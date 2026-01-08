@@ -6,9 +6,9 @@ const MockData = {
     // Current User
     currentUser: {
         id: 1,
-        name: 'Admin User',
-        email: 'admin@mgs.school.nz',
-        initials: 'AD',
+        name: 'R. Horn',
+        email: 'r.horn@middleton.school.nz',
+        initials: 'RH',
         role: 'admin'
     },
 

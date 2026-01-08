@@ -48,13 +48,12 @@ class App {
         const password = document.getElementById('password').value;
 
         // Demo authentication
-        if ((email === 'admin@mgs.school.nz' && password === 'admin123') ||
-            (email === 'music@mgs.school.nz' && password === 'music123')) {
+        if (email === 'r.horn@middleton.school.nz' && password === 'demo123') {
             sessionStorage.setItem('loggedIn', 'true');
             this.showApp();
             this.showToast('Welcome to MGS Arts Portal!', 'success');
         } else {
-            this.showToast('Invalid credentials. Try admin@mgs.school.nz / admin123', 'error');
+            this.showToast('Invalid credentials. Check the login hint below.', 'error');
         }
     }
 
@@ -1072,8 +1071,11 @@ class App {
     }
 }
 
-// Initialize app
-const app = new App();
+// Initialize app when DOM is ready
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+    app = new App();
+});
 
 // Service Worker Registration for PWA
 if ('serviceWorker' in navigator) {
