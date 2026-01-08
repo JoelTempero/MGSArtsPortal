@@ -6,20 +6,19 @@ const MockData = {
     // Current User
     currentUser: {
         id: 1,
-        name: 'R. Horn',
+        name: 'Rhian Horn',
         email: 'r.horn@middleton.school.nz',
         initials: 'RH',
         role: 'admin'
     },
 
-    // Tutors (not users - just stored data)
+    // Tutors (Music Itinerant Teachers - not users, just stored data)
     tutors: [
         {
             id: 1,
             name: 'Motoi Shibusawa',
             initials: 'MS',
             color: '#8b5cf6',
-            disciplines: ['Music'],
             instruments: ['Guitar', 'Bass', 'Ukulele'],
             studentCount: 24,
             lessonsPerWeek: 18
@@ -29,7 +28,6 @@ const MockData = {
             name: 'Cameron Finlay',
             initials: 'CF',
             color: '#ec4899',
-            disciplines: ['Music'],
             instruments: ['Drums', 'Percussion'],
             studentCount: 16,
             lessonsPerWeek: 12
@@ -39,7 +37,6 @@ const MockData = {
             name: 'Lynley Fuglestad',
             initials: 'LF',
             color: '#06b6d4',
-            disciplines: ['Music'],
             instruments: ['Piano', 'Keyboard'],
             studentCount: 20,
             lessonsPerWeek: 15
@@ -49,7 +46,6 @@ const MockData = {
             name: 'Elizabeth Macfarlane',
             initials: 'EM',
             color: '#f59e0b',
-            disciplines: ['Music'],
             instruments: ['Vocals', 'Choir'],
             studentCount: 18,
             lessonsPerWeek: 10
@@ -59,7 +55,6 @@ const MockData = {
             name: 'Christine Rudd',
             initials: 'CR',
             color: '#22c55e',
-            disciplines: ['Music'],
             instruments: ['Piano', 'Music Theory'],
             studentCount: 14,
             lessonsPerWeek: 10
@@ -69,98 +64,69 @@ const MockData = {
             name: 'Lana Law',
             initials: 'LL',
             color: '#3b82f6',
-            disciplines: ['Music'],
             instruments: ['Saxophone', 'Clarinet', 'Flute'],
             studentCount: 12,
             lessonsPerWeek: 8
-        },
-        {
-            id: 7,
-            name: 'Sarah Mitchell',
-            initials: 'SM',
-            color: '#ec4899',
-            disciplines: ['Drama'],
-            instruments: ['Acting', 'Speech & Drama'],
-            studentCount: 28,
-            lessonsPerWeek: 8
-        },
-        {
-            id: 8,
-            name: 'James Cooper',
-            initials: 'JC',
-            color: '#06b6d4',
-            disciplines: ['Dance'],
-            instruments: ['Contemporary', 'Jazz'],
-            studentCount: 22,
-            lessonsPerWeek: 6
         }
     ],
 
-    // Students
+    // Students (Music lessons only)
     students: [
-        { id: 1, name: 'Sam Ure', class: '7WH', year: 7, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 2, name: 'Monty Given', class: '8BR', year: 8, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 3, name: 'Chené Walsh', class: '9PE', year: 9, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 4, name: 'Blake Ramsay', class: '10CH', year: 10, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 5, name: 'Austin Fletcher', class: '7SM', year: 7, disciplines: ['Music'], instruments: ['Drums'], tutorId: 2, status: 'active' },
-        { id: 6, name: 'Oliver Owen', class: '8JK', year: 8, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 7, name: 'Ella-Rose McConnell', class: '9TH', year: 9, disciplines: ['Music'], instruments: ['Drums'], tutorId: 2, status: 'active' },
-        { id: 8, name: 'Asia Hardanava', class: '10WS', year: 10, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 9, name: 'Annabelle Venter', class: '11AR', year: 11, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 10, name: 'Paige Churton', class: '7LM', year: 7, disciplines: ['Music'], instruments: ['Drums'], tutorId: 2, status: 'active' },
-        { id: 11, name: 'Sol Armstrong', class: '8DP', year: 8, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 12, name: 'Gabriel Perry', class: '3r9', year: 3, disciplines: ['Music'], instruments: ['Piano'], tutorId: 3, status: 'active' },
-        { id: 13, name: 'Kelsea Andales', class: '7PM', year: 7, disciplines: ['Music'], instruments: ['Drums'], tutorId: 2, status: 'active' },
-        { id: 14, name: 'Daniel Reyneke', class: '5r12', year: 5, disciplines: ['Music'], instruments: ['Drums'], tutorId: 2, status: 'waiting' },
-        { id: 15, name: 'Wilf Lowe', class: '9BR', year: 9, disciplines: ['Music'], instruments: ['Guitar'], tutorId: 1, status: 'active' },
-        { id: 16, name: 'Ayala Moe', class: '11HD', year: 11, disciplines: ['Music'], instruments: ['Vocals'], tutorId: 4, status: 'assigned' },
-        { id: 17, name: 'Amber Judkins', class: '11SV', year: 11, disciplines: ['Music'], instruments: ['Piano'], tutorId: 5, status: 'assigned' },
-        { id: 18, name: 'Shanna Moe', class: '13WN', year: 13, disciplines: ['Music'], instruments: ['Vocals'], tutorId: 4, status: 'assigned' },
-        { id: 19, name: 'Theo Read', class: '13CH', year: 13, disciplines: ['Music'], instruments: ['Saxophone'], tutorId: 6, status: 'assigned' },
-        { id: 20, name: 'Emily Watson', class: '10PE', year: 10, disciplines: ['Drama'], instruments: ['Acting'], tutorId: 7, status: 'active' },
-        { id: 21, name: 'Jack Morrison', class: '11BR', year: 11, disciplines: ['Drama'], instruments: ['Speech & Drama'], tutorId: 7, status: 'active' },
-        { id: 22, name: 'Sophie Chen', class: '9WH', year: 9, disciplines: ['Dance'], instruments: ['Contemporary'], tutorId: 8, status: 'active' },
-        { id: 23, name: 'Mia Thompson', class: '10JK', year: 10, disciplines: ['Dance'], instruments: ['Jazz'], tutorId: 8, status: 'active' }
+        { id: 1, name: 'Sam Ure', class: '7WH', year: 7, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 2, name: 'Monty Given', class: '8BR', year: 8, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 3, name: 'Chené Walsh', class: '9PE', year: 9, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 4, name: 'Blake Ramsay', class: '10CH', year: 10, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 5, name: 'Austin Fletcher', class: '7SM', year: 7, instruments: ['Drums'], tutorId: 2, status: 'active' },
+        { id: 6, name: 'Oliver Owen', class: '8JK', year: 8, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 7, name: 'Ella-Rose McConnell', class: '9TH', year: 9, instruments: ['Drums'], tutorId: 2, status: 'active' },
+        { id: 8, name: 'Asia Hardanava', class: '10WS', year: 10, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 9, name: 'Annabelle Venter', class: '11AR', year: 11, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 10, name: 'Paige Churton', class: '7LM', year: 7, instruments: ['Drums'], tutorId: 2, status: 'active' },
+        { id: 11, name: 'Sol Armstrong', class: '8DP', year: 8, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 12, name: 'Gabriel Perry', class: '3r9', year: 3, instruments: ['Piano'], tutorId: 3, status: 'active' },
+        { id: 13, name: 'Kelsea Andales', class: '7PM', year: 7, instruments: ['Drums'], tutorId: 2, status: 'active' },
+        { id: 14, name: 'Daniel Reyneke', class: '5r12', year: 5, instruments: ['Drums'], tutorId: 2, status: 'waiting' },
+        { id: 15, name: 'Wilf Lowe', class: '9BR', year: 9, instruments: ['Guitar'], tutorId: 1, status: 'active' },
+        { id: 16, name: 'Ayala Moe', class: '11HD', year: 11, instruments: ['Vocals'], tutorId: 4, status: 'assigned' },
+        { id: 17, name: 'Amber Judkins', class: '11SV', year: 11, instruments: ['Piano'], tutorId: 5, status: 'assigned' },
+        { id: 18, name: 'Shanna Moe', class: '13WN', year: 13, instruments: ['Vocals'], tutorId: 4, status: 'assigned' },
+        { id: 19, name: 'Theo Read', class: '13CH', year: 13, instruments: ['Saxophone'], tutorId: 6, status: 'assigned' }
     ],
 
-    // Today's Lessons (Day Planner)
+    // Today's Lessons
     todaysLessons: [
-        { id: 1, studentId: 1, tutorId: 1, time: '8:20 AM - 8:40 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'present' },
-        { id: 2, studentId: 2, tutorId: 1, time: '8:40 AM - 9:00 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'present' },
-        { id: 3, studentId: 3, tutorId: 1, time: '9:00 AM - 9:20 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'late' },
-        { id: 4, studentId: 4, tutorId: 1, time: '9:20 AM - 9:40 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'present' },
-        { id: 5, studentId: 5, tutorId: 2, time: '9:30 AM - 10:00 AM', discipline: 'Music', instrument: 'Drums', attendance: 'unmarked' },
-        { id: 6, studentId: 6, tutorId: 1, time: '9:40 AM - 10:00 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'unmarked' },
-        { id: 7, studentId: 7, tutorId: 2, time: '10:00 AM - 10:30 AM', discipline: 'Music', instrument: 'Drums', attendance: 'unmarked' },
-        { id: 8, studentId: 8, tutorId: 1, time: '10:00 AM - 10:20 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'absent' },
-        { id: 9, studentId: 9, tutorId: 1, time: '10:20 AM - 10:40 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'unmarked' },
-        { id: 10, studentId: 10, tutorId: 2, time: '10:30 AM - 11:00 AM', discipline: 'Music', instrument: 'Drums', attendance: 'unmarked' },
-        { id: 11, studentId: 11, tutorId: 1, time: '10:40 AM - 11:00 AM', discipline: 'Music', instrument: 'Guitar', attendance: 'unmarked' },
-        { id: 12, studentId: 12, tutorId: 3, time: '11:00 AM - 11:30 AM', discipline: 'Music', instrument: 'Piano', attendance: 'unmarked' },
-        { id: 13, studentId: 20, tutorId: 7, time: '11:30 AM - 12:00 PM', discipline: 'Drama', instrument: 'Acting', attendance: 'present' },
-        { id: 14, studentId: 22, tutorId: 8, time: '1:00 PM - 1:30 PM', discipline: 'Dance', instrument: 'Contemporary', attendance: 'present' },
-        { id: 15, studentId: 23, tutorId: 8, time: '1:30 PM - 2:00 PM', discipline: 'Dance', instrument: 'Jazz', attendance: 'late' }
+        { id: 1, studentId: 1, tutorId: 1, time: '8:20 AM', instrument: 'Guitar' },
+        { id: 2, studentId: 2, tutorId: 1, time: '8:40 AM', instrument: 'Guitar' },
+        { id: 3, studentId: 3, tutorId: 1, time: '9:00 AM', instrument: 'Guitar' },
+        { id: 4, studentId: 4, tutorId: 1, time: '9:20 AM', instrument: 'Guitar' },
+        { id: 5, studentId: 5, tutorId: 2, time: '9:30 AM', instrument: 'Drums' },
+        { id: 6, studentId: 6, tutorId: 1, time: '9:40 AM', instrument: 'Guitar' },
+        { id: 7, studentId: 7, tutorId: 2, time: '10:00 AM', instrument: 'Drums' },
+        { id: 8, studentId: 8, tutorId: 1, time: '10:00 AM', instrument: 'Guitar' },
+        { id: 9, studentId: 9, tutorId: 1, time: '10:20 AM', instrument: 'Guitar' },
+        { id: 10, studentId: 10, tutorId: 2, time: '10:30 AM', instrument: 'Drums' },
+        { id: 11, studentId: 11, tutorId: 1, time: '10:40 AM', instrument: 'Guitar' },
+        { id: 12, studentId: 12, tutorId: 3, time: '11:00 AM', instrument: 'Piano' },
+        { id: 13, studentId: 13, tutorId: 2, time: '11:30 AM', instrument: 'Drums' },
+        { id: 14, studentId: 15, tutorId: 1, time: '1:00 PM', instrument: 'Guitar' },
+        { id: 15, studentId: 19, tutorId: 6, time: '1:30 PM', instrument: 'Saxophone' }
     ],
 
     // All Lessons (recurring schedule)
     lessons: [
-        { id: 1, studentId: 1, tutorId: 1, dayTime: 'Thursday 8:20 AM', discipline: 'Music', instrument: 'Guitar', status: 'active' },
-        { id: 2, studentId: 2, tutorId: 1, dayTime: 'Thursday 8:40 AM', discipline: 'Music', instrument: 'Guitar', status: 'active' },
-        { id: 3, studentId: 3, tutorId: 1, dayTime: 'Thursday 9:00 AM', discipline: 'Music', instrument: 'Guitar', status: 'active' },
-        { id: 4, studentId: 4, tutorId: 1, dayTime: 'Thursday 9:20 AM', discipline: 'Music', instrument: 'Guitar', status: 'active' },
-        { id: 5, studentId: 5, tutorId: 2, dayTime: 'Thursday 9:30 AM', discipline: 'Music', instrument: 'Drums', status: 'active' },
-        { id: 6, studentId: 12, tutorId: 3, dayTime: 'On Demand', discipline: 'Music', instrument: 'Piano', status: 'active' },
-        { id: 7, studentId: 13, tutorId: 2, dayTime: 'On Demand', discipline: 'Music', instrument: 'Drums', status: 'active' },
-        { id: 8, studentId: 14, tutorId: 2, dayTime: '--', discipline: 'Music', instrument: 'Drums', status: 'waiting' },
-        { id: 9, studentId: 15, tutorId: 1, dayTime: 'On Demand', discipline: 'Music', instrument: 'Guitar', status: 'active' },
-        { id: 10, studentId: 16, tutorId: 4, dayTime: '--', discipline: 'Music', instrument: 'Vocals', status: 'assigned' },
-        { id: 11, studentId: 17, tutorId: 5, dayTime: '--', discipline: 'Music', instrument: 'Piano', status: 'assigned' },
-        { id: 12, studentId: 18, tutorId: 4, dayTime: '--', discipline: 'Music', instrument: 'Vocals', status: 'assigned' },
-        { id: 13, studentId: 19, tutorId: 6, dayTime: 'Tuesday 8:45 AM', discipline: 'Music', instrument: 'Saxophone', status: 'assigned' },
-        { id: 14, studentId: 20, tutorId: 7, dayTime: 'Thursday 11:30 AM', discipline: 'Drama', instrument: 'Acting', status: 'active' },
-        { id: 15, studentId: 21, tutorId: 7, dayTime: 'Monday 2:00 PM', discipline: 'Drama', instrument: 'Speech & Drama', status: 'active' },
-        { id: 16, studentId: 22, tutorId: 8, dayTime: 'Thursday 1:00 PM', discipline: 'Dance', instrument: 'Contemporary', status: 'active' },
-        { id: 17, studentId: 23, tutorId: 8, dayTime: 'Thursday 1:30 PM', discipline: 'Dance', instrument: 'Jazz', status: 'active' }
+        { id: 1, studentId: 1, tutorId: 1, day: 'Thursday', time: '8:20 AM', instrument: 'Guitar', status: 'active' },
+        { id: 2, studentId: 2, tutorId: 1, day: 'Thursday', time: '8:40 AM', instrument: 'Guitar', status: 'active' },
+        { id: 3, studentId: 3, tutorId: 1, day: 'Thursday', time: '9:00 AM', instrument: 'Guitar', status: 'active' },
+        { id: 4, studentId: 4, tutorId: 1, day: 'Thursday', time: '9:20 AM', instrument: 'Guitar', status: 'active' },
+        { id: 5, studentId: 5, tutorId: 2, day: 'Thursday', time: '9:30 AM', instrument: 'Drums', status: 'active' },
+        { id: 6, studentId: 12, tutorId: 3, day: 'Monday', time: '11:00 AM', instrument: 'Piano', status: 'active' },
+        { id: 7, studentId: 13, tutorId: 2, day: 'Tuesday', time: '9:00 AM', instrument: 'Drums', status: 'active' },
+        { id: 8, studentId: 14, tutorId: 2, day: 'Wednesday', time: '10:00 AM', instrument: 'Drums', status: 'waiting' },
+        { id: 9, studentId: 15, tutorId: 1, day: 'Thursday', time: '1:00 PM', instrument: 'Guitar', status: 'active' },
+        { id: 10, studentId: 16, tutorId: 4, day: 'Friday', time: '9:00 AM', instrument: 'Vocals', status: 'assigned' },
+        { id: 11, studentId: 17, tutorId: 5, day: 'Monday', time: '2:00 PM', instrument: 'Piano', status: 'assigned' },
+        { id: 12, studentId: 18, tutorId: 4, day: 'Friday', time: '9:30 AM', instrument: 'Vocals', status: 'assigned' },
+        { id: 13, studentId: 19, tutorId: 6, day: 'Tuesday', time: '8:45 AM', instrument: 'Saxophone', status: 'assigned' }
     ],
 
     // Lesson Requests
@@ -175,15 +141,72 @@ const MockData = {
 
     // Events
     events: [
-        { id: 1, name: 'Easter Assembly', description: 'Easter Assembly performance', date: 'Apr 8th, 2026', term: 'Term 1', discipline: 'All' },
-        { id: 2, name: 'Rock Night', description: 'Annual rock band showcase', date: 'May 7th, 2026', term: 'Term 2', discipline: 'Music' },
-        { id: 3, name: 'Cafe Acoustique', description: 'Acoustic performance evening', date: 'May 14th, 2026', term: 'Term 2', discipline: 'Music', alert: true },
-        { id: 4, name: 'Big Sing', description: 'Regional choir competition', date: 'Jun 6th, 2026', term: 'Term 2', discipline: 'Music', alert: true },
-        { id: 5, name: 'Trial Event', description: 'Test event description', date: 'Jul 16th, 2026', term: 'Term 3', discipline: 'Drama', alert: true },
-        { id: 6, name: 'CSMF area rehearsal', description: 'CSMF preparation', date: 'Sep 8th, 2026', term: 'Term 3', discipline: 'Music' },
-        { id: 7, name: 'CSMF performance day rehearsal', description: 'CSMF final rehearsal', date: 'Nov 7th, 2026', term: 'Term 4', discipline: 'Music', alert: true },
-        { id: 8, name: 'Dance Showcase', description: 'End of year dance performance', date: 'Nov 20th, 2026', term: 'Term 4', discipline: 'Dance' },
-        { id: 9, name: 'Drama Production', description: 'Annual school play', date: 'Aug 15th, 2026', term: 'Term 3', discipline: 'Drama' }
+        { id: 1, name: 'Easter Assembly', description: 'Easter Assembly performance', date: 'Apr 8th, 2026', term: 'Term 1', category: 'Performing Arts', templateType: 'school-during' },
+        { id: 2, name: 'Rock Night', description: 'Annual rock band showcase', date: 'May 7th, 2026', term: 'Term 2', category: 'Music', templateType: 'school-after' },
+        { id: 3, name: 'Cafe Acoustique', description: 'Acoustic performance evening', date: 'May 14th, 2026', term: 'Term 2', category: 'Music', templateType: 'school-after', alert: true },
+        { id: 4, name: 'Big Sing', description: 'Regional choir competition', date: 'Jun 6th, 2026', term: 'Term 2', category: 'Music', templateType: 'offsite-during', alert: true },
+        { id: 5, name: 'Drama Showcase', description: 'Drama class performances', date: 'Jul 16th, 2026', term: 'Term 3', category: 'Drama', templateType: 'school-after', alert: true },
+        { id: 6, name: 'Kapa Haka Festival', description: 'Regional Kapa Haka competition', date: 'Aug 12th, 2026', term: 'Term 3', category: 'Kapa Haka', templateType: 'offsite-during' },
+        { id: 7, name: 'Pasifika Showcase', description: 'Celebration of Pasifika culture', date: 'Sep 8th, 2026', term: 'Term 3', category: 'Pasifika', templateType: 'school-after' },
+        { id: 8, name: 'CSMF Performance', description: 'Canterbury Schools Music Festival', date: 'Nov 7th, 2026', term: 'Term 4', category: 'Music', templateType: 'offsite-after', alert: true },
+        { id: 9, name: 'Dance Showcase', description: 'End of year dance performance', date: 'Nov 20th, 2026', term: 'Term 4', category: 'Dance', templateType: 'school-after' },
+        { id: 10, name: 'School Production', description: 'Annual school musical/play', date: 'Sep 25th, 2026', term: 'Term 3', category: 'Production', templateType: 'school-after' }
+    ],
+
+    // Event Templates (based on MMA Performance Programme)
+    eventTemplates: [
+        {
+            id: 'school-during',
+            name: 'School Performance During School Hours',
+            description: 'For performances held at school during the school day',
+            tasks: [
+                { phase: '4+ weeks prior', items: ['Secure school calendar booking', 'Confirm performance repertoire', 'Inform performer\'s parents and whānau'] },
+                { phase: '2 weeks prior', items: ['Confirm technical requirements, instruments, and personnel', 'Organise relief', 'Finalise runsheet (opening/closing, performances, staging/tech)', 'Inform staff members of performers out of class (specific times)'] },
+                { phase: '1 week prior', items: ['Remind performer\'s parents and whānau', 'Confirm details with event organiser', 'Finalise performers instructions (arrival, setup, clothing, equipment)', 'Provide performers with Performance Pass', 'Finalise technical setup and timeline'] },
+                { phase: 'Pre-performance', items: ['All equipment is in the right place and available', 'Performance space is setup', 'Groups are prepared and communicated with', 'Performers list to Student Services'] },
+                { phase: 'Performance day', items: ['Meet performers at prearranged space', 'Mark attendance for Student Services', 'Manage setup and tech rehearsals', 'Supervise performers in downtime', 'Manage pack down', 'Ensure equipment is correctly returned'] },
+                { phase: 'Post-performance', items: ['Debrief with organisers, group leaders, and technical support'] }
+            ]
+        },
+        {
+            id: 'school-after',
+            name: 'School Performance After School Hours',
+            description: 'For performances held at school after the school day',
+            tasks: [
+                { phase: '4+ weeks prior', items: ['Ensure venue is booked', 'Secure school calendar booking', 'Confirm performance repertoire', 'Inform performer\'s whānau of event'] },
+                { phase: '2 weeks prior', items: ['Confirm technical requirements, instruments, and personnel', 'Organise relief if required for setup', 'Finalise runsheet', 'Advertise event to Staff and School Community'] },
+                { phase: '1 week prior', items: ['Confirm details with group leaders and technical team', 'Finalise performers instructions', 'Remind performer\'s parents and whānau with arrival times', 'Finalise technical setup design and timeline'] },
+                { phase: 'Pre-performance', items: ['All equipment is in the right place', 'Performance space is setup', 'Group is prepared', 'Performers list confirmed'] },
+                { phase: 'Performance day', items: ['Meet performers at prearranged space', 'Note attendance of performers', 'Manage setup and tech rehearsals', 'Supervise performers in downtime', 'Manage pack down', 'Ensure equipment is correctly returned'] },
+                { phase: 'Post-performance', items: ['Debrief the performance, programme, and process'] }
+            ]
+        },
+        {
+            id: 'offsite-during',
+            name: 'Offsite Performance During School Hours',
+            description: 'For performances held at external venues during school hours',
+            tasks: [
+                { phase: '4+ weeks prior', items: ['Ensure venue is booked', 'Secure school calendar booking', 'Confirm performance repertoire', 'Inform performer\'s whānau of event', 'Finalise transport arrangements', 'Complete EOTC paperwork'] },
+                { phase: '2 weeks prior', items: ['Confirm technical requirements, instruments, and personnel', 'Organise relief', 'Complete parental permission returns', 'Inform staff members of performers out of class'] },
+                { phase: '1 week prior', items: ['Confirm details with group leaders', 'Finalise performers instructions', 'Provide performers with Performance Pass', 'Remind performer\'s parents and whānau with travel times', 'Finalise technical requirements'] },
+                { phase: 'Pre-performance', items: ['All equipment is in the right place', 'Performance space is setup', 'Group is prepared', 'Performers list to Student Services'] },
+                { phase: 'Performance day', items: ['Meet performers at prearranged space', 'Mark attendance for Student Services', 'Manage setup and tech rehearsals', 'Supervise performers in downtime', 'Manage pack down', 'Ensure equipment is correctly returned/transported'] },
+                { phase: 'Post-performance', items: ['Debrief the performance, programme, and process'] }
+            ]
+        },
+        {
+            id: 'offsite-after',
+            name: 'Offsite Performance After School Hours',
+            description: 'For performances held at external venues after school hours',
+            tasks: [
+                { phase: '4+ weeks prior', items: ['Ensure venue is booked', 'Secure school calendar booking', 'Understand venue host\'s requirements', 'Confirm performance repertoire', 'Inform performer\'s parents and whānau', 'Finalise transport arrangements', 'Complete EOTC paperwork'] },
+                { phase: '2 weeks prior', items: ['Confirm technical requirements, instruments, and personnel', 'Liaise with venue host about requirements', 'Organise relief if required', 'Complete parental permission returns', 'Inform staff of performers out of class'] },
+                { phase: '1 week prior', items: ['Confirm details with group leaders', 'Finalise performers instructions', 'Provide Performance Pass if required', 'Remind performer\'s whānau with travel times', 'Finalise technical requirements'] },
+                { phase: 'Pre-performance', items: ['All equipment is in the right place', 'Performance space is setup', 'Group is prepared'] },
+                { phase: 'Performance day', items: ['Meet performers at prearranged space', 'Manage setup and tech rehearsals', 'Supervise performers in downtime', 'Manage pack down', 'Ensure equipment is correctly returned/transported'] },
+                { phase: 'Post-performance', items: ['Debrief the performance, programme, and process'] }
+            ]
+        }
     ],
 
     // Instrument Hires
@@ -221,17 +244,19 @@ const MockData = {
         { id: 18, name: 'Flute 6', type: 'Flute', size: 'Standard', condition: 'Good', status: 'On Hire' }
     ],
 
-    // Groups
+    // Performing Arts Groups
     groups: [
-        { id: 1, name: 'Concert Band', type: 'Ensemble', discipline: 'Music', memberCount: 32, meetingTime: 'Wednesday 3:30 PM' },
-        { id: 2, name: 'Jazz Band', type: 'Ensemble', discipline: 'Music', memberCount: 14, meetingTime: 'Thursday 3:30 PM' },
-        { id: 3, name: 'Senior Choir', type: 'Choir', discipline: 'Music', memberCount: 45, meetingTime: 'Tuesday 12:30 PM' },
-        { id: 4, name: 'Junior Choir', type: 'Choir', discipline: 'Music', memberCount: 38, meetingTime: 'Monday 12:30 PM' },
-        { id: 5, name: 'Rock Band A', type: 'Band', discipline: 'Music', memberCount: 5, meetingTime: 'Friday 3:30 PM' },
-        { id: 6, name: 'Rock Band B', type: 'Band', discipline: 'Music', memberCount: 5, meetingTime: 'Friday 4:30 PM' },
-        { id: 7, name: 'Drama Club', type: 'Club', discipline: 'Drama', memberCount: 28, meetingTime: 'Wednesday 3:30 PM' },
-        { id: 8, name: 'Dance Crew', type: 'Crew', discipline: 'Dance', memberCount: 16, meetingTime: 'Tuesday 3:30 PM' },
-        { id: 9, name: 'String Quartet', type: 'Chamber', discipline: 'Music', memberCount: 4, meetingTime: 'Monday 3:30 PM' }
+        { id: 1, name: 'Concert Band', type: 'Ensemble', category: 'Music', memberCount: 32, meetingTime: 'Wednesday 3:30 PM' },
+        { id: 2, name: 'Jazz Band', type: 'Ensemble', category: 'Music', memberCount: 14, meetingTime: 'Thursday 3:30 PM' },
+        { id: 3, name: 'Senior Choir', type: 'Choir', category: 'Music', memberCount: 45, meetingTime: 'Tuesday 12:30 PM' },
+        { id: 4, name: 'Junior Choir', type: 'Choir', category: 'Music', memberCount: 38, meetingTime: 'Monday 12:30 PM' },
+        { id: 5, name: 'Rock Band A', type: 'Band', category: 'Music', memberCount: 5, meetingTime: 'Friday 3:30 PM' },
+        { id: 6, name: 'Rock Band B', type: 'Band', category: 'Music', memberCount: 5, meetingTime: 'Friday 4:30 PM' },
+        { id: 7, name: 'Drama Club', type: 'Club', category: 'Drama', memberCount: 28, meetingTime: 'Wednesday 3:30 PM' },
+        { id: 8, name: 'Dance Crew', type: 'Crew', category: 'Dance', memberCount: 16, meetingTime: 'Tuesday 3:30 PM' },
+        { id: 9, name: 'String Quartet', type: 'Chamber', category: 'Music', memberCount: 4, meetingTime: 'Monday 3:30 PM' },
+        { id: 10, name: 'Kapa Haka', type: 'Group', category: 'Kapa Haka', memberCount: 35, meetingTime: 'Thursday 3:30 PM' },
+        { id: 11, name: 'Pasifika Group', type: 'Group', category: 'Pasifika', memberCount: 24, meetingTime: 'Wednesday 3:30 PM' }
     ]
 };
 

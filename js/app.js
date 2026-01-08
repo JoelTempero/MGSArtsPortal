@@ -176,9 +176,44 @@ class App {
     // ========================================
 
     renderDashboard() {
+        this.renderTodaysLessons();
         this.renderUpcomingEvents();
         this.renderRecentRequests();
-        this.updateLessonCount();
+    }
+
+    renderTodaysLessons() {
+        const tbody = document.getElementById('todays-lessons-body');
+        const badge = document.getElementById('total-lessons-badge');
+        if (!tbody) return;
+
+        const lessons = MockData.todaysLessons;
+        if (badge) {
+            badge.textContent = `${lessons.length} lessons`;
+        }
+
+        tbody.innerHTML = lessons.map(lesson => {
+            const student = getStudentById(lesson.studentId);
+            const tutor = getTutorById(lesson.tutorId);
+            
+            return `
+                <tr>
+                    <td>${lesson.time}</td>
+                    <td>
+                        <div class="cell-student">
+                            <div class="student-avatar music">${student.name.charAt(0)}</div>
+                            <span class="student-name">${student.name}</span>
+                        </div>
+                    </td>
+                    <td>${lesson.instrument}</td>
+                    <td>
+                        <div class="cell-tutor">
+                            <div class="tutor-avatar" style="background: ${tutor.color}; color: white;">${tutor.initials}</div>
+                            <span>${tutor.name}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     renderUpcomingEvents() {
@@ -222,16 +257,8 @@ class App {
         `).join('');
     }
 
-    updateLessonCount() {
-        const total = MockData.todaysLessons.length;
-        const totalEl = document.getElementById('total-lessons');
-        if (totalEl) {
-            totalEl.textContent = total;
-        }
-    }
-
     // ========================================
-    // Day Planner Rendering
+    // Day Planner Rendering (removed - now on dashboard)
     // ========================================
 
     renderPlanner() {
@@ -288,19 +315,19 @@ class App {
         tbody.innerHTML = MockData.lessons.map(lesson => {
             const student = getStudentById(lesson.studentId);
             const tutor = getTutorById(lesson.tutorId);
+            const dayTime = lesson.day && lesson.time ? `${lesson.day} ${lesson.time}` : '--';
             
             return `
                 <tr>
                     <td>
                         <div class="cell-student">
-                            <div class="student-avatar ${getDisciplineColor(lesson.discipline)}">${student.name.charAt(0)}</div>
+                            <div class="student-avatar music">${student.name.charAt(0)}</div>
                             <span class="student-name">${student.name}</span>
                         </div>
                     </td>
                     <td>${student.class}</td>
-                    <td><span class="discipline-tag discipline-${getDisciplineColor(lesson.discipline)}">${lesson.discipline}</span></td>
                     <td>${lesson.instrument}</td>
-                    <td>${lesson.dayTime}</td>
+                    <td>${dayTime}</td>
                     <td>
                         <div class="cell-tutor">
                             <div class="tutor-avatar" style="background: ${tutor.color}; color: white;">${tutor.initials}</div>
@@ -308,6 +335,16 @@ class App {
                         </div>
                     </td>
                     <td><span class="status-badge ${getStatusClass(lesson.status)}">${lesson.status}</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="row-action-btn" title="Edit">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -374,12 +411,11 @@ class App {
                     <div class="tutor-avatar-large" style="background: ${tutor.color};">${tutor.initials}</div>
                     <div class="tutor-header-info">
                         <div class="tutor-name">${tutor.name}</div>
-                        <div class="tutor-role">Tutor</div>
+                        <div class="tutor-role">Itinerant Music Teacher</div>
                     </div>
                 </div>
                 <div class="tutor-disciplines">
-                    ${tutor.disciplines.map(d => `<span class="discipline-tag discipline-${getDisciplineColor(d)}">${d}</span>`).join('')}
-                    ${tutor.instruments.map(i => `<span class="discipline-tag" style="background: var(--color-bg-elevated); color: var(--color-text-secondary);">${i}</span>`).join('')}
+                    ${tutor.instruments.map(i => `<span class="discipline-tag discipline-music">${i}</span>`).join('')}
                 </div>
                 <div class="tutor-stats">
                     <div class="tutor-stat">
@@ -403,25 +439,35 @@ class App {
         const tbody = document.getElementById('events-body');
         if (!tbody) return;
 
+        const categoryColors = {
+            'Music': 'music',
+            'Drama': 'drama',
+            'Dance': 'dance',
+            'Pasifika': 'music',
+            'Kapa Haka': 'drama',
+            'Performing Arts': 'dance',
+            'Production': 'drama'
+        };
+
         tbody.innerHTML = MockData.events.map(event => `
             <tr>
                 <td><strong>${event.name}</strong></td>
                 <td>${event.description}</td>
                 <td>${event.date}</td>
                 <td>${event.term}</td>
-                <td><span class="discipline-tag discipline-${event.discipline === 'All' ? 'music' : getDisciplineColor(event.discipline)}">${event.discipline}</span></td>
+                <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category}</span></td>
                 <td>
                     <div class="row-actions">
+                        <button class="row-action-btn" title="View Tasks">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11l3 3L22 4"/>
+                                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                            </svg>
+                        </button>
                         <button class="row-action-btn" title="Edit">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                        <button class="row-action-btn" title="Delete">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                             </svg>
                         </button>
                     </div>
@@ -515,6 +561,14 @@ class App {
         const container = document.getElementById('groups-grid');
         if (!container) return;
 
+        const categoryColors = {
+            'Music': 'music',
+            'Drama': 'drama',
+            'Dance': 'dance',
+            'Pasifika': 'music',
+            'Kapa Haka': 'drama'
+        };
+
         container.innerHTML = MockData.groups.map(group => `
             <div class="group-card">
                 <div class="group-card-header">
@@ -528,7 +582,7 @@ class App {
                             <span class="group-meta-label">Members</span>
                         </div>
                         <div class="group-meta-item">
-                            <span class="group-meta-value discipline-tag discipline-${getDisciplineColor(group.discipline)}">${group.discipline}</span>
+                            <span class="group-meta-value discipline-tag discipline-${categoryColors[group.category] || 'music'}">${group.category}</span>
                         </div>
                     </div>
                     <div style="font-size: 0.85rem; color: var(--color-text-muted);">

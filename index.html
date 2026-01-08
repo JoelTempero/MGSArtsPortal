@@ -86,7 +86,7 @@
                 
                 <div class="login-footer">
                     <p>Demo Credentials:</p>
-                    <code><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5624783e392438163b3f32323a332239387825353e39393a78382c">[email&#160;protected]</a> / demo123</code>
+                    <code>r.horn@middleton.school.nz / demo123</code>
                 </div>
             </div>
             
@@ -160,15 +160,6 @@
                     <span>Dashboard</span>
                 </a>
 
-                <a href="#planner" class="nav-item" data-page="planner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/>
-                        <path d="M16 2v4M8 2v4M3 10h18"/>
-                        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
-                    </svg>
-                    <span>Day Planner</span>
-                </a>
-
                 <div class="nav-section">
                     <span class="nav-section-title">Categories</span>
                 </div>
@@ -203,7 +194,7 @@
                     </button>
                     <div class="nav-group-items" data-group="events">
                         <a href="#events" class="nav-item sub" data-page="events">Upcoming Events</a>
-                        <a href="#templates" class="nav-item sub" data-page="templates">Templates</a>
+                        <a href="#templates" class="nav-item sub" data-page="templates">Event Templates</a>
                     </div>
                 </div>
 
@@ -213,7 +204,7 @@
                         <circle cx="9" cy="7" r="4"/>
                         <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
                     </svg>
-                    <span>Groups</span>
+                    <span>Performing Arts Groups</span>
                 </a>
 
                 <div class="nav-group">
@@ -294,8 +285,8 @@
             <div class="page active" id="page-dashboard">
                 <div class="page-header">
                     <div class="page-header-content">
-                        <h1 class="page-title">Dashboard</h1>
-                        <p class="page-subtitle">Welcome back! Here's what's happening today.</p>
+                        <h1 class="page-title">Welcome back, Rhian</h1>
+                        <p class="page-subtitle">Here's what's happening today.</p>
                     </div>
                     <div class="page-header-actions">
                         <div class="date-navigator">
@@ -316,8 +307,8 @@
                 </div>
 
                 <div class="dashboard-grid">
-                    <!-- Lessons Summary Card -->
-                    <div class="card card-lessons-summary">
+                    <!-- Today's Lessons Card - Full List -->
+                    <div class="card card-todays-lessons">
                         <div class="card-header">
                             <h2 class="card-title">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -326,102 +317,23 @@
                                 </svg>
                                 Today's Lessons
                             </h2>
-                            <a href="#planner" class="card-action" data-page="planner">View Planner →</a>
+                            <span class="lessons-count-badge" id="total-lessons-badge">15 lessons</span>
                         </div>
-                        <div class="card-body">
-                            <div class="lessons-count">
-                                <span class="count-number" id="total-lessons">35</span>
-                                <span class="count-label">Scheduled Today</span>
-                            </div>
-                            <div class="today-lessons-breakdown">
-                                <div class="breakdown-item">
-                                    <span class="breakdown-icon music">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M9 18V5l12-2v13"/>
-                                            <circle cx="6" cy="18" r="3"/>
-                                            <circle cx="18" cy="16" r="3"/>
-                                        </svg>
-                                    </span>
-                                    <span class="breakdown-count">28</span>
-                                    <span class="breakdown-label">Music</span>
-                                </div>
-                                <div class="breakdown-item">
-                                    <span class="breakdown-icon drama">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
-                                        </svg>
-                                    </span>
-                                    <span class="breakdown-count">5</span>
-                                    <span class="breakdown-label">Drama</span>
-                                </div>
-                                <div class="breakdown-item">
-                                    <span class="breakdown-icon dance">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="4" r="2"/>
-                                            <path d="M12 6v4M8 22l4-10 4 10M6 12h12"/>
-                                        </svg>
-                                    </span>
-                                    <span class="breakdown-count">2</span>
-                                    <span class="breakdown-label">Dance</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Arts Breakdown Card -->
-                    <div class="card card-arts-breakdown">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                    <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                </svg>
-                                Arts Breakdown
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="arts-list">
-                                <div class="art-item art-music">
-                                    <div class="art-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M9 18V5l12-2v13"/>
-                                            <circle cx="6" cy="18" r="3"/>
-                                            <circle cx="18" cy="16" r="3"/>
-                                        </svg>
-                                    </div>
-                                    <div class="art-info">
-                                        <span class="art-name">Music</span>
-                                        <span class="art-count">28 lessons today</span>
-                                    </div>
-                                    <div class="art-badge">156 students</div>
-                                </div>
-                                <div class="art-item art-drama">
-                                    <div class="art-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
-                                        </svg>
-                                    </div>
-                                    <div class="art-info">
-                                        <span class="art-name">Drama</span>
-                                        <span class="art-count">5 lessons today</span>
-                                    </div>
-                                    <div class="art-badge">42 students</div>
-                                </div>
-                                <div class="art-item art-dance">
-                                    <div class="art-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="4" r="2"/>
-                                            <path d="M12 6v4M8 22l4-10 4 10M6 12h12"/>
-                                        </svg>
-                                    </div>
-                                    <div class="art-info">
-                                        <span class="art-name">Dance</span>
-                                        <span class="art-count">2 lessons today</span>
-                                    </div>
-                                    <div class="art-badge">28 students</div>
-                                </div>
+                        <div class="card-body card-body-table">
+                            <div class="table-container">
+                                <table class="data-table compact" id="todays-lessons-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Student</th>
+                                            <th>Instrument</th>
+                                            <th>Tutor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="todays-lessons-body">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -683,13 +595,6 @@
                     </div>
                 </div>
 
-                <div class="page-tabs">
-                    <button class="tab-btn active" data-tab="all">All Lessons</button>
-                    <button class="tab-btn" data-tab="music">Music</button>
-                    <button class="tab-btn" data-tab="drama">Drama</button>
-                    <button class="tab-btn" data-tab="dance">Dance</button>
-                </div>
-
                 <div class="page-toolbar">
                     <div class="search-box">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -728,11 +633,11 @@
                                 <tr>
                                     <th>Student</th>
                                     <th>Class</th>
-                                    <th>Discipline</th>
-                                    <th>Instrument/Focus</th>
-                                    <th>Day/Time</th>
+                                    <th>Instrument</th>
+                                    <th>Day & Time</th>
                                     <th>Tutor</th>
                                     <th>Status</th>
+                                    <th class="th-actions"></th>
                                 </tr>
                             </thead>
                             <tbody id="lessons-body">
@@ -872,7 +777,7 @@
                                     <th>Description</th>
                                     <th>Date</th>
                                     <th>Term</th>
-                                    <th>Discipline</th>
+                                    <th>Category</th>
                                     <th class="th-actions"></th>
                                 </tr>
                             </thead>
@@ -1011,7 +916,7 @@
                             <span>/</span>
                             <span>Groups</span>
                         </nav>
-                        <h1 class="page-title">Student Groups</h1>
+                        <h1 class="page-title">Performing Arts Groups</h1>
                     </div>
                     <div class="page-header-actions">
                         <button class="btn btn-primary" data-action="add-group">
@@ -1281,8 +1186,8 @@
                                 <div class="user-row">
                                     <div class="user-avatar admin">RH</div>
                                     <div class="user-info">
-                                        <span class="user-name">R. Horn</span>
-                                        <span class="user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a5d78bcdcad7cbe5c8ccc1c1c9c0d1cacb8bd6c6cdcacac98bcbdf">[email&#160;protected]</a></span>
+                                        <span class="user-name">Rhian Horn</span>
+                                        <span class="user-email">r.horn@middleton.school.nz</span>
                                     </div>
                                     <span class="user-role role-admin">Admin</span>
                                 </div>
@@ -1329,25 +1234,76 @@
                             <span>Event Templates</span>
                         </nav>
                         <h1 class="page-title">Event Templates</h1>
-                    </div>
-                    <div class="page-header-actions">
-                        <button class="btn btn-primary" data-action="add-template">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                            Create Template
-                        </button>
+                        <p class="page-subtitle">Pre-configured task checklists based on event type and location</p>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <path d="M3 9h18M9 21V9"/>
-                        </svg>
-                        <h3>No Templates Yet</h3>
-                        <p>Create reusable event templates for recurring performances and activities.</p>
-                        <button class="btn btn-primary">Create First Template</button>
+                
+                <div class="templates-grid" id="templates-grid">
+                    <div class="template-card" data-template="school-during">
+                        <div class="template-icon school">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                                <path d="M9 22V12h6v10"/>
+                            </svg>
+                        </div>
+                        <div class="template-content">
+                            <h3 class="template-name">School Performance During School Hours</h3>
+                            <p class="template-description">For performances held at school during the school day</p>
+                            <div class="template-meta">
+                                <span class="template-tasks">6 phases • 24 tasks</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm">View Template</button>
+                    </div>
+
+                    <div class="template-card" data-template="school-after">
+                        <div class="template-icon evening">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                            </svg>
+                        </div>
+                        <div class="template-content">
+                            <h3 class="template-name">School Performance After School Hours</h3>
+                            <p class="template-description">For performances held at school after the school day</p>
+                            <div class="template-meta">
+                                <span class="template-tasks">6 phases • 22 tasks</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm">View Template</button>
+                    </div>
+
+                    <div class="template-card" data-template="offsite-during">
+                        <div class="template-icon offsite">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="10" r="3"/>
+                                <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 7 8 11.7z"/>
+                            </svg>
+                        </div>
+                        <div class="template-content">
+                            <h3 class="template-name">Offsite Performance During School Hours</h3>
+                            <p class="template-description">For performances held at external venues during school hours</p>
+                            <div class="template-meta">
+                                <span class="template-tasks">6 phases • 26 tasks</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm">View Template</button>
+                    </div>
+
+                    <div class="template-card" data-template="offsite-after">
+                        <div class="template-icon offsite-evening">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <div class="template-content">
+                            <h3 class="template-name">Offsite Performance After School Hours</h3>
+                            <p class="template-description">For performances held at external venues after school hours</p>
+                            <div class="template-meta">
+                                <span class="template-tasks">6 phases • 25 tasks</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm">View Template</button>
                     </div>
                 </div>
             </div>
