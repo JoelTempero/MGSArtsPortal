@@ -2,86 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1a1f2e">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f1219">
     <meta name="description" content="MGS Arts Portal - Middleton Grange School Performing Arts Management">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MGS Arts">
-    
     <title>MGS Arts Portal</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icon-192.svg">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
     <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <!-- Login Screen -->
-    <div id="login-screen" class="screen active">
+    <div class="login-screen" id="login-screen">
         <div class="login-container">
-            <div class="login-backdrop"></div>
             <div class="login-card">
                 <div class="login-header">
-                    <div class="logo-artistic">
-                        <div class="logo-icon">
-                            <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="30" cy="30" r="28" stroke="url(#logoGrad)" stroke-width="2"/>
-                                <path d="M20 38V22L30 18L40 22V38L30 42L20 38Z" fill="url(#logoGrad)" opacity="0.2"/>
-                                <path d="M20 38V22L30 18L40 22V38L30 42L20 38Z" stroke="url(#logoGrad)" stroke-width="1.5"/>
-                                <circle cx="30" cy="28" r="6" stroke="url(#logoGrad)" stroke-width="1.5"/>
-                                <path d="M27 35H33" stroke="url(#logoGrad)" stroke-width="1.5" stroke-linecap="round"/>
-                                <defs>
-                                    <linearGradient id="logoGrad" x1="0" y1="0" x2="60" y2="60">
-                                        <stop offset="0%" stop-color="#c9a962"/>
-                                        <stop offset="100%" stop-color="#8b7355"/>
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                        </div>
+                    <div class="login-logo">
+                        <svg viewBox="0 0 48 48" fill="none">
+                            <defs>
+                                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#c9a962"/>
+                                    <stop offset="100%" style="stop-color:#a08339"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="24" cy="24" r="22" stroke="url(#logoGrad)" stroke-width="2" fill="none"/>
+                            <path d="M16 32V18l16-4v14" stroke="url(#logoGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="13" cy="32" r="3" fill="url(#logoGrad)"/>
+                            <circle cx="29" cy="28" r="3" fill="url(#logoGrad)"/>
+                        </svg>
                     </div>
                     <h1 class="login-title">MGS Arts Portal</h1>
-                    <p class="login-subtitle">Middleton Grange School<br>Performing Arts Management</p>
+                    <p class="login-subtitle">Middleton Grange School</p>
                 </div>
                 
-                <form id="login-form" class="login-form">
+                <form class="login-form" id="login-form">
                     <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                                <path d="M22 6L12 13L2 6"/>
-                            </svg>
-                            <input type="email" id="email" placeholder="your.email@middleton.school.nz" required>
-                        </div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="your.email@middleton.school.nz" required>
                     </div>
-                    
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="11" width="18" height="11" rx="2"/>
-                                <circle cx="12" cy="16" r="1"/>
-                                <path d="M7 11V7a5 5 0 0110 0v4"/>
-                            </svg>
-                            <input type="password" id="password" placeholder="••••••••" required>
-                        </div>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-full">
-                        <span>Sign In</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
+                    <div class="login-error" id="login-error"></div>
+                    <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+                        <span class="btn-text">Sign In</span>
+                        <span class="btn-loader" style="display: none;">
+                            <svg class="spinner" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="32" stroke-linecap="round"/>
+                            </svg>
+                        </span>
                     </button>
+                    <a href="#" class="forgot-password" id="forgot-password">Forgot password?</a>
                 </form>
                 
                 <div class="login-footer">
@@ -99,46 +80,48 @@
     </div>
 
     <!-- Main App -->
-    <div id="app-screen" class="screen">
+    <div class="app-container" id="app-container" style="display: none;">
         <!-- Mobile Header -->
-        <header class="app-header">
-            <button class="menu-toggle" id="menu-toggle">
-                <span></span>
-                <span></span>
-                <span></span>
+        <header class="mobile-header">
+            <button class="hamburger-btn" id="hamburger-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
             </button>
-            <div class="header-brand">
-                <span class="brand-text">MGS Arts</span>
+            <div class="mobile-logo">
+                <span class="logo-text">MGS Arts</span>
             </div>
-            <div class="header-actions">
-                <button class="header-btn" id="theme-toggle" title="Toggle theme">
-                    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5"/>
-                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                    </svg>
-                    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-                    </svg>
-                </button>
-                <div class="user-avatar" id="user-menu-trigger">
-                    <span>RH</span>
-                </div>
-            </div>
+            <button class="theme-toggle" id="theme-toggle-mobile" title="Toggle theme">
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                </svg>
+            </button>
         </header>
 
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <div class="logo-mark">
-                        <svg viewBox="0 0 40 40" fill="none">
-                            <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="1.5"/>
-                            <path d="M13 26V14L20 11L27 14V26L20 29L13 26Z" fill="currentColor" opacity="0.2"/>
-                            <path d="M13 26V14L20 11L27 14V26L20 29L13 26Z" stroke="currentColor" stroke-width="1.5"/>
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 48 48" fill="none">
+                            <defs>
+                                <linearGradient id="sidebarLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#c9a962"/>
+                                    <stop offset="100%" style="stop-color:#a08339"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="24" cy="24" r="22" stroke="url(#sidebarLogoGrad)" stroke-width="2" fill="none"/>
+                            <path d="M16 32V18l16-4v14" stroke="url(#sidebarLogoGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="13" cy="32" r="3" fill="url(#sidebarLogoGrad)"/>
+                            <circle cx="29" cy="28" r="3" fill="url(#sidebarLogoGrad)"/>
                         </svg>
                     </div>
-                    <div class="logo-text">
-                        <span class="logo-title">MGS Arts Portal</span>
+                    <div class="logo-text-container">
+                        <span class="logo-text">MGS Arts Portal</span>
                         <span class="logo-tagline">Performing Arts</span>
                     </div>
                 </div>
@@ -271,8 +254,24 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
                     </svg>
-                    <span>Logout</span>
+                    <span>Sign Out</span>
                 </button>
+                <div class="sidebar-user">
+                    <div class="user-avatar" id="user-avatar">RH</div>
+                    <div class="user-info">
+                        <span class="user-name" id="user-name">Rhian Horn</span>
+                        <span class="user-role">Administrator</span>
+                    </div>
+                    <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -280,12 +279,18 @@
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
         <!-- Main Content -->
-        <main class="main-content" id="main-content">
+        <main class="main-content">
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loading-overlay">
+                <div class="loading-spinner"></div>
+                <p>Loading...</p>
+            </div>
+
             <!-- Dashboard Page -->
             <div class="page active" id="page-dashboard">
                 <div class="page-header">
                     <div class="page-header-content">
-                        <h1 class="page-title">Welcome back, Rhian</h1>
+                        <h1 class="page-title">Welcome back, <span id="welcome-name">Rhian</span></h1>
                         <p class="page-subtitle">Here's what's happening today.</p>
                     </div>
                     <div class="page-header-actions">
@@ -307,7 +312,7 @@
                 </div>
 
                 <div class="dashboard-grid">
-                    <!-- Today's Lessons Card - Full List -->
+                    <!-- Today's Lessons Card -->
                     <div class="card card-todays-lessons">
                         <div class="card-header">
                             <h2 class="card-title">
@@ -317,7 +322,7 @@
                                 </svg>
                                 Today's Lessons
                             </h2>
-                            <span class="lessons-count-badge" id="total-lessons-badge">15 lessons</span>
+                            <span class="lessons-count-badge" id="total-lessons-badge">0 lessons</span>
                         </div>
                         <div class="card-body card-body-table">
                             <div class="table-container">
@@ -350,8 +355,8 @@
                             <a href="#events" class="card-action" data-page="events">Show All →</a>
                         </div>
                         <div class="card-body">
-                            <div class="events-list" id="events-list">
-                                <!-- Events populated by JS -->
+                            <div class="event-list" id="events-list">
+                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
@@ -370,17 +375,17 @@
                         </div>
                         <div class="card-body">
                             <div class="requests-summary">
-                                <div class="request-stat">
-                                    <span class="request-count">4</span>
-                                    <span class="request-label">Awaiting Review</span>
+                                <div class="summary-item">
+                                    <span class="summary-value" id="requests-awaiting">0</span>
+                                    <span class="summary-label">Awaiting</span>
                                 </div>
-                                <div class="request-stat">
-                                    <span class="request-count">2</span>
-                                    <span class="request-label">On Waiting List</span>
+                                <div class="summary-item">
+                                    <span class="summary-value" id="requests-waitlist">0</span>
+                                    <span class="summary-label">Waitlist</span>
                                 </div>
                             </div>
                             <div class="recent-requests" id="recent-requests">
-                                <!-- Requests populated by JS -->
+                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
@@ -399,35 +404,18 @@
                             <a href="#hires" class="card-action" data-page="hires">Manage →</a>
                         </div>
                         <div class="card-body">
-                            <div class="hires-overview">
-                                <div class="hire-stat">
-                                    <span class="hire-icon active">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M20 6L9 17l-5-5"/>
-                                        </svg>
-                                    </span>
-                                    <span class="hire-count">9</span>
-                                    <span class="hire-label">Active Hires</span>
+                            <div class="hires-summary">
+                                <div class="summary-item">
+                                    <span class="summary-value" id="hires-active">0</span>
+                                    <span class="summary-label">Active</span>
                                 </div>
-                                <div class="hire-stat">
-                                    <span class="hire-icon warning">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                                            <path d="M12 9v4M12 17h.01"/>
-                                        </svg>
-                                    </span>
-                                    <span class="hire-count">3</span>
-                                    <span class="hire-label">Due Soon</span>
+                                <div class="summary-item warning">
+                                    <span class="summary-value" id="hires-due-soon">0</span>
+                                    <span class="summary-label">Due Soon</span>
                                 </div>
-                                <div class="hire-stat">
-                                    <span class="hire-icon overdue">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M12 8v4l3 3"/>
-                                        </svg>
-                                    </span>
-                                    <span class="hire-count">1</span>
-                                    <span class="hire-label">Overdue</span>
+                                <div class="summary-item danger">
+                                    <span class="summary-value" id="hires-overdue">0</span>
+                                    <span class="summary-label">Overdue</span>
                                 </div>
                             </div>
                         </div>
@@ -445,14 +433,14 @@
                         </div>
                         <div class="card-body">
                             <div class="quick-actions-grid">
-                                <button class="quick-action" data-action="add-lesson">
+                                <button class="quick-action-btn" data-action="add-lesson">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path d="M12 8v8M8 12h8"/>
+                                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                        <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"/>
                                     </svg>
                                     <span>New Lesson</span>
                                 </button>
-                                <button class="quick-action" data-action="add-student">
+                                <button class="quick-action-btn" data-action="add-student">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
                                         <circle cx="8.5" cy="7" r="4"/>
@@ -460,31 +448,25 @@
                                     </svg>
                                     <span>Add Student</span>
                                 </button>
-                                <button class="quick-action" data-action="add-event">
+                                <button class="quick-action-btn" data-action="add-event">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2"/>
-                                        <path d="M16 2v4M8 2v4M3 10h18"/>
-                                        <path d="M12 14v4M10 16h4"/>
+                                        <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
                                     </svg>
                                     <span>Create Event</span>
                                 </button>
-                                <button class="quick-action" data-action="import-data">
+                                <button class="quick-action-btn" data-action="import-data">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/>
-                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                                     </svg>
                                     <span>Import Data</span>
                                 </button>
-                                <button class="quick-action" data-action="export-data">
+                                <button class="quick-action-btn" data-action="export-data">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                                        <polyline points="7 10 12 15 17 10"/>
-                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                                     </svg>
                                     <span>Export Data</span>
                                 </button>
-                                <button class="quick-action" data-action="add-group">
+                                <button class="quick-action-btn" data-action="add-group">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
                                         <circle cx="9" cy="7" r="4"/>
@@ -498,83 +480,7 @@
                 </div>
             </div>
 
-            <!-- Day Planner Page -->
-            <div class="page" id="page-planner">
-                <div class="page-header">
-                    <div class="page-header-content">
-                        <nav class="breadcrumb">
-                            <a href="#dashboard" data-page="dashboard">Dashboard</a>
-                            <span>/</span>
-                            <span>Day Planner</span>
-                        </nav>
-                        <h1 class="page-title">Day Planner</h1>
-                    </div>
-                    <div class="page-header-actions">
-                        <div class="date-navigator">
-                            <button class="date-nav-btn" data-action="prev-day">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M15 18l-6-6 6-6"/>
-                                </svg>
-                            </button>
-                            <span class="current-date">Thursday, January 8th, 2026</span>
-                            <button class="date-nav-btn" data-action="next-day">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 18l6-6-6-6"/>
-                                </svg>
-                            </button>
-                            <button class="btn btn-outline btn-sm" data-action="today">Today</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="page-toolbar">
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <input type="text" placeholder="Search lessons..." id="planner-search">
-                    </div>
-                    <div class="toolbar-actions">
-                        <div class="filter-dropdown">
-                            <button class="btn btn-outline btn-sm">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-                                </svg>
-                                Filter
-                            </button>
-                        </div>
-                        <button class="btn btn-primary btn-sm" data-action="add-lesson">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                            Add Lesson
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="table-container">
-                        <table class="data-table" id="planner-table">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Student</th>
-                                    <th>Discipline</th>
-                                    <th>Instrument/Focus</th>
-                                    <th>Tutor</th>
-                                    <th class="th-actions"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="planner-body">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lessons List Page -->
+            <!-- Lessons Page -->
             <div class="page" id="page-lessons">
                 <div class="page-header">
                     <div class="page-header-content">
@@ -604,25 +510,12 @@
                         <input type="text" placeholder="Search lessons..." id="lessons-search">
                     </div>
                     <div class="toolbar-actions">
-                        <div class="filter-dropdown">
-                            <button class="btn btn-outline btn-sm">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-                                </svg>
-                                Filter
-                            </button>
-                        </div>
-                        <div class="actions-dropdown">
-                            <button class="btn btn-outline btn-sm">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                                </svg>
-                                Actions
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dropdown-chevron">
-                                    <path d="M6 9l6 6 6-6"/>
-                                </svg>
-                            </button>
-                        </div>
+                        <button class="btn btn-outline btn-sm" id="lessons-filter">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                            </svg>
+                            Filter
+                        </button>
                     </div>
                 </div>
 
@@ -677,16 +570,6 @@
                         </svg>
                         <input type="text" placeholder="Search students..." id="students-search">
                     </div>
-                    <div class="toolbar-actions">
-                        <div class="filter-dropdown">
-                            <button class="btn btn-outline btn-sm">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-                                </svg>
-                                Filter
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="card">
@@ -697,8 +580,8 @@
                                     <th>Student</th>
                                     <th>Year</th>
                                     <th>Class</th>
-                                    <th>Disciplines</th>
-                                    <th>Tutor(s)</th>
+                                    <th>Instruments</th>
+                                    <th>Tutor</th>
                                     <th>Status</th>
                                     <th class="th-actions"></th>
                                 </tr>
@@ -720,7 +603,7 @@
                             <span>/</span>
                             <span>Tutors</span>
                         </nav>
-                        <h1 class="page-title">Tutors</h1>
+                        <h1 class="page-title">Itinerant Music Teachers</h1>
                     </div>
                     <div class="page-header-actions">
                         <button class="btn btn-primary" data-action="add-tutor">
@@ -753,18 +636,8 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14"/>
                             </svg>
-                            Create Event
+                            Add Event
                         </button>
-                    </div>
-                </div>
-
-                <div class="page-toolbar">
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <input type="text" placeholder="Search events..." id="events-search">
                     </div>
                 </div>
 
@@ -796,35 +669,16 @@
                         <nav class="breadcrumb">
                             <a href="#dashboard" data-page="dashboard">Dashboard</a>
                             <span>/</span>
-                            <span>Requests</span>
+                            <span>Lesson Requests</span>
                         </nav>
                         <h1 class="page-title">Lesson Requests</h1>
                     </div>
                 </div>
 
                 <div class="page-tabs">
-                    <button class="tab-btn active" data-tab="pending">Pending Review</button>
-                    <button class="tab-btn" data-tab="approved">Approved</button>
-                    <button class="tab-btn" data-tab="waitlist">Waiting List</button>
-                </div>
-
-                <div class="requests-stats">
-                    <div class="stat-card">
-                        <span class="stat-number">4</span>
-                        <span class="stat-label">Total Requests</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-number">0</span>
-                        <span class="stat-label">Active</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-number">0</span>
-                        <span class="stat-label">Pending</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-number">0</span>
-                        <span class="stat-label">Waiting List</span>
-                    </div>
+                    <button class="tab-btn active" data-tab="all">All Requests</button>
+                    <button class="tab-btn" data-tab="awaiting">Awaiting</button>
+                    <button class="tab-btn" data-tab="waitlist">Waitlist</button>
                 </div>
 
                 <div class="card">
@@ -832,13 +686,12 @@
                         <table class="data-table" id="requests-table">
                             <thead>
                                 <tr>
-                                    <th>Student Name</th>
+                                    <th>Student</th>
                                     <th>Year</th>
-                                    <th>Discipline</th>
-                                    <th>Instrument/Focus</th>
-                                    <th>Status</th>
+                                    <th>Instrument</th>
                                     <th>Received</th>
                                     <th>Form</th>
+                                    <th>Status</th>
                                     <th class="th-actions"></th>
                                 </tr>
                             </thead>
@@ -846,63 +699,6 @@
                                 <!-- Populated by JS -->
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Instrument Hires Page -->
-            <div class="page" id="page-hires">
-                <div class="page-header">
-                    <div class="page-header-content">
-                        <nav class="breadcrumb">
-                            <a href="#dashboard" data-page="dashboard">Dashboard</a>
-                            <span>/</span>
-                            <span>Instrument Hire</span>
-                        </nav>
-                        <h1 class="page-title">Instrument Hires</h1>
-                    </div>
-                    <div class="page-header-actions">
-                        <a href="#instrument-list" class="btn btn-outline" data-page="instrument-list">View Inventory</a>
-                        <button class="btn btn-primary" data-action="new-hire">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                            New Hire
-                        </button>
-                    </div>
-                </div>
-
-                <div class="page-toolbar">
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <input type="text" placeholder="Search hires..." id="hires-search">
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="table-container">
-                        <table class="data-table" id="hires-table">
-                            <thead>
-                                <tr>
-                                    <th>Instrument</th>
-                                    <th>Student</th>
-                                    <th>Hire Date</th>
-                                    <th>Expected Return</th>
-                                    <th>Agreement</th>
-                                    <th>Status</th>
-                                    <th class="th-actions"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="hires-body">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="table-footer">
-                        <span class="record-count">Displaying: <strong>9</strong> / 9</span>
                     </div>
                 </div>
             </div>
@@ -923,7 +719,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14"/>
                             </svg>
-                            Create Group
+                            Add Group
                         </button>
                     </div>
                 </div>
@@ -954,16 +750,6 @@
                     </div>
                 </div>
 
-                <div class="page-toolbar">
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <input type="text" placeholder="Search instruments..." id="instruments-search">
-                    </div>
-                </div>
-
                 <div class="card">
                     <div class="table-container">
                         <table class="data-table" id="instruments-table">
@@ -985,7 +771,50 @@
                 </div>
             </div>
 
-            <!-- Public Forms Page -->
+            <!-- Instrument Hires Page -->
+            <div class="page" id="page-hires">
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <nav class="breadcrumb">
+                            <a href="#dashboard" data-page="dashboard">Dashboard</a>
+                            <span>/</span>
+                            <span>Instrument Hires</span>
+                        </nav>
+                        <h1 class="page-title">Instrument Hires</h1>
+                    </div>
+                    <div class="page-header-actions">
+                        <button class="btn btn-primary" data-action="add-hire">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            New Hire
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-container">
+                        <table class="data-table" id="hires-table">
+                            <thead>
+                                <tr>
+                                    <th>Instrument</th>
+                                    <th>Student</th>
+                                    <th>Hire Date</th>
+                                    <th>Expected Return</th>
+                                    <th>Agreement</th>
+                                    <th>Status</th>
+                                    <th class="th-actions"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="hires-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forms Page -->
             <div class="page" id="page-forms">
                 <div class="page-header">
                     <div class="page-header-content">
@@ -994,10 +823,10 @@
                             <span>/</span>
                             <span>Signup Forms</span>
                         </nav>
-                        <h1 class="page-title">Public Signup Forms</h1>
+                        <h1 class="page-title">Signup Forms</h1>
                     </div>
                     <div class="page-header-actions">
-                        <button class="btn btn-primary" data-action="create-form">
+                        <button class="btn btn-primary" data-action="add-form">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14"/>
                             </svg>
@@ -1008,59 +837,29 @@
 
                 <div class="forms-grid" id="forms-grid">
                     <div class="form-card">
-                        <div class="form-card-header">
-                            <div class="form-icon music">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 18V5l12-2v13"/>
-                                    <circle cx="6" cy="18" r="3"/>
-                                    <circle cx="18" cy="16" r="3"/>
-                                </svg>
-                            </div>
-                            <div class="form-status active">Active</div>
-                        </div>
-                        <h3 class="form-title">Music Tuition Signups 2026</h3>
-                        <p class="form-description">Individual and group music lesson signups for the new academic year.</p>
-                        <div class="form-meta">
-                            <span><strong>42</strong> responses</span>
-                            <span>Closes: Feb 28, 2026</span>
+                        <div class="form-status active">Active</div>
+                        <h3 class="form-name">Music Tuition Signups 2026</h3>
+                        <p class="form-description">Registration for itinerant music lessons</p>
+                        <div class="form-stats">
+                            <span class="form-responses">42 responses</span>
                         </div>
                         <div class="form-actions">
                             <button class="btn btn-outline btn-sm">Edit</button>
-                            <button class="btn btn-outline btn-sm">View Responses</button>
-                            <button class="btn btn-primary btn-sm">Copy Link</button>
+                            <button class="btn btn-outline btn-sm">View</button>
+                            <button class="btn btn-outline btn-sm">Copy Link</button>
                         </div>
                     </div>
-
                     <div class="form-card">
-                        <div class="form-card-header">
-                            <div class="form-icon drama">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
-                                </svg>
-                            </div>
-                            <div class="form-status active">Active</div>
-                        </div>
-                        <h3 class="form-title">Performing Arts Groups 2026</h3>
-                        <p class="form-description">Sign up for drama, dance, and ensemble groups for Term 1.</p>
-                        <div class="form-meta">
-                            <span><strong>28</strong> responses</span>
-                            <span>Closes: Jan 31, 2026</span>
+                        <div class="form-status active">Active</div>
+                        <h3 class="form-name">Performing Arts Groups 2026</h3>
+                        <p class="form-description">Expression of interest for all PA groups</p>
+                        <div class="form-stats">
+                            <span class="form-responses">28 responses</span>
                         </div>
                         <div class="form-actions">
                             <button class="btn btn-outline btn-sm">Edit</button>
-                            <button class="btn btn-outline btn-sm">View Responses</button>
-                            <button class="btn btn-primary btn-sm">Copy Link</button>
-                        </div>
-                    </div>
-
-                    <div class="form-card form-card-new">
-                        <div class="form-card-content">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 8v8M8 12h8"/>
-                            </svg>
-                            <span>Create New Form</span>
+                            <button class="btn btn-outline btn-sm">View</button>
+                            <button class="btn btn-outline btn-sm">Copy Link</button>
                         </div>
                     </div>
                 </div>
@@ -1080,109 +879,66 @@
                 </div>
 
                 <div class="settings-grid">
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                    <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                </svg>
-                                School Information
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="setting-group">
-                                <label>School Name</label>
-                                <input type="text" value="Middleton Grange School" class="setting-input">
-                            </div>
-                            <div class="setting-group">
-                                <label>Portal Name</label>
-                                <input type="text" value="MGS Arts Portal" class="setting-input">
-                            </div>
-                            <div class="setting-group">
-                                <label>Academic Year</label>
-                                <input type="text" value="2026" class="setting-input">
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">School Information</h2>
+                        <div class="card">
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label>School Name</label>
+                                    <input type="text" value="Middleton Grange School" id="setting-school-name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Academy Name</label>
+                                    <input type="text" value="Middleton Music Academy" id="setting-academy-name">
+                                </div>
+                                <button class="btn btn-primary" id="save-school-settings">Save Changes</button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                                    <path d="M16 2v4M8 2v4M3 10h18"/>
-                                </svg>
-                                Term Dates
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="term-row">
-                                <span class="term-label">Term 1</span>
-                                <span class="term-dates">Feb 3 - Apr 17, 2026</span>
-                            </div>
-                            <div class="term-row">
-                                <span class="term-label">Term 2</span>
-                                <span class="term-dates">May 4 - Jul 10, 2026</span>
-                            </div>
-                            <div class="term-row">
-                                <span class="term-label">Term 3</span>
-                                <span class="term-dates">Jul 27 - Sep 25, 2026</span>
-                            </div>
-                            <div class="term-row">
-                                <span class="term-label">Term 4</span>
-                                <span class="term-dates">Oct 12 - Dec 15, 2026</span>
-                            </div>
-                            <button class="btn btn-outline btn-sm" style="margin-top: 1rem;">Edit Term Dates</button>
-                        </div>
-                    </div>
-
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                                    <polyline points="17 8 12 3 7 8"/>
-                                    <line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                                Data Management
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <p class="setting-description">Import or export your portal data for backup or migration.</p>
-                            <div class="data-buttons">
-                                <button class="btn btn-outline" id="import-data-btn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/>
-                                        <line x1="12" y1="3" x2="12" y2="15"/>
-                                    </svg>
-                                    Import Data
-                                </button>
-                                <button class="btn btn-outline" id="export-data-btn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                                        <polyline points="7 10 12 15 17 10"/>
-                                        <line x1="12" y1="15" x2="12" y2="3"/>
-                                    </svg>
-                                    Export Data
-                                </button>
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Term Dates 2026</h2>
+                        <div class="card">
+                            <div class="term-dates-list" id="term-dates-list">
+                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
 
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h2 class="card-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                                User Management
-                            </h2>
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Data Management</h2>
+                        <div class="card">
+                            <div class="data-actions">
+                                <div class="data-action-item">
+                                    <div class="data-action-info">
+                                        <h4>Load Demo Data</h4>
+                                        <p>Populate the database with sample data for testing</p>
+                                    </div>
+                                    <button class="btn btn-outline" id="load-demo-data">Load Demo Data</button>
+                                </div>
+                                <div class="data-action-item">
+                                    <div class="data-action-info">
+                                        <h4>Export Data</h4>
+                                        <p>Download all data as a JSON file</p>
+                                    </div>
+                                    <button class="btn btn-outline" id="export-all-data">Export All</button>
+                                </div>
+                                <div class="data-action-item">
+                                    <div class="data-action-info">
+                                        <h4>Import Data</h4>
+                                        <p>Import data from a JSON file</p>
+                                    </div>
+                                    <input type="file" id="import-file" accept=".json" style="display: none;">
+                                    <button class="btn btn-outline" id="import-data-btn">Import</button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="users-list">
+                    </div>
+
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Users</h2>
+                        <div class="card">
+                            <div class="users-list" id="users-list">
                                 <div class="user-row">
                                     <div class="user-avatar admin">RH</div>
                                     <div class="user-info">
@@ -1192,34 +948,7 @@
                                     <span class="user-role role-admin">Admin</span>
                                 </div>
                             </div>
-                            <button class="btn btn-outline btn-sm" style="margin-top: 1rem;">Manage Users</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Attendance Page -->
-            <div class="page" id="page-attendance">
-                <div class="page-header">
-                    <div class="page-header-content">
-                        <nav class="breadcrumb">
-                            <a href="#dashboard" data-page="dashboard">Dashboard</a>
-                            <span>/</span>
-                            <span>Review Attendance</span>
-                        </nav>
-                        <h1 class="page-title">Review Attendance</h1>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="4" width="18" height="18" rx="2"/>
-                            <path d="M16 2v4M8 2v4M3 10h18"/>
-                            <path d="M9 16l2 2 4-4"/>
-                        </svg>
-                        <h3>Attendance Review</h3>
-                        <p>Select a date range to review historical attendance data.</p>
-                        <button class="btn btn-primary">Select Date Range</button>
                     </div>
                 </div>
             </div>
@@ -1253,7 +982,7 @@
                                 <span class="template-tasks">6 phases • 24 tasks</span>
                             </div>
                         </div>
-                        <button class="btn btn-outline btn-sm">View Template</button>
+                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="school-during">View Template</button>
                     </div>
 
                     <div class="template-card" data-template="school-after">
@@ -1269,7 +998,7 @@
                                 <span class="template-tasks">6 phases • 22 tasks</span>
                             </div>
                         </div>
-                        <button class="btn btn-outline btn-sm">View Template</button>
+                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="school-after">View Template</button>
                     </div>
 
                     <div class="template-card" data-template="offsite-during">
@@ -1286,7 +1015,7 @@
                                 <span class="template-tasks">6 phases • 26 tasks</span>
                             </div>
                         </div>
-                        <button class="btn btn-outline btn-sm">View Template</button>
+                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="offsite-during">View Template</button>
                     </div>
 
                     <div class="template-card" data-template="offsite-after">
@@ -1303,7 +1032,7 @@
                                 <span class="template-tasks">6 phases • 25 tasks</span>
                             </div>
                         </div>
-                        <button class="btn btn-outline btn-sm">View Template</button>
+                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="offsite-after">View Template</button>
                     </div>
                 </div>
             </div>
@@ -1324,6 +1053,10 @@
             <div class="modal-body" id="modal-body">
                 <!-- Modal content populated by JS -->
             </div>
+            <div class="modal-footer" id="modal-footer">
+                <button class="btn btn-outline" id="modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="modal-save">Save</button>
+            </div>
         </div>
     </div>
 
@@ -1332,6 +1065,7 @@
 
     <!-- Scripts -->
     <script src="js/data.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/dummyData.js"></script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
