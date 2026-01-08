@@ -312,16 +312,16 @@ class App {
     toggleNavGroup(btn) {
         const group = btn.dataset.group;
         const items = document.querySelector(`.nav-group-items[data-group="${group}"]`);
-        const isOpen = items.classList.contains('open');
+        const isOpen = items.classList.contains('expanded');
         
         // Close all groups
-        document.querySelectorAll('.nav-group-items').forEach(g => g.classList.remove('open'));
-        document.querySelectorAll('.nav-group-toggle').forEach(b => b.classList.remove('open'));
+        document.querySelectorAll('.nav-group-items').forEach(g => g.classList.remove('expanded'));
+        document.querySelectorAll('.nav-group-toggle').forEach(b => b.classList.remove('expanded'));
         
         // Toggle this group
         if (!isOpen) {
-            items.classList.add('open');
-            btn.classList.add('open');
+            items.classList.add('expanded');
+            btn.classList.add('expanded');
         }
     }
 
@@ -1021,6 +1021,9 @@ class App {
             case 'export-data':
                 this.exportData();
                 break;
+            case 'add-form':
+                this.showAddFormModal();
+                break;
         }
     }
 
@@ -1584,6 +1587,53 @@ class App {
         }
     }
 
+    showAddFormModal() {
+        const content = `
+            <form id="add-form-form" class="modal-form">
+                <div class="form-group">
+                    <label>Form Name</label>
+                    <input type="text" name="name" placeholder="e.g., Music Tuition Signups 2026" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" placeholder="What is this form for?" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Available Instruments</label>
+                    <input type="text" name="instruments" placeholder="Guitar, Piano, Drums (comma-separated)">
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Create Signup Form', content, () => this.saveForm());
+    }
+
+    async saveForm() {
+        const form = document.getElementById('add-form-form');
+        const formData = new FormData(form);
+        
+        const signupForm = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            status: formData.get('status'),
+            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
+            responses: 0,
+            createdAt: new Date().toISOString()
+        };
+        
+        // For now, show success - forms would be stored in a forms collection
+        this.showToast('Form created! (Form builder coming soon)', 'success');
+        this.closeModal();
+    }
+
     showTemplateModal(templateId) {
         const template = EventTemplates[templateId];
         if (!template) return;
@@ -1801,7 +1851,16 @@ class App {
     // ========================================
 
     showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
+        let container = document.getElementById('toast-container');
+        
+        // Create container if it doesn't exist
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+        
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
         toast.innerHTML = `
