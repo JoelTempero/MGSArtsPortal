@@ -1047,8 +1047,613 @@ class App {
     }
 
     async handleEdit(type, id) {
-        // For now, show a simple message - will implement full edit modals
-        this.showToast(`Edit ${type} functionality coming soon`, 'info');
+        switch (type) {
+            case 'lesson':
+                this.showEditLessonModal(id);
+                break;
+            case 'student':
+                this.showEditStudentModal(id);
+                break;
+            case 'tutor':
+                this.showEditTutorModal(id);
+                break;
+            case 'event':
+                this.showEditEventModal(id);
+                break;
+            case 'group':
+                this.showEditGroupModal(id);
+                break;
+            case 'instrument':
+                this.showEditInstrumentModal(id);
+                break;
+            case 'hire':
+                this.showEditHireModal(id);
+                break;
+            default:
+                this.showToast(`Edit ${type} not implemented`, 'info');
+        }
+    }
+
+    // ========================================
+    // Edit Modals
+    // ========================================
+
+    showEditLessonModal(id) {
+        const lesson = this.data.lessons.find(l => l.id === id);
+        if (!lesson) return;
+
+        const tutorOptions = this.data.tutors.map(t => 
+            `<option value="${t.id}" ${t.id === lesson.tutorId ? 'selected' : ''}>${t.name}</option>`
+        ).join('');
+        const studentOptions = this.data.students.map(s => 
+            `<option value="${s.id}" ${s.id === lesson.studentId ? 'selected' : ''}>${s.name} (${s.class || ''})</option>`
+        ).join('');
+        
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const dayOptions = days.map(d => 
+            `<option value="${d}" ${d === lesson.day ? 'selected' : ''}>${d}</option>`
+        ).join('');
+
+        const content = `
+            <form id="edit-lesson-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Student</label>
+                    <select name="studentId" required>
+                        <option value="">Select student...</option>
+                        ${studentOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tutor</label>
+                    <select name="tutorId" required>
+                        <option value="">Select tutor...</option>
+                        ${tutorOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Instrument</label>
+                    <input type="text" name="instrument" value="${lesson.instrument || ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Day</label>
+                        <select name="day" required>
+                            ${dayOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="text" name="time" value="${lesson.time || ''}" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="active" ${lesson.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="paused" ${lesson.status === 'paused' ? 'selected' : ''}>Paused</option>
+                        <option value="cancelled" ${lesson.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Lesson', content, () => this.updateLesson());
+    }
+
+    async updateLesson() {
+        const form = document.getElementById('edit-lesson-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const lesson = {
+            studentId: formData.get('studentId'),
+            tutorId: formData.get('tutorId'),
+            instrument: formData.get('instrument'),
+            day: formData.get('day'),
+            time: formData.get('time'),
+            status: formData.get('status')
+        };
+        
+        const result = await DatabaseService.updateLesson(id, lesson);
+        
+        if (result.success) {
+            this.showToast('Lesson updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating lesson', 'error');
+        }
+    }
+
+    showEditStudentModal(id) {
+        const student = this.data.students.find(s => s.id === id);
+        if (!student) return;
+
+        const tutorOptions = this.data.tutors.map(t => 
+            `<option value="${t.id}" ${t.id === student.tutorId ? 'selected' : ''}>${t.name}</option>`
+        ).join('');
+        
+        const content = `
+            <form id="edit-student-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" name="name" value="${student.name || ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" name="year" min="1" max="13" value="${student.year || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <input type="text" name="class" value="${student.class || ''}" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Instrument(s)</label>
+                    <input type="text" name="instruments" value="${(student.instruments || []).join(', ')}">
+                </div>
+                <div class="form-group">
+                    <label>Tutor</label>
+                    <select name="tutorId">
+                        <option value="">Select tutor (optional)...</option>
+                        ${tutorOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Parent Email</label>
+                    <input type="email" name="parentEmail" value="${student.parentEmail || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="active" ${student.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="assigned" ${student.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                        <option value="waiting" ${student.status === 'waiting' ? 'selected' : ''}>Waiting</option>
+                        <option value="inactive" ${student.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                    </select>
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Student', content, () => this.updateStudent());
+    }
+
+    async updateStudent() {
+        const form = document.getElementById('edit-student-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const student = {
+            name: formData.get('name'),
+            year: parseInt(formData.get('year')),
+            class: formData.get('class'),
+            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
+            tutorId: formData.get('tutorId') || null,
+            parentEmail: formData.get('parentEmail'),
+            status: formData.get('status')
+        };
+        
+        const result = await DatabaseService.updateStudent(id, student);
+        
+        if (result.success) {
+            this.showToast('Student updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating student', 'error');
+        }
+    }
+
+    showEditTutorModal(id) {
+        const tutor = this.data.tutors.find(t => t.id === id);
+        if (!tutor) return;
+        
+        const content = `
+            <form id="edit-tutor-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" name="name" value="${tutor.name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="${tutor.email || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" value="${tutor.phone || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Instruments (comma-separated)</label>
+                    <input type="text" name="instruments" value="${(tutor.instruments || []).join(', ')}">
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <input type="color" name="color" value="${tutor.color || '#8b5cf6'}" style="width: 60px; height: 38px;">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="active">
+                        <option value="true" ${tutor.active !== false ? 'selected' : ''}>Active</option>
+                        <option value="false" ${tutor.active === false ? 'selected' : ''}>Inactive</option>
+                    </select>
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Tutor', content, () => this.updateTutor());
+    }
+
+    async updateTutor() {
+        const form = document.getElementById('edit-tutor-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const name = formData.get('name');
+        const initials = name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
+        
+        const tutor = {
+            name: name,
+            initials: initials,
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
+            color: formData.get('color'),
+            active: formData.get('active') === 'true'
+        };
+        
+        const result = await DatabaseService.updateTutor(id, tutor);
+        
+        if (result.success) {
+            this.showToast('Tutor updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating tutor', 'error');
+        }
+    }
+
+    showEditEventModal(id) {
+        const event = this.data.events.find(e => e.id === id);
+        if (!event) return;
+
+        const categories = ['Music', 'Concert', 'Competition', 'Workshop', 'Exam', 'Performing Arts', 'Production', 'Drama', 'Dance', 'Kapa Haka', 'Pasifika'];
+        const categoryOptions = categories.map(c => 
+            `<option value="${c}" ${c === event.category ? 'selected' : ''}>${c}</option>`
+        ).join('');
+
+        const templates = [
+            { value: 'school-during', label: 'School (During Hours)' },
+            { value: 'school-after', label: 'School (After Hours)' },
+            { value: 'offsite-during', label: 'Offsite (During Hours)' },
+            { value: 'offsite-after', label: 'Offsite (After Hours)' }
+        ];
+        const templateOptions = templates.map(t => 
+            `<option value="${t.value}" ${t.value === event.templateType ? 'selected' : ''}>${t.label}</option>`
+        ).join('');
+
+        const content = `
+            <form id="edit-event-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Event Name</label>
+                    <input type="text" name="name" value="${event.name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description">${event.description || ''}</textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" name="date" value="${event.date || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Term</label>
+                        <select name="term">
+                            <option value="Term 1" ${event.term === 'Term 1' ? 'selected' : ''}>Term 1</option>
+                            <option value="Term 2" ${event.term === 'Term 2' ? 'selected' : ''}>Term 2</option>
+                            <option value="Term 3" ${event.term === 'Term 3' ? 'selected' : ''}>Term 3</option>
+                            <option value="Term 4" ${event.term === 'Term 4' ? 'selected' : ''}>Term 4</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category">
+                            ${categoryOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Template</label>
+                        <select name="templateType">
+                            ${templateOptions}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="upcoming" ${event.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
+                        <option value="in-progress" ${event.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                        <option value="completed" ${event.status === 'completed' ? 'selected' : ''}>Completed</option>
+                        <option value="cancelled" ${event.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Event', content, () => this.updateEvent());
+    }
+
+    async updateEvent() {
+        const form = document.getElementById('edit-event-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const event = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            date: formData.get('date'),
+            term: formData.get('term'),
+            category: formData.get('category'),
+            templateType: formData.get('templateType'),
+            status: formData.get('status')
+        };
+        
+        const result = await DatabaseService.updateEvent(id, event);
+        
+        if (result.success) {
+            this.showToast('Event updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating event', 'error');
+        }
+    }
+
+    showEditGroupModal(id) {
+        const group = this.data.groups.find(g => g.id === id);
+        if (!group) return;
+
+        const types = ['Ensemble', 'Choir', 'Band', 'Club', 'Crew', 'Group', 'Chamber'];
+        const typeOptions = types.map(t => 
+            `<option value="${t}" ${t === group.type ? 'selected' : ''}>${t}</option>`
+        ).join('');
+
+        const categories = ['Music', 'Drama', 'Dance', 'Kapa Haka', 'Pasifika'];
+        const categoryOptions = categories.map(c => 
+            `<option value="${c}" ${c === group.category ? 'selected' : ''}>${c}</option>`
+        ).join('');
+
+        const content = `
+            <form id="edit-group-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Group Name</label>
+                    <input type="text" name="name" value="${group.name || ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select name="type">
+                            ${typeOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category">
+                            ${categoryOptions}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Meeting Time</label>
+                    <input type="text" name="meetingTime" value="${group.meetingTime || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Group Leader</label>
+                    <input type="text" name="leader" value="${group.leader || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Member Count</label>
+                    <input type="number" name="memberCount" value="${group.memberCount || 0}" min="0">
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Group', content, () => this.updateGroup());
+    }
+
+    async updateGroup() {
+        const form = document.getElementById('edit-group-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const group = {
+            name: formData.get('name'),
+            type: formData.get('type'),
+            category: formData.get('category'),
+            meetingTime: formData.get('meetingTime'),
+            leader: formData.get('leader'),
+            memberCount: parseInt(formData.get('memberCount')) || 0
+        };
+        
+        const result = await DatabaseService.updateGroup(id, group);
+        
+        if (result.success) {
+            this.showToast('Group updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating group', 'error');
+        }
+    }
+
+    showEditInstrumentModal(id) {
+        const instrument = this.data.instruments.find(i => i.id === id);
+        if (!instrument) return;
+
+        const conditions = ['Excellent', 'Good', 'Fair', 'Poor'];
+        const conditionOptions = conditions.map(c => 
+            `<option value="${c}" ${c === instrument.condition ? 'selected' : ''}>${c}</option>`
+        ).join('');
+
+        const statuses = ['Available', 'On Hire', 'Under Repair', 'Retired'];
+        const statusOptions = statuses.map(s => 
+            `<option value="${s}" ${s === instrument.status ? 'selected' : ''}>${s}</option>`
+        ).join('');
+
+        const content = `
+            <form id="edit-instrument-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Instrument Name</label>
+                    <input type="text" name="name" value="${instrument.name || ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <input type="text" name="type" value="${instrument.type || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Size</label>
+                        <input type="text" name="size" value="${instrument.size || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Condition</label>
+                        <select name="condition">
+                            ${conditionOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status">
+                            ${statusOptions}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Serial Number</label>
+                    <input type="text" name="serialNumber" value="${instrument.serialNumber || ''}">
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Instrument', content, () => this.updateInstrument());
+    }
+
+    async updateInstrument() {
+        const form = document.getElementById('edit-instrument-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const instrument = {
+            name: formData.get('name'),
+            type: formData.get('type'),
+            size: formData.get('size'),
+            condition: formData.get('condition'),
+            status: formData.get('status'),
+            serialNumber: formData.get('serialNumber')
+        };
+        
+        const result = await DatabaseService.updateInstrument(id, instrument);
+        
+        if (result.success) {
+            this.showToast('Instrument updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating instrument', 'error');
+        }
+    }
+
+    showEditHireModal(id) {
+        const hire = this.data.instrumentHires.find(h => h.id === id);
+        if (!hire) return;
+
+        const statuses = ['active', 'returned', 'overdue'];
+        const statusOptions = statuses.map(s => 
+            `<option value="${s}" ${s === hire.status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+        ).join('');
+
+        const content = `
+            <form id="edit-hire-form" class="modal-form">
+                <input type="hidden" name="id" value="${id}">
+                <div class="form-group">
+                    <label>Instrument</label>
+                    <input type="text" value="${hire.instrumentName || 'Unknown'}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" name="studentName" value="${hire.studentName || ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Hire Date</label>
+                        <input type="date" name="hireDate" value="${hire.hireDate || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Expected Return</label>
+                        <input type="date" name="expectedReturn" value="${hire.expectedReturn || ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status">
+                            ${statusOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Agreement Uploaded</label>
+                        <select name="agreement">
+                            <option value="true" ${hire.agreement ? 'selected' : ''}>Yes</option>
+                            <option value="false" ${!hire.agreement ? 'selected' : ''}>No</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Hire Record', content, () => this.updateHire());
+    }
+
+    async updateHire() {
+        const form = document.getElementById('edit-hire-form');
+        const formData = new FormData(form);
+        const id = formData.get('id');
+        
+        const hire = {
+            studentName: formData.get('studentName'),
+            hireDate: formData.get('hireDate'),
+            expectedReturn: formData.get('expectedReturn'),
+            status: formData.get('status'),
+            agreement: formData.get('agreement') === 'true'
+        };
+        
+        const result = await DatabaseService.update('instrumentHires', id, hire);
+        
+        if (result.success) {
+            this.showToast('Hire record updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating hire record', 'error');
+        }
     }
 
     async handleDelete(type, id) {
