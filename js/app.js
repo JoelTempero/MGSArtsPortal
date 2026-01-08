@@ -303,6 +303,9 @@ class App {
             case 'hires':
                 this.renderHires();
                 break;
+            case 'forms':
+                this.renderForms();
+                break;
             case 'settings':
                 this.renderSettings();
                 break;
@@ -597,7 +600,7 @@ class App {
         if (!container) return;
         
         if (this.data.tutors.length === 0) {
-            container.innerHTML = '<div class="no-data-card">No tutors found. Add your first tutor!</div>';
+            container.innerHTML = '<div class="no-data-card">No staff found. Add your first staff member!</div>';
             return;
         }
         
@@ -616,30 +619,52 @@ class App {
             }
         });
         
-        container.innerHTML = this.data.tutors.map(tutor => `
-            <div class="tutor-card" data-id="${tutor.id}">
-                <div class="tutor-card-header">
-                    <div class="tutor-avatar-large" style="background: ${tutor.color};">${tutor.initials}</div>
-                    <div class="tutor-header-info">
-                        <div class="tutor-name">${tutor.name}</div>
-                        <div class="tutor-role">Itinerant Music Teacher</div>
+        container.innerHTML = this.data.tutors.map(tutor => {
+            // Handle both old groupId and new groupIds format
+            const tutorGroupIds = tutor.groupIds || (tutor.groupId ? [tutor.groupId] : []);
+            const groups = tutorGroupIds.map(gid => this.data.groups.find(g => g.id === gid)).filter(g => g);
+            
+            // Determine role label based on what they have
+            const hasInstruments = tutor.instruments && tutor.instruments.length > 0;
+            const hasGroups = groups.length > 0;
+            let roleLabel = 'Staff Member';
+            if (hasInstruments && hasGroups) roleLabel = 'Tutor & Group Leader';
+            else if (hasInstruments) roleLabel = 'Itinerant Music Teacher';
+            else if (hasGroups) roleLabel = 'Group Leader';
+            
+            return `
+                <div class="tutor-card" data-id="${tutor.id}">
+                    <div class="tutor-card-header">
+                        <div class="tutor-avatar-large" style="background: ${tutor.color};">${tutor.initials}</div>
+                        <div class="tutor-header-info">
+                            <div class="tutor-name">${tutor.name}</div>
+                            <div class="tutor-role">${roleLabel}</div>
+                        </div>
+                    </div>
+                    <div class="tutor-disciplines">
+                        ${(tutor.instruments || []).map(i => `<span class="discipline-tag discipline-music">${i}</span>`).join('')}
+                        ${groups.map(g => `<span class="discipline-tag discipline-drama">${g.name}</span>`).join('')}
+                    </div>
+                    <div class="tutor-stats">
+                        <div class="tutor-stat">
+                            <div class="tutor-stat-value">${studentCounts[tutor.id] || tutor.studentCount || 0}</div>
+                            <div class="tutor-stat-label">Students</div>
+                        </div>
+                        <div class="tutor-stat">
+                            <div class="tutor-stat-value">${lessonCounts[tutor.id] || tutor.lessonsPerWeek || 0}</div>
+                            <div class="tutor-stat-label">Lessons/Week</div>
+                        </div>
+                    </div>
+                    <div class="tutor-card-actions">
+                        <button class="btn btn-outline btn-sm" data-action="edit-tutor" data-id="${tutor.id}">Edit</button>
+                        <button class="btn btn-outline btn-sm" data-action="delete-tutor" data-id="${tutor.id}">Delete</button>
                     </div>
                 </div>
-                <div class="tutor-disciplines">
-                    ${(tutor.instruments || []).map(i => `<span class="discipline-tag discipline-music">${i}</span>`).join('')}
-                </div>
-                <div class="tutor-stats">
-                    <div class="tutor-stat">
-                        <div class="tutor-stat-value">${studentCounts[tutor.id] || tutor.studentCount || 0}</div>
-                        <div class="tutor-stat-label">Students</div>
-                    </div>
-                    <div class="tutor-stat">
-                        <div class="tutor-stat-value">${lessonCounts[tutor.id] || tutor.lessonsPerWeek || 0}</div>
-                        <div class="tutor-stat-label">Lessons/Week</div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+        
+        // Bind edit/delete buttons
+        this.bindRowActions('tutor');
     }
 
     // ========================================
@@ -656,36 +681,61 @@ class App {
             'Performing Arts': 'dance', 'Production': 'drama'
         };
         
+        const templateLabels = {
+            'school-during': 'School (During)',
+            'school-after': 'School (After)',
+            'offsite-during': 'Offsite (During)',
+            'offsite-after': 'Offsite (After)'
+        };
+        
         if (this.data.events.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No events found. Create your first event!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No events found. Create your first event!</td></tr>';
             return;
         }
         
-        tbody.innerHTML = this.data.events.map(event => `
-            <tr data-id="${event.id}">
-                <td><strong>${event.name}</strong></td>
-                <td>${event.description || '—'}</td>
-                <td>${this.formatDate(event.date)}</td>
-                <td>${event.term || '—'}</td>
-                <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
-                <td>
-                    <div class="row-actions">
-                        <button class="row-action-btn" title="View Tasks" data-action="view-event-tasks" data-id="${event.id}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 11l3 3L22 4"/>
-                                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                            </svg>
-                        </button>
-                        <button class="row-action-btn" title="Edit" data-action="edit-event" data-id="${event.id}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = this.data.events.map(event => {
+            const templateLabel = templateLabels[event.template] || event.template || '—';
+            // Calculate task progress if tasks exist
+            const tasks = event.tasks || [];
+            const completedTasks = tasks.filter(t => t.completed).length;
+            const overdueTasks = tasks.filter(t => !t.completed && new Date(t.dueDate) < new Date()).length;
+            const taskStatus = tasks.length > 0 
+                ? `<span class="task-progress ${overdueTasks > 0 ? 'has-overdue' : ''}">${completedTasks}/${tasks.length}</span>`
+                : '';
+            
+            return `
+                <tr data-id="${event.id}">
+                    <td><strong>${event.name}</strong></td>
+                    <td>${event.description || '—'}</td>
+                    <td>${this.formatDate(event.date)}</td>
+                    <td>${event.term || '—'}</td>
+                    <td><span class="template-badge">${templateLabel}</span> ${taskStatus}</td>
+                    <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="row-action-btn" title="View Tasks" data-action="view-event-tasks" data-id="${event.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                                </svg>
+                            </button>
+                            <button class="row-action-btn" title="Edit" data-action="edit-event" data-id="${event.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="row-action-btn" title="Delete" data-action="delete-event" data-id="${event.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
         
         this.bindRowActions('event');
     }
@@ -779,50 +829,90 @@ class App {
                             <span class="group-meta-value discipline-tag discipline-${categoryColors[group.category] || 'music'}">${group.category}</span>
                         </div>
                     </div>
-                    <div style="font-size: 0.85rem; color: var(--color-text-muted);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; display: inline; vertical-align: middle; margin-right: 4px;">
+                    <div class="group-leader">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        ${group.leader || 'No leader assigned'}
+                    </div>
+                    <div class="group-meeting">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
                             <circle cx="12" cy="12" r="10"/>
                             <path d="M12 6v6l4 2"/>
                         </svg>
                         ${group.meetingTime || 'TBA'}
                     </div>
                 </div>
+                <div class="group-card-actions">
+                    <button class="btn btn-outline btn-sm" data-action="edit-group" data-id="${group.id}">Edit</button>
+                    <button class="btn btn-outline btn-sm" data-action="delete-group" data-id="${group.id}">Delete</button>
+                </div>
             </div>
         `).join('');
+        
+        // Bind edit/delete buttons for groups
+        this.bindRowActions('group');
     }
 
     // ========================================
     // Instruments Rendering
     // ========================================
 
+    // Instrument hire costs per year based on type
+    getInstrumentCost(type) {
+        const costs = {
+            'violin': 120, 'flute': 120, 'clarinet': 120, 'trumpet': 120, 'trombone': 120,
+            'oboe': 220, 'cello': 220, 'alto sax': 220, 'alto saxophone': 220,
+            'tenor sax': 220, 'tenor saxophone': 220, 'baritone sax': 220, 'baritone saxophone': 220,
+            'bassoon': 220, 'double bass': 220, 'piccolo': 220, 'saxophone': 220
+        };
+        const typeLower = (type || '').toLowerCase();
+        for (const [key, value] of Object.entries(costs)) {
+            if (typeLower.includes(key)) return value;
+        }
+        return 120; // Default cost
+    }
+
     renderInstruments() {
         const tbody = document.getElementById('instruments-body');
         if (!tbody) return;
         
         if (this.data.instruments.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No instruments found. Add your first instrument!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No instruments found. Add your first instrument!</td></tr>';
             return;
         }
         
-        tbody.innerHTML = this.data.instruments.map(inst => `
-            <tr data-id="${inst.id}">
-                <td><strong>${inst.name}</strong></td>
-                <td>${inst.type}</td>
-                <td>${inst.size || '—'}</td>
-                <td>${inst.condition || 'Good'}</td>
-                <td><span class="status-badge status-${inst.status === 'Available' ? 'active' : 'assigned'}">${inst.status}</span></td>
-                <td>
-                    <div class="row-actions">
-                        <button class="row-action-btn" title="Edit" data-action="edit-instrument" data-id="${inst.id}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = this.data.instruments.map(inst => {
+            const cost = inst.cost || this.getInstrumentCost(inst.type);
+            return `
+                <tr data-id="${inst.id}">
+                    <td><strong>${inst.name}</strong></td>
+                    <td>${inst.type}</td>
+                    <td>${inst.size || '—'}</td>
+                    <td>${inst.serialNumber || '—'}</td>
+                    <td>$${cost}/yr</td>
+                    <td>${inst.condition || 'Good'}</td>
+                    <td><span class="status-badge status-${inst.status === 'Available' ? 'active' : 'assigned'}">${inst.status}</span></td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="row-action-btn" title="Edit" data-action="edit-instrument" data-id="${inst.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="row-action-btn" title="Delete" data-action="delete-instrument" data-id="${inst.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
         
         this.bindRowActions('instrument');
     }
@@ -836,12 +926,15 @@ class App {
         if (!tbody) return;
         
         if (this.data.instrumentHires.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No active hires</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No active hires</td></tr>';
             return;
         }
         
         tbody.innerHTML = this.data.instrumentHires.map(hire => {
             const statusClass = hire.status === 'active' ? 'active' : hire.status === 'overdue' ? 'waiting' : 'assigned';
+            // Get cost from hire record or calculate from instrument type
+            const instrument = this.data.instruments.find(i => i.id === hire.instrumentId);
+            const cost = hire.cost || instrument?.cost || this.getInstrumentCost(hire.instrumentName || hire.instrument || '');
             
             return `
                 <tr data-id="${hire.id}">
@@ -849,6 +942,7 @@ class App {
                     <td>${hire.studentName}</td>
                     <td>${this.formatDate(hire.hireDate)}</td>
                     <td>${this.formatDate(hire.expectedReturn)}</td>
+                    <td>$${cost}/yr</td>
                     <td>${hire.agreement ? '✓ Signed' : '✗ Pending'}</td>
                     <td><span class="status-badge status-${statusClass}">${hire.status}</span></td>
                     <td>
@@ -859,6 +953,12 @@ class App {
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                 </svg>
                             </button>
+                            <button class="row-action-btn" title="Delete" data-action="delete-hire" data-id="${hire.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -866,6 +966,75 @@ class App {
         }).join('');
         
         this.bindRowActions('hire');
+    }
+
+    // ========================================
+    // Forms Rendering
+    // ========================================
+
+    renderForms() {
+        const container = document.getElementById('forms-grid');
+        if (!container) return;
+        
+        // Default forms data if none exists
+        const forms = this.data.forms || [
+            {
+                id: 'music-tuition-2026',
+                name: 'Music Tuition Signups 2026',
+                description: 'Registration for itinerant music lessons',
+                status: 'active',
+                responses: this.data.lessonRequests?.length || 0,
+                createdAt: '2026-01-01'
+            },
+            {
+                id: 'pa-groups-2026',
+                name: 'Performing Arts Groups 2026',
+                description: 'Expression of interest for all PA groups',
+                status: 'active',
+                responses: 28,
+                createdAt: '2026-01-01'
+            }
+        ];
+        
+        if (forms.length === 0) {
+            container.innerHTML = '<div class="no-data-card">No signup forms created yet. Create your first form!</div>';
+            return;
+        }
+        
+        container.innerHTML = forms.map(form => `
+            <div class="form-card" data-id="${form.id}">
+                <div class="form-status ${form.status}">${form.status === 'active' ? 'Active' : form.status === 'draft' ? 'Draft' : 'Closed'}</div>
+                <h3 class="form-name">${form.name}</h3>
+                <p class="form-description">${form.description}</p>
+                <div class="form-stats">
+                    <span class="form-responses">${form.responses || 0} responses</span>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-outline btn-sm" onclick="app.showEditFormModal('${form.id}')">Edit</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.viewFormResponses('${form.id}')">View Responses</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.copyFormLink('${form.id}')">Copy Link</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    showEditFormModal(formId) {
+        this.showToast('Form editor coming soon!', 'info');
+    }
+
+    viewFormResponses(formId) {
+        // Navigate to requests page filtered by form
+        this.navigateTo('requests');
+        this.showToast('Showing responses for this form', 'info');
+    }
+
+    copyFormLink(formId) {
+        const link = `${window.location.origin}/forms/${formId}`;
+        navigator.clipboard.writeText(link).then(() => {
+            this.showToast('Link copied to clipboard!', 'success');
+        }).catch(() => {
+            this.showToast('Could not copy link', 'error');
+        });
     }
 
     // ========================================
@@ -1044,6 +1213,13 @@ class App {
                 btn.addEventListener('click', () => this.handleWaitlistRequest(btn.dataset.id));
             });
         }
+        
+        // Event-specific actions
+        if (type === 'event') {
+            document.querySelectorAll('[data-action="view-event-tasks"]').forEach(btn => {
+                btn.addEventListener('click', () => this.showEventTasksModal(btn.dataset.id));
+            });
+        }
     }
 
     async handleEdit(type, id) {
@@ -1082,11 +1258,23 @@ class App {
         const lesson = this.data.lessons.find(l => l.id === id);
         if (!lesson) return;
 
+        // Find matching tutor by ID or name
+        const matchedTutor = lesson.tutorId 
+            ? this.data.tutors.find(t => t.id === lesson.tutorId)
+            : this.data.tutors.find(t => t.name === lesson.tutorName);
+        const matchedTutorId = matchedTutor?.id || '';
+
+        // Find matching student by ID or name
+        const matchedStudent = lesson.studentId 
+            ? this.data.students.find(s => s.id === lesson.studentId)
+            : this.data.students.find(s => s.name === lesson.studentName);
+        const matchedStudentId = matchedStudent?.id || '';
+
         const tutorOptions = this.data.tutors.map(t => 
-            `<option value="${t.id}" ${t.id === lesson.tutorId ? 'selected' : ''}>${t.name}</option>`
+            `<option value="${t.id}" ${t.id === matchedTutorId ? 'selected' : ''}>${t.name}</option>`
         ).join('');
         const studentOptions = this.data.students.map(s => 
-            `<option value="${s.id}" ${s.id === lesson.studentId ? 'selected' : ''}>${s.name} (${s.class || ''})</option>`
+            `<option value="${s.id}" ${s.id === matchedStudentId ? 'selected' : ''}>${s.name} (${s.class || ''})</option>`
         ).join('');
         
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -1253,6 +1441,16 @@ class App {
         const tutor = this.data.tutors.find(t => t.id === id);
         if (!tutor) return;
         
+        // Handle both old groupId and new groupIds format
+        const tutorGroupIds = tutor.groupIds || (tutor.groupId ? [tutor.groupId] : []);
+        
+        const groupCheckboxes = this.data.groups.map(g => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="groups" value="${g.id}" ${tutorGroupIds.includes(g.id) ? 'checked' : ''}>
+                <span>${g.name}</span>
+            </label>`
+        ).join('');
+        
         const content = `
             <form id="edit-tutor-form" class="modal-form">
                 <input type="hidden" name="id" value="${id}">
@@ -1260,33 +1458,44 @@ class App {
                     <label>Name</label>
                     <input type="text" name="name" value="${tutor.name || ''}" required>
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" value="${tutor.email || ''}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" value="${tutor.email || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" name="phone" value="${tutor.phone || ''}">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Phone</label>
-                    <input type="tel" name="phone" value="${tutor.phone || ''}">
-                </div>
-                <div class="form-group">
-                    <label>Instruments (comma-separated)</label>
+                    <label>Instruments Taught (comma-separated)</label>
                     <input type="text" name="instruments" value="${(tutor.instruments || []).join(', ')}">
+                    <small class="form-hint">Leave blank if not a music tutor</small>
                 </div>
                 <div class="form-group">
-                    <label>Color</label>
-                    <input type="color" name="color" value="${tutor.color || '#8b5cf6'}" style="width: 60px; height: 38px;">
+                    <label>Groups Led</label>
+                    <div class="checkbox-group">
+                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select name="active">
-                        <option value="true" ${tutor.active !== false ? 'selected' : ''}>Active</option>
-                        <option value="false" ${tutor.active === false ? 'selected' : ''}>Inactive</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Color</label>
+                        <input type="color" name="color" value="${tutor.color || '#8b5cf6'}" style="width: 60px; height: 38px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="active">
+                            <option value="true" ${tutor.active !== false ? 'selected' : ''}>Active</option>
+                            <option value="false" ${tutor.active === false ? 'selected' : ''}>Inactive</option>
+                        </select>
+                    </div>
                 </div>
             </form>
         `;
         
-        this.showModal('Edit Tutor', content, () => this.updateTutor());
+        this.showModal('Edit Staff Member', content, () => this.updateTutor());
     }
 
     async updateTutor() {
@@ -1297,12 +1506,16 @@ class App {
         const name = formData.get('name');
         const initials = name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
         
+        // Get all checked groups
+        const groupIds = formData.getAll('groups');
+        
         const tutor = {
             name: name,
             initials: initials,
             email: formData.get('email'),
             phone: formData.get('phone'),
-            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
+            instruments: (formData.get('instruments') || '').split(',').map(i => i.trim()).filter(i => i),
+            groupIds: groupIds,
             color: formData.get('color'),
             active: formData.get('active') === 'true'
         };
@@ -1310,7 +1523,12 @@ class App {
         const result = await DatabaseService.updateTutor(id, tutor);
         
         if (result.success) {
-            this.showToast('Tutor updated successfully!', 'success');
+            // Update groups with this leader
+            for (const groupId of groupIds) {
+                await DatabaseService.updateGroup(groupId, { leader: name });
+            }
+            
+            this.showToast('Staff member updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
             this.renderCurrentPage();
@@ -1328,6 +1546,7 @@ class App {
             `<option value="${c}" ${c === event.category ? 'selected' : ''}>${c}</option>`
         ).join('');
 
+        const currentTemplate = event.template || event.templateType || '';
         const templates = [
             { value: 'school-during', label: 'School (During Hours)' },
             { value: 'school-after', label: 'School (After Hours)' },
@@ -1335,7 +1554,7 @@ class App {
             { value: 'offsite-after', label: 'Offsite (After Hours)' }
         ];
         const templateOptions = templates.map(t => 
-            `<option value="${t.value}" ${t.value === event.templateType ? 'selected' : ''}>${t.label}</option>`
+            `<option value="${t.value}" ${t.value === currentTemplate ? 'selected' : ''}>${t.label}</option>`
         ).join('');
 
         const content = `
@@ -1373,7 +1592,8 @@ class App {
                     </div>
                     <div class="form-group">
                         <label>Template</label>
-                        <select name="templateType">
+                        <select name="template">
+                            <option value="">Select template...</option>
                             ${templateOptions}
                         </select>
                     </div>
@@ -1404,7 +1624,7 @@ class App {
             date: formData.get('date'),
             term: formData.get('term'),
             category: formData.get('category'),
-            templateType: formData.get('templateType'),
+            template: formData.get('template'),
             status: formData.get('status')
         };
         
@@ -1417,6 +1637,192 @@ class App {
             this.renderCurrentPage();
         } else {
             this.showToast('Error updating event', 'error');
+        }
+    }
+
+    // Event Task Templates - tasks with days before event
+    getEventTemplateTasks(templateType) {
+        const templates = {
+            'school-during': [
+                { name: 'Book venue/room', daysBefore: 28 },
+                { name: 'Create event on school calendar', daysBefore: 21 },
+                { name: 'Notify staff involved', daysBefore: 21 },
+                { name: 'Send parent notification', daysBefore: 14 },
+                { name: 'Confirm catering (if needed)', daysBefore: 7 },
+                { name: 'Prepare equipment/resources', daysBefore: 3 },
+                { name: 'Final run-through', daysBefore: 1 },
+                { name: 'Event day setup', daysBefore: 0 }
+            ],
+            'school-after': [
+                { name: 'Book venue/room', daysBefore: 28 },
+                { name: 'Create event on school calendar', daysBefore: 21 },
+                { name: 'Arrange staff supervision', daysBefore: 21 },
+                { name: 'Send parent notification with pickup info', daysBefore: 14 },
+                { name: 'Confirm catering (if needed)', daysBefore: 7 },
+                { name: 'Arrange lighting/sound', daysBefore: 7 },
+                { name: 'Prepare equipment/resources', daysBefore: 3 },
+                { name: 'Final run-through', daysBefore: 1 },
+                { name: 'Event day setup', daysBefore: 0 }
+            ],
+            'offsite-during': [
+                { name: 'Book external venue', daysBefore: 42 },
+                { name: 'Arrange transport', daysBefore: 28 },
+                { name: 'Complete RAMS form', daysBefore: 21 },
+                { name: 'Send permission slips', daysBefore: 21 },
+                { name: 'Collect permission slips', daysBefore: 7 },
+                { name: 'Confirm transport & numbers', daysBefore: 3 },
+                { name: 'Prepare equipment to take', daysBefore: 2 },
+                { name: 'Final briefing with students', daysBefore: 1 },
+                { name: 'Event day - check roll', daysBefore: 0 }
+            ],
+            'offsite-after': [
+                { name: 'Book external venue', daysBefore: 42 },
+                { name: 'Arrange transport', daysBefore: 28 },
+                { name: 'Complete RAMS form', daysBefore: 21 },
+                { name: 'Send permission slips with return time', daysBefore: 21 },
+                { name: 'Arrange staff supervision for return', daysBefore: 14 },
+                { name: 'Collect permission slips', daysBefore: 7 },
+                { name: 'Confirm transport & numbers', daysBefore: 3 },
+                { name: 'Prepare equipment to take', daysBefore: 2 },
+                { name: 'Final briefing with students', daysBefore: 1 },
+                { name: 'Event day - check roll', daysBefore: 0 }
+            ]
+        };
+        return templates[templateType] || templates['school-during'];
+    }
+
+    showEventTasksModal(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+        
+        const eventDate = new Date(event.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get template tasks or use existing tasks
+        const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+        
+        // Merge with any saved task completion status
+        const savedTasks = event.tasks || [];
+        const tasks = templateTasks.map((task, index) => {
+            const savedTask = savedTasks.find(t => t.name === task.name) || {};
+            const dueDate = new Date(eventDate);
+            dueDate.setDate(dueDate.getDate() - task.daysBefore);
+            
+            const isOverdue = !savedTask.completed && dueDate < today;
+            const isDueToday = dueDate.toDateString() === today.toDateString();
+            const isDueSoon = !isOverdue && !isDueToday && dueDate <= new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+            
+            return {
+                ...task,
+                id: index,
+                dueDate: dueDate,
+                completed: savedTask.completed || false,
+                completedDate: savedTask.completedDate || null,
+                isOverdue,
+                isDueToday,
+                isDueSoon
+            };
+        });
+        
+        const completedCount = tasks.filter(t => t.completed).length;
+        const overdueCount = tasks.filter(t => t.isOverdue).length;
+        
+        const content = `
+            <div class="event-tasks-modal">
+                <div class="event-tasks-header">
+                    <div class="event-info">
+                        <h3>${event.name}</h3>
+                        <p>Event Date: <strong>${this.formatDate(event.date)}</strong></p>
+                    </div>
+                    <div class="tasks-summary">
+                        <span class="tasks-progress">${completedCount}/${tasks.length} complete</span>
+                        ${overdueCount > 0 ? `<span class="tasks-overdue">${overdueCount} overdue</span>` : ''}
+                    </div>
+                </div>
+                <div class="tasks-list" id="event-tasks-list">
+                    ${tasks.map(task => `
+                        <div class="task-item ${task.completed ? 'completed' : ''} ${task.isOverdue ? 'overdue' : ''} ${task.isDueToday ? 'due-today' : ''} ${task.isDueSoon ? 'due-soon' : ''}" data-task-id="${task.id}">
+                            <label class="task-checkbox">
+                                <input type="checkbox" ${task.completed ? 'checked' : ''} data-event-id="${eventId}" data-task-name="${task.name}">
+                                <span class="checkmark"></span>
+                            </label>
+                            <div class="task-content">
+                                <span class="task-name">${task.name}</span>
+                                <span class="task-due">
+                                    ${task.daysBefore === 0 ? 'Event day' : 
+                                      task.daysBefore === 1 ? '1 day before' :
+                                      `${task.daysBefore} days before`}
+                                    <span class="task-date">(${this.formatDate(task.dueDate)})</span>
+                                </span>
+                            </div>
+                            <div class="task-status">
+                                ${task.completed ? '<span class="status-complete">✓</span>' :
+                                  task.isOverdue ? '<span class="status-overdue">Overdue</span>' :
+                                  task.isDueToday ? '<span class="status-today">Today</span>' :
+                                  task.isDueSoon ? '<span class="status-soon">Soon</span>' : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        this.showModal(`Event Tasks: ${event.name}`, content, null);
+        document.getElementById('modal-save').style.display = 'none';
+        
+        // Bind checkbox changes
+        setTimeout(() => {
+            document.querySelectorAll('#event-tasks-list input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    this.toggleEventTask(e.target.dataset.eventId, e.target.dataset.taskName, e.target.checked);
+                });
+            });
+        }, 100);
+    }
+
+    async toggleEventTask(eventId, taskName, completed) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+        
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+        
+        // Find or create task entry
+        let task = event.tasks.find(t => t.name === taskName);
+        if (task) {
+            task.completed = completed;
+            task.completedDate = completed ? new Date().toISOString() : null;
+        } else {
+            event.tasks.push({
+                name: taskName,
+                completed: completed,
+                completedDate: completed ? new Date().toISOString() : null
+            });
+        }
+        
+        // Update in database
+        const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
+        
+        if (result.success) {
+            // Update UI
+            const taskItem = document.querySelector(`[data-task-name="${taskName}"]`).closest('.task-item');
+            if (completed) {
+                taskItem.classList.add('completed');
+                taskItem.classList.remove('overdue', 'due-today', 'due-soon');
+                taskItem.querySelector('.task-status').innerHTML = '<span class="status-complete">✓</span>';
+            } else {
+                taskItem.classList.remove('completed');
+                // Recalculate status would require more logic, so just refresh
+                this.showEventTasksModal(eventId);
+            }
+            
+            // Update summary counts
+            const completedCount = event.tasks.filter(t => t.completed).length;
+            const totalCount = document.querySelectorAll('#event-tasks-list .task-item').length;
+            document.querySelector('.tasks-progress').textContent = `${completedCount}/${totalCount} complete`;
         }
     }
 
@@ -1657,20 +2063,48 @@ class App {
     }
 
     async handleDelete(type, id) {
-        if (!confirm(`Are you sure you want to delete this ${type}?`)) return;
+        // Show confirmation modal instead of browser confirm
+        const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
         
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3>Delete ${typeLabel}?</h3>
+                <p>This action cannot be undone. Are you sure you want to permanently delete this ${type}?</p>
+            </div>
+        `;
+        
+        this.showModal(`Delete ${typeLabel}`, content, () => this.confirmDelete(type, id));
+        document.getElementById('modal-save').textContent = 'Delete';
+        document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    async confirmDelete(type, id) {
         const collectionMap = {
             lesson: 'lessons',
             student: 'students',
+            tutor: 'tutors',
             event: 'events',
             request: 'lessonRequests',
+            group: 'groups',
             instrument: 'instruments',
             hire: 'instrumentHires'
         };
         
         const result = await DatabaseService.delete(collectionMap[type], id);
         
+        // Reset the save button
+        document.getElementById('modal-save').textContent = 'Save';
+        document.getElementById('modal-save').classList.remove('btn-danger');
+        
         if (result.success) {
+            this.closeModal();
             this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`, 'success');
             await this.loadAllData();
             this.renderCurrentPage();
@@ -1680,12 +2114,135 @@ class App {
     }
 
     async handleApproveRequest(id) {
-        const result = await DatabaseService.updateLessonRequest(id, { status: 'approved' });
-        if (result.success) {
-            this.showToast('Request approved!', 'success');
+        const request = this.data.lessonRequests.find(r => r.id === id);
+        if (!request) return;
+        
+        // Find tutors who teach this instrument
+        const matchingTutors = this.data.tutors.filter(t => 
+            t.instruments && t.instruments.some(i => 
+                i.toLowerCase().includes(request.instrument.toLowerCase()) ||
+                request.instrument.toLowerCase().includes(i.toLowerCase())
+            )
+        );
+        
+        let tutorOptions = '';
+        if (matchingTutors.length > 0) {
+            tutorOptions = matchingTutors.map(t => 
+                `<option value="${t.id}">${t.name} - ${t.instruments.join(', ')}</option>`
+            ).join('');
+        } else {
+            // Show all tutors if no exact match
+            tutorOptions = this.data.tutors.map(t => 
+                `<option value="${t.id}">${t.name} - ${(t.instruments || []).join(', ')}</option>`
+            ).join('');
+        }
+        
+        const content = `
+            <div class="approve-request-form">
+                <div class="request-summary">
+                    <div class="summary-row">
+                        <span class="label">Student:</span>
+                        <span class="value">${request.studentName}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Year:</span>
+                        <span class="value">${request.year}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Instrument:</span>
+                        <span class="value">${request.instrument}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Parent Email:</span>
+                        <span class="value">${request.parentEmail || 'Not provided'}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Received:</span>
+                        <span class="value">${this.formatDate(request.received)}</span>
+                    </div>
+                </div>
+                <form id="approve-request-form" class="modal-form">
+                    <input type="hidden" name="requestId" value="${id}">
+                    <div class="form-group">
+                        <label>Assign Tutor *</label>
+                        <select name="tutorId" required>
+                            <option value="">Select a tutor...</option>
+                            ${tutorOptions}
+                        </select>
+                        ${matchingTutors.length > 0 ? 
+                            `<small class="form-hint">Showing tutors who teach ${request.instrument}</small>` : 
+                            `<small class="form-hint warning">No tutors found for ${request.instrument} - showing all tutors</small>`
+                        }
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Lesson Day</label>
+                            <select name="day">
+                                <option value="">To be scheduled...</option>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Time</label>
+                            <input type="text" name="time" placeholder="e.g., 9:00 AM">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        this.showModal('Approve Lesson Request', content, () => this.confirmApproveRequest());
+        document.getElementById('modal-save').textContent = 'Approve & Create Lesson';
+    }
+
+    async confirmApproveRequest() {
+        const form = document.getElementById('approve-request-form');
+        const formData = new FormData(form);
+        
+        const requestId = formData.get('requestId');
+        const tutorId = formData.get('tutorId');
+        
+        if (!tutorId) {
+            this.showToast('Please select a tutor', 'error');
+            return;
+        }
+        
+        const request = this.data.lessonRequests.find(r => r.id === requestId);
+        const tutor = this.data.tutors.find(t => t.id === tutorId);
+        
+        // Create a new lesson
+        const lesson = {
+            studentName: request.studentName.split(' (')[0], // Remove class from name
+            tutorId: tutorId,
+            tutorName: tutor.name,
+            instrument: request.instrument,
+            day: formData.get('day') || 'TBC',
+            time: formData.get('time') || 'TBC',
+            status: 'active'
+        };
+        
+        // Add the lesson
+        const lessonResult = await DatabaseService.addLesson(lesson);
+        
+        if (lessonResult.success) {
+            // Update the request status
+            await DatabaseService.updateLessonRequest(requestId, { 
+                status: 'approved',
+                assignedTutor: tutor.name,
+                approvedDate: new Date().toISOString().split('T')[0]
+            });
+            
+            document.getElementById('modal-save').textContent = 'Save';
+            this.closeModal();
+            this.showToast('Request approved and lesson created!', 'success');
             await this.loadAllData();
-            this.renderRequests();
-            this.renderRecentRequests();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error creating lesson', 'error');
         }
     }
 
@@ -1899,7 +2456,7 @@ class App {
                     </div>
                     <div class="form-group">
                         <label>Template</label>
-                        <select name="templateType">
+                        <select name="template">
                             <option value="school-during">School (During Hours)</option>
                             <option value="school-after">School (After Hours)</option>
                             <option value="offsite-during">Offsite (During Hours)</option>
@@ -1923,8 +2480,9 @@ class App {
             date: formData.get('date'),
             term: formData.get('term'),
             category: formData.get('category'),
-            templateType: formData.get('templateType'),
-            status: 'upcoming'
+            template: formData.get('template'),
+            status: 'upcoming',
+            tasks: [] // Initialize empty tasks array
         };
         
         const result = await DatabaseService.addEvent(event);
@@ -1940,28 +2498,45 @@ class App {
     }
 
     showAddTutorModal() {
+        const groupCheckboxes = this.data.groups.map(g => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="groups" value="${g.id}">
+                <span>${g.name}</span>
+            </label>`
+        ).join('');
+        
         const content = `
             <form id="add-tutor-form" class="modal-form">
                 <div class="form-group">
                     <label>Name</label>
                     <input type="text" name="name" placeholder="Full name" required>
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" placeholder="tutor@email.com" required>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="staff@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" name="phone" placeholder="021 123 4567">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Phone</label>
-                    <input type="tel" name="phone" placeholder="021 123 4567">
+                    <label>Instruments Taught (comma separated)</label>
+                    <input type="text" name="instruments" placeholder="e.g., Guitar, Bass, Ukulele">
+                    <small class="form-hint">Leave blank if not a music tutor</small>
                 </div>
                 <div class="form-group">
-                    <label>Instruments (comma separated)</label>
-                    <input type="text" name="instruments" placeholder="e.g., Guitar, Bass, Ukulele" required>
+                    <label>Groups Led</label>
+                    <div class="checkbox-group">
+                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
+                    </div>
+                    <small class="form-hint">Select groups this person leads</small>
                 </div>
             </form>
         `;
         
-        this.showModal('Add New Tutor', content, () => this.saveTutor());
+        this.showModal('Add Staff Member', content, () => this.saveTutor());
     }
 
     async saveTutor() {
@@ -1973,12 +2548,16 @@ class App {
         const colors = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#22c55e', '#3b82f6'];
         const color = colors[Math.floor(Math.random() * colors.length)];
         
+        // Get all checked groups
+        const groupIds = formData.getAll('groups');
+        
         const tutor = {
             name: name,
             initials: initials,
             email: formData.get('email'),
             phone: formData.get('phone'),
-            instruments: formData.get('instruments').split(',').map(i => i.trim()),
+            instruments: (formData.get('instruments') || '').split(',').map(i => i.trim()).filter(i => i),
+            groupIds: groupIds,
             color: color,
             active: true
         };
@@ -1986,12 +2565,17 @@ class App {
         const result = await DatabaseService.addTutor(tutor);
         
         if (result.success) {
-            this.showToast('Tutor added successfully!', 'success');
+            // Update groups with this leader
+            for (const groupId of groupIds) {
+                await DatabaseService.updateGroup(groupId, { leader: name });
+            }
+            
+            this.showToast('Staff member added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
             this.renderCurrentPage();
         } else {
-            this.showToast('Error adding tutor', 'error');
+            this.showToast('Error adding staff member', 'error');
         }
     }
 
