@@ -1,0 +1,26 @@
+{
+    "name": "MGS Arts Portal",
+    "short_name": "MGS Arts",
+    "description": "Middleton Grange School Performing Arts Management Portal",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f1219",
+    "theme_color": "#1a1f2e",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "assets/icon-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "assets/icon-512.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["education", "productivity"],
+    "lang": "en-NZ"
+}
