@@ -377,13 +377,13 @@
                         </div>
                         <div class="card-body">
                             <div class="requests-summary">
-                                <div class="summary-item">
-                                    <span class="summary-value" id="requests-awaiting">0</span>
-                                    <span class="summary-label">Awaiting</span>
+                                <div class="request-stat awaiting">
+                                    <span class="request-count" id="requests-awaiting">0</span>
+                                    <span class="request-label">Awaiting</span>
                                 </div>
-                                <div class="summary-item">
-                                    <span class="summary-value" id="requests-waitlist">0</span>
-                                    <span class="summary-label">Waitlist</span>
+                                <div class="request-stat waitlist">
+                                    <span class="request-count" id="requests-waitlist">0</span>
+                                    <span class="request-label">Waitlist</span>
                                 </div>
                             </div>
                             <div class="recent-requests" id="recent-requests">
@@ -406,18 +406,18 @@
                             <a href="#hires" class="card-action" data-page="hires">Manage →</a>
                         </div>
                         <div class="card-body">
-                            <div class="hires-summary">
-                                <div class="summary-item">
-                                    <span class="summary-value" id="hires-active">0</span>
-                                    <span class="summary-label">Active</span>
+                            <div class="requests-summary">
+                                <div class="request-stat active">
+                                    <span class="request-count" id="hires-active">0</span>
+                                    <span class="request-label">Active</span>
                                 </div>
-                                <div class="summary-item warning">
-                                    <span class="summary-value" id="hires-due-soon">0</span>
-                                    <span class="summary-label">Due Soon</span>
+                                <div class="request-stat due-soon">
+                                    <span class="request-count" id="hires-due-soon">0</span>
+                                    <span class="request-label">Due Soon</span>
                                 </div>
-                                <div class="summary-item danger">
-                                    <span class="summary-value" id="hires-overdue">0</span>
-                                    <span class="summary-label">Overdue</span>
+                                <div class="request-stat overdue">
+                                    <span class="request-count" id="hires-overdue">0</span>
+                                    <span class="request-label">Overdue</span>
                                 </div>
                             </div>
                         </div>
@@ -948,6 +948,28 @@
                                         <span class="user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="483a6620273a260825212c2c242d3c2726663b2b20272724662632">[email&#160;protected]</a></span>
                                     </div>
                                     <span class="user-role role-admin">Admin</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h2 class="settings-section-title">Event Categories</h2>
+                        <div class="card">
+                            <div class="categories-list" id="categories-list">
+                                <!-- Populated by JS -->
+                            </div>
+                            <div class="category-add-form" style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+                                <div class="form-row" style="display: flex; gap: var(--spacing-md); align-items: flex-end;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>New Category Name</label>
+                                        <input type="text" id="new-category-name" placeholder="e.g., Assembly">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Color</label>
+                                        <input type="color" id="new-category-color" value="#8b5cf6" style="width: 50px; height: 38px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                                    </div>
+                                    <button class="btn btn-primary" id="add-category-btn">Add Category</button>
                                 </div>
                             </div>
                         </div>

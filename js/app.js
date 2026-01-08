@@ -157,6 +157,7 @@ class App {
         document.getElementById('import-data-btn')?.addEventListener('click', () => document.getElementById('import-file').click());
         document.getElementById('import-file')?.addEventListener('change', (e) => this.importData(e));
         document.getElementById('save-school-settings')?.addEventListener('click', () => this.saveSchoolSettings());
+        document.getElementById('add-category-btn')?.addEventListener('click', () => this.addCategory());
         
         // Search inputs
         document.getElementById('lessons-search')?.addEventListener('input', (e) => this.handleSearch('lessons', e.target.value));
@@ -416,15 +417,18 @@ class App {
             return;
         }
         
-        container.innerHTML = events.map(event => `
-            <div class="event-item">
-                <div class="event-info">
-                    <span class="event-name">${event.name}</span>
-                    <span class="event-date">${this.formatDate(event.date)}</span>
+        container.innerHTML = events.map(event => {
+            const categoryClass = (event.category || 'other').toLowerCase().replace(/\s+/g, '-');
+            return `
+                <div class="event-item">
+                    <div class="event-info">
+                        <span class="event-name">${event.name}</span>
+                        <span class="event-date">${this.formatDate(event.date)}</span>
+                    </div>
+                    <span class="category-badge ${categoryClass}">${event.category || 'Event'}</span>
                 </div>
-                <span class="discipline-tag discipline-music">${event.category || 'Event'}</span>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     renderRecentRequests() {
@@ -888,6 +892,94 @@ class App {
         if (this.data.settings?.academyName) {
             document.getElementById('setting-academy-name').value = this.data.settings.academyName;
         }
+        
+        // Render categories
+        this.renderCategories();
+    }
+    
+    renderCategories() {
+        const container = document.getElementById('categories-list');
+        if (!container) return;
+        
+        // Default categories if none in settings
+        const defaultCategories = [
+            { name: 'Music', color: '#8b5cf6' },
+            { name: 'Performing Arts', color: '#ec4899' },
+            { name: 'Production', color: '#06b6d4' },
+            { name: 'Concert', color: '#c9a962' },
+            { name: 'Competition', color: '#ef4444' },
+            { name: 'Workshop', color: '#22c55e' },
+            { name: 'Exam', color: '#3b82f6' }
+        ];
+        
+        const categories = this.data.settings?.categories || defaultCategories;
+        
+        container.innerHTML = categories.map((cat, index) => `
+            <div class="category-row" data-category-index="${index}">
+                <div class="category-color-preview" style="background: ${cat.color};"></div>
+                <span class="category-name">${cat.name}</span>
+                <span class="category-badge-preview" style="background: ${cat.color}20; color: ${cat.color};">${cat.name}</span>
+                <div class="category-actions">
+                    <button class="btn btn-outline btn-sm" onclick="app.editCategory(${index})">Edit</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.deleteCategory(${index})">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    async addCategory() {
+        const nameInput = document.getElementById('new-category-name');
+        const colorInput = document.getElementById('new-category-color');
+        
+        const name = nameInput.value.trim();
+        const color = colorInput.value;
+        
+        if (!name) {
+            this.showToast('Please enter a category name', 'error');
+            return;
+        }
+        
+        const categories = this.data.settings?.categories || [];
+        categories.push({ name, color });
+        
+        // Save to Firebase
+        await DatabaseService.update('settings', 'general', { categories });
+        this.data.settings = { ...this.data.settings, categories };
+        
+        // Clear inputs and refresh
+        nameInput.value = '';
+        this.renderCategories();
+        this.showToast('Category added successfully', 'success');
+    }
+    
+    editCategory(index) {
+        const categories = this.data.settings?.categories || [];
+        const cat = categories[index];
+        if (!cat) return;
+        
+        const newName = prompt('Category name:', cat.name);
+        if (newName === null) return;
+        
+        const newColor = prompt('Category color (hex):', cat.color);
+        if (newColor === null) return;
+        
+        categories[index] = { name: newName || cat.name, color: newColor || cat.color };
+        this.saveCategoriesAndRefresh(categories);
+    }
+    
+    async deleteCategory(index) {
+        if (!confirm('Delete this category?')) return;
+        
+        const categories = this.data.settings?.categories || [];
+        categories.splice(index, 1);
+        this.saveCategoriesAndRefresh(categories);
+    }
+    
+    async saveCategoriesAndRefresh(categories) {
+        await DatabaseService.update('settings', 'general', { categories });
+        this.data.settings = { ...this.data.settings, categories };
+        this.renderCategories();
+        this.showToast('Categories updated', 'success');
     }
 
     // ========================================
@@ -1734,3 +1826,4 @@ class App {
 
 // Initialize app
 const app = new App();
+window.app = app; // Make available for inline handlers

@@ -831,10 +831,17 @@ input, textarea, select {
    MAIN CONTENT
    ======================================== */
 
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
 .main-content {
+    flex: 1;
     min-height: 100vh;
     padding: var(--spacing-lg);
     padding-top: calc(var(--header-height) + var(--spacing-lg));
+    width: 100%;
 }
 
 @media (min-width: 1024px) {
@@ -842,6 +849,7 @@ input, textarea, select {
         margin-left: var(--sidebar-width);
         padding: var(--spacing-xl);
         padding-top: var(--spacing-xl);
+        width: calc(100% - var(--sidebar-width));
     }
 }
 
@@ -1419,16 +1427,17 @@ input, textarea, select {
 .events-list {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
 }
 
 .event-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     background: var(--color-bg-tertiary);
     border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-gold);
     transition: transform var(--transition-fast);
 }
 
@@ -1470,29 +1479,122 @@ input, textarea, select {
     height: 14px;
 }
 
+/* Category Badge Colors */
+.category-badge,
+.event-badge.category {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+}
+
+.category-badge.music,
+.event-badge.music {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+}
+
+.category-badge.performing-arts,
+.event-badge.performing-arts {
+    background: rgba(236, 72, 153, 0.15);
+    color: #ec4899;
+}
+
+.category-badge.production,
+.event-badge.production {
+    background: rgba(6, 182, 212, 0.15);
+    color: #06b6d4;
+}
+
+.category-badge.concert,
+.event-badge.concert {
+    background: rgba(201, 169, 98, 0.15);
+    color: var(--color-gold);
+}
+
+.category-badge.competition,
+.event-badge.competition {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.category-badge.workshop,
+.event-badge.workshop {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.category-badge.exam,
+.event-badge.exam {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+}
+
+.category-badge.other,
+.event-badge.other {
+    background: rgba(113, 113, 122, 0.15);
+    color: #71717a;
+}
+
 /* Requests Summary */
 .requests-summary {
     display: flex;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
 }
 
 .request-stat {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    min-width: 80px;
+    text-align: center;
+}
+
+.request-stat.awaiting {
+    border-bottom: 3px solid var(--color-warning);
+}
+
+.request-stat.waitlist {
+    border-bottom: 3px solid var(--color-info);
+}
+
+.request-stat.active {
+    border-bottom: 3px solid var(--color-success);
+}
+
+.request-stat.due-soon {
+    border-bottom: 3px solid var(--color-warning);
+}
+
+.request-stat.overdue {
+    border-bottom: 3px solid var(--color-danger);
 }
 
 .request-count {
     font-size: 1.75rem;
     font-weight: 700;
-    color: var(--color-gold);
+    color: var(--color-text-primary);
     line-height: 1;
 }
 
+.request-stat.awaiting .request-count { color: var(--color-warning); }
+.request-stat.waitlist .request-count { color: var(--color-info); }
+.request-stat.active .request-count { color: var(--color-success); }
+.request-stat.due-soon .request-count { color: var(--color-warning); }
+.request-stat.overdue .request-count { color: var(--color-danger); }
+
 .request-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     margin-top: var(--spacing-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .recent-requests {
@@ -2411,6 +2513,55 @@ input, textarea, select {
 .role-teacher {
     background: var(--color-music-bg);
     color: var(--color-music);
+}
+
+/* Categories List */
+.categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.category-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.category-color-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.category-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.category-badge-preview {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+}
+
+.category-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.category-actions button {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
 }
 
 /* Requests Stats */
