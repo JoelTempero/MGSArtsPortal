@@ -153,6 +153,23 @@ input, textarea, select {
    LOGIN SCREEN
    ======================================== */
 
+.login-screen {
+    min-height: 100vh;
+    background: 
+        radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(201, 169, 98, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.1) 0%, transparent 60%),
+        var(--color-bg-primary);
+}
+
+[data-theme="light"] .login-screen {
+    background: 
+        radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(201, 169, 98, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.06) 0%, transparent 60%),
+        var(--color-bg-primary);
+}
+
 .login-container {
     min-height: 100vh;
     display: flex;
@@ -216,6 +233,23 @@ input, textarea, select {
     height: 100%;
 }
 
+.login-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-lg);
+}
+
+.login-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.login-logo svg {
+    width: 100%;
+    height: 100%;
+}
+
 .login-title {
     font-family: var(--font-display);
     font-size: 2rem;
@@ -247,6 +281,27 @@ input, textarea, select {
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--color-text-secondary);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-gold);
+    box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.15);
+}
+
+.form-group input::placeholder {
+    color: var(--color-text-muted);
 }
 
 .input-wrapper {
@@ -305,6 +360,25 @@ input, textarea, select {
     background: var(--color-bg-tertiary);
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--radius-sm);
+}
+
+.forgot-password {
+    display: block;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    transition: color var(--transition-fast);
+}
+
+.forgot-password:hover {
+    color: var(--color-gold);
+}
+
+.login-error {
+    color: var(--color-danger);
+    font-size: 0.85rem;
+    text-align: center;
+    min-height: 1.2rem;
 }
 
 .login-decoration {
