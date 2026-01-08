@@ -179,7 +179,7 @@ class App {
     renderDashboard() {
         this.renderUpcomingEvents();
         this.renderRecentRequests();
-        this.updateAttendanceStats();
+        this.updateLessonCount();
     }
 
     renderUpcomingEvents() {
@@ -223,30 +223,12 @@ class App {
         `).join('');
     }
 
-    updateAttendanceStats() {
-        const lessons = MockData.todaysLessons;
-        const present = lessons.filter(l => l.attendance === 'present').length;
-        const late = lessons.filter(l => l.attendance === 'late').length;
-        const absent = lessons.filter(l => l.attendance === 'absent').length;
-        const unmarked = lessons.filter(l => l.attendance === 'unmarked').length;
-        const total = lessons.length;
-
-        document.getElementById('total-lessons').textContent = total;
-        document.getElementById('present-count').textContent = present;
-        document.getElementById('late-count').textContent = late;
-        document.getElementById('absent-count').textContent = absent;
-        document.getElementById('unmarked-count').textContent = unmarked;
-
-        // Update bar
-        const presentPct = (present / total * 100).toFixed(0);
-        const latePct = (late / total * 100).toFixed(0);
-        const absentPct = (absent / total * 100).toFixed(0);
-        const unmarkedPct = (unmarked / total * 100).toFixed(0);
-
-        document.querySelector('.bar-present').style.width = `${presentPct}%`;
-        document.querySelector('.bar-late').style.width = `${latePct}%`;
-        document.querySelector('.bar-absent').style.width = `${absentPct}%`;
-        document.querySelector('.bar-unmarked').style.width = `${unmarkedPct}%`;
+    updateLessonCount() {
+        const total = MockData.todaysLessons.length;
+        const totalEl = document.getElementById('total-lessons');
+        if (totalEl) {
+            totalEl.textContent = total;
+        }
     }
 
     // ========================================
@@ -263,9 +245,6 @@ class App {
             
             return `
                 <tr>
-                    <td>
-                        <div class="attendance-status ${getAttendanceClass(lesson.attendance)}"></div>
-                    </td>
                     <td>${lesson.time}</td>
                     <td>
                         <div class="cell-student">
@@ -285,24 +264,11 @@ class App {
                         </div>
                     </td>
                     <td>
-                        <div class="attendance-actions">
-                            <button class="attendance-btn present ${lesson.attendance === 'present' ? 'active' : ''}" 
-                                    data-lesson="${lesson.id}" data-status="present" title="Present">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                    <path d="M20 6L9 17l-5-5"/>
-                                </svg>
-                            </button>
-                            <button class="attendance-btn late ${lesson.attendance === 'late' ? 'active' : ''}"
-                                    data-lesson="${lesson.id}" data-status="late" title="Late">
+                        <div class="row-actions">
+                            <button class="row-action-btn" title="Edit">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M12 6v6l4 2"/>
-                                </svg>
-                            </button>
-                            <button class="attendance-btn absent ${lesson.attendance === 'absent' ? 'active' : ''}"
-                                    data-lesson="${lesson.id}" data-status="absent" title="Absent">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                    <path d="M18 6L6 18M6 6l12 12"/>
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                 </svg>
                             </button>
                         </div>
@@ -310,36 +276,6 @@ class App {
                 </tr>
             `;
         }).join('');
-
-        // Bind attendance buttons
-        tbody.querySelectorAll('.attendance-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.markAttendance(e));
-        });
-    }
-
-    markAttendance(e) {
-        const btn = e.currentTarget;
-        const lessonId = parseInt(btn.dataset.lesson);
-        const status = btn.dataset.status;
-        
-        // Update mock data
-        const lesson = MockData.todaysLessons.find(l => l.id === lessonId);
-        if (lesson) {
-            lesson.attendance = status;
-        }
-
-        // Update UI
-        const row = btn.closest('tr');
-        row.querySelectorAll('.attendance-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        const statusDot = row.querySelector('.attendance-status');
-        statusDot.className = `attendance-status ${getAttendanceClass(status)}`;
-
-        // Update dashboard stats
-        this.updateAttendanceStats();
-
-        this.showToast(`Attendance marked as ${status}`, 'success');
     }
 
     // ========================================

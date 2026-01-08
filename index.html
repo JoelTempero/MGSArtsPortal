@@ -86,7 +86,7 @@
                 
                 <div class="login-footer">
                     <p>Demo Credentials:</p>
-                    <code>admin@mgs.school.nz / admin123</code>
+                    <code><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3c5d585155527c515b4f124f5f54535350125246">[email&#160;protected]</a> / admin123</code>
                 </div>
             </div>
             
@@ -187,7 +187,6 @@
                     </button>
                     <div class="nav-group-items" data-group="lessons">
                         <a href="#lessons" class="nav-item sub" data-page="lessons">Lesson List</a>
-                        <a href="#attendance" class="nav-item sub" data-page="attendance">Review Attendance</a>
                         <a href="#requests" class="nav-item sub" data-page="requests">Requests</a>
                     </div>
                 </div>
@@ -332,61 +331,40 @@
                         <div class="card-body">
                             <div class="lessons-count">
                                 <span class="count-number" id="total-lessons">35</span>
-                                <span class="count-label">Scheduled</span>
+                                <span class="count-label">Scheduled Today</span>
                             </div>
-                            <div class="attendance-stats">
-                                <div class="stat stat-present">
-                                    <div class="stat-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                            <path d="M20 6L9 17l-5-5"/>
+                            <div class="today-lessons-breakdown">
+                                <div class="breakdown-item">
+                                    <span class="breakdown-icon music">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18V5l12-2v13"/>
+                                            <circle cx="6" cy="18" r="3"/>
+                                            <circle cx="18" cy="16" r="3"/>
                                         </svg>
-                                    </div>
-                                    <div class="stat-info">
-                                        <span class="stat-value" id="present-count">12</span>
-                                        <span class="stat-label">Present</span>
-                                    </div>
+                                    </span>
+                                    <span class="breakdown-count">28</span>
+                                    <span class="breakdown-label">Music</span>
                                 </div>
-                                <div class="stat stat-late">
-                                    <div class="stat-icon">
+                                <div class="breakdown-item">
+                                    <span class="breakdown-icon drama">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <circle cx="12" cy="12" r="10"/>
-                                            <path d="M12 6v6l4 2"/>
+                                            <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
                                         </svg>
-                                    </div>
-                                    <div class="stat-info">
-                                        <span class="stat-value" id="late-count">3</span>
-                                        <span class="stat-label">Late</span>
-                                    </div>
+                                    </span>
+                                    <span class="breakdown-count">5</span>
+                                    <span class="breakdown-label">Drama</span>
                                 </div>
-                                <div class="stat stat-absent">
-                                    <div class="stat-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                            <path d="M18 6L6 18M6 6l12 12"/>
-                                        </svg>
-                                    </div>
-                                    <div class="stat-info">
-                                        <span class="stat-value" id="absent-count">2</span>
-                                        <span class="stat-label">Absent</span>
-                                    </div>
-                                </div>
-                                <div class="stat stat-unmarked">
-                                    <div class="stat-icon">
+                                <div class="breakdown-item">
+                                    <span class="breakdown-icon dance">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/>
+                                            <circle cx="12" cy="4" r="2"/>
+                                            <path d="M12 6v4M8 22l4-10 4 10M6 12h12"/>
                                         </svg>
-                                    </div>
-                                    <div class="stat-info">
-                                        <span class="stat-value" id="unmarked-count">18</span>
-                                        <span class="stat-label">Unmarked</span>
-                                    </div>
+                                    </span>
+                                    <span class="breakdown-count">2</span>
+                                    <span class="breakdown-label">Dance</span>
                                 </div>
-                            </div>
-                            <div class="attendance-bar">
-                                <div class="bar-segment bar-present" style="width: 34%"></div>
-                                <div class="bar-segment bar-late" style="width: 9%"></div>
-                                <div class="bar-segment bar-absent" style="width: 6%"></div>
-                                <div class="bar-segment bar-unmarked" style="width: 51%"></div>
                             </div>
                         </div>
                     </div>
@@ -578,6 +556,14 @@
                                     </svg>
                                     <span>Create Event</span>
                                 </button>
+                                <button class="quick-action" data-action="import-data">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <span>Import Data</span>
+                                </button>
                                 <button class="quick-action" data-action="export-data">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -585,6 +571,14 @@
                                         <line x1="12" y1="15" x2="12" y2="3"/>
                                     </svg>
                                     <span>Export Data</span>
+                                </button>
+                                <button class="quick-action" data-action="add-group">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                                    </svg>
+                                    <span>Create Group</span>
                                 </button>
                             </div>
                         </div>
@@ -652,13 +646,12 @@
                         <table class="data-table" id="planner-table">
                             <thead>
                                 <tr>
-                                    <th class="th-status"></th>
                                     <th>Time</th>
                                     <th>Student</th>
                                     <th>Discipline</th>
                                     <th>Instrument/Focus</th>
                                     <th>Tutor</th>
-                                    <th class="th-actions">Attendance</th>
+                                    <th class="th-actions"></th>
                                 </tr>
                             </thead>
                             <tbody id="planner-body">
@@ -1289,7 +1282,7 @@
                                     <div class="user-avatar admin">AD</div>
                                     <div class="user-info">
                                         <span class="user-name">Admin User</span>
-                                        <span class="user-email">admin@mgs.school.nz</span>
+                                        <span class="user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="345550595d5a745953471a47575c5b5b581a5a4e">[email&#160;protected]</a></span>
                                     </div>
                                     <span class="user-role role-admin">Admin</span>
                                 </div>
@@ -1297,7 +1290,7 @@
                                     <div class="user-avatar teacher">MT</div>
                                     <div class="user-info">
                                         <span class="user-name">Music Teacher</span>
-                                        <span class="user-email">music@mgs.school.nz</span>
+                                        <span class="user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4c21393f252f0c212b3f623f2f24232320622236">[email&#160;protected]</a></span>
                                     </div>
                                     <span class="user-role role-teacher">Teacher</span>
                                 </div>
@@ -1379,18 +1372,4 @@
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
                 </button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                <!-- Modal content populated by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container" id="toast-container"></div>
-
-    <!-- Scripts -->
-    <script src="js/data.js"></script>
-    <script src="js/app.js"></script>
-</body>
-</html>
+            

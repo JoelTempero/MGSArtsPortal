@@ -1100,6 +1100,62 @@ input, textarea, select {
     margin-top: var(--spacing-xs);
 }
 
+/* Today's Lessons Breakdown */
+.today-lessons-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+.breakdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.breakdown-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+}
+
+.breakdown-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.breakdown-icon.music {
+    background: var(--color-music-bg);
+    color: var(--color-music);
+}
+
+.breakdown-icon.drama {
+    background: var(--color-drama-bg);
+    color: var(--color-drama);
+}
+
+.breakdown-icon.dance {
+    background: var(--color-dance-bg);
+    color: var(--color-dance);
+}
+
+.breakdown-count {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.breakdown-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
 .attendance-stats {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1439,8 +1495,14 @@ input, textarea, select {
 /* Quick Actions */
 .quick-actions-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-md);
+}
+
+@media (max-width: 640px) {
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 .quick-action {
