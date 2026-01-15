@@ -77,7 +77,7 @@ class App {
         this.showLoading(true);
         
         try {
-            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms] = await Promise.all([
+            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates] = await Promise.all([
                 DatabaseService.getStudents(),
                 DatabaseService.getTutors(),
                 DatabaseService.getLessons(),
@@ -87,10 +87,12 @@ class App {
                 DatabaseService.getInstrumentHires(),
                 DatabaseService.getLessonRequests(),
                 DatabaseService.getSettings(),
-                DatabaseService.getForms()
+                DatabaseService.getForms(),
+                DatabaseService.getUsers(),
+                DatabaseService.getTemplates()
             ]);
             
-            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms };
+            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates };
             
             // If no data, show welcome message
             if (students.length === 0 && tutors.length === 0) {
@@ -163,6 +165,11 @@ class App {
         // Search inputs
         document.getElementById('lessons-search')?.addEventListener('input', (e) => this.handleSearch('lessons', e.target.value));
         document.getElementById('students-search')?.addEventListener('input', (e) => this.handleSearch('students', e.target.value));
+        document.getElementById('events-search')?.addEventListener('input', (e) => this.handleSearch('events', e.target.value));
+        document.getElementById('tutors-search')?.addEventListener('input', (e) => this.handleSearch('tutors', e.target.value));
+        document.getElementById('groups-search')?.addEventListener('input', (e) => this.handleSearch('groups', e.target.value));
+        document.getElementById('instruments-search')?.addEventListener('input', (e) => this.handleSearch('instruments', e.target.value));
+        document.getElementById('hires-search')?.addEventListener('input', (e) => this.handleSearch('hires', e.target.value));
         
         // Request tabs
         document.querySelectorAll('.page-tabs .tab-btn').forEach(btn => {
@@ -306,6 +313,9 @@ class App {
                 break;
             case 'forms':
                 this.renderForms();
+                break;
+            case 'templates':
+                this.renderTemplates();
                 break;
             case 'settings':
                 this.renderSettings();
@@ -1156,20 +1166,397 @@ class App {
     }
 
     // ========================================
+    // Templates Rendering
+    // ========================================
+    
+    renderTemplates() {
+        const container = document.getElementById('templates-grid');
+        if (!container) return;
+        
+        // Built-in templates (from EventTemplates)
+        const builtInTemplates = [
+            { id: 'school-during', name: 'School Performance During School Hours', description: 'For performances held at school during the school day', icon: 'school', isBuiltIn: true },
+            { id: 'school-after', name: 'School Performance After School Hours', description: 'For performances held at school after the school day', icon: 'evening', isBuiltIn: true },
+            { id: 'offsite-during', name: 'Offsite Performance During School Hours', description: 'For performances held at external venues during school hours', icon: 'offsite', isBuiltIn: true },
+            { id: 'offsite-after', name: 'Offsite Performance After School Hours', description: 'For performances held at external venues after school hours', icon: 'offsite-evening', isBuiltIn: true }
+        ];
+        
+        // Get built-in template task counts
+        builtInTemplates.forEach(t => {
+            const template = EventTemplates[t.id];
+            if (template) {
+                const phaseCount = template.tasks.length;
+                const taskCount = template.tasks.reduce((sum, phase) => sum + phase.items.length, 0);
+                t.taskCount = `${phaseCount} phases • ${taskCount} tasks`;
+            }
+        });
+        
+        // Custom templates from database
+        const customTemplates = (this.data.templates || []).map(t => ({
+            ...t,
+            isBuiltIn: false,
+            icon: 'custom',
+            taskCount: `${t.tasks?.length || 0} phases • ${(t.tasks || []).reduce((sum, phase) => sum + (phase.items?.length || 0), 0)} tasks`
+        }));
+        
+        const allTemplates = [...builtInTemplates, ...customTemplates];
+        
+        const iconSvgs = {
+            'school': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+            'evening': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
+            'offsite': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 7 8 11.7z"/></svg>',
+            'offsite-evening': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+            'custom': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>'
+        };
+        
+        container.innerHTML = allTemplates.map(template => `
+            <div class="template-card" data-template="${template.id}">
+                <div class="template-icon ${template.icon}">
+                    ${iconSvgs[template.icon] || iconSvgs['custom']}
+                </div>
+                <div class="template-content">
+                    <h3 class="template-name">${template.name}</h3>
+                    <p class="template-description">${template.description}</p>
+                    <div class="template-meta">
+                        <span class="template-tasks">${template.taskCount || ''}</span>
+                        ${template.isBuiltIn ? '<span class="template-badge">Built-in</span>' : '<span class="template-badge custom">Custom</span>'}
+                    </div>
+                </div>
+                <div class="template-actions">
+                    <button class="btn btn-outline btn-sm" onclick="app.showTemplateModal('${template.id}')">View</button>
+                    ${!template.isBuiltIn ? `
+                        <button class="btn btn-outline btn-sm" onclick="app.showEditTemplateModal('${template.id}')">Edit</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.deleteTemplate('${template.id}')">Delete</button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    showAddTemplateModal() {
+        const modal = document.getElementById('modal');
+        modal.innerHTML = `
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h3>Create Event Template</h3>
+                    <button class="modal-close" onclick="app.closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-template-form">
+                        <div class="form-group">
+                            <label>Template Name <span class="required">*</span></label>
+                            <input type="text" id="template-name" required placeholder="e.g., Community Concert">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="template-description" rows="2" placeholder="Brief description of when to use this template"></textarea>
+                        </div>
+                        
+                        <div class="template-phases-editor" id="template-phases-editor">
+                            <h4>Task Phases</h4>
+                            <p class="help-text">Add phases and tasks that will be included in events using this template.</p>
+                            
+                            <div id="phases-container">
+                                <div class="phase-item" data-phase-index="0">
+                                    <div class="phase-header">
+                                        <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Planning)" value="Planning">
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(0)">Remove Phase</button>
+                                    </div>
+                                    <div class="phase-tasks-list">
+                                        <div class="task-input-row">
+                                            <input type="text" class="task-input" placeholder="Task description">
+                                            <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(0)">+ Add Task</button>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.saveTemplate()">Create Template</button>
+                </div>
+            </div>
+        `;
+        modal.classList.add('active');
+    }
+    
+    showEditTemplateModal(templateId) {
+        const template = this.data.templates?.find(t => t.id === templateId);
+        if (!template) {
+            this.showToast('Template not found', 'error');
+            return;
+        }
+        
+        const phasesHtml = (template.tasks || []).map((phase, pIndex) => `
+            <div class="phase-item" data-phase-index="${pIndex}">
+                <div class="phase-header">
+                    <input type="text" class="phase-name-input" placeholder="Phase name" value="${phase.phase || ''}">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(${pIndex})">Remove Phase</button>
+                </div>
+                <div class="phase-tasks-list">
+                    ${(phase.items || []).map(task => `
+                        <div class="task-input-row">
+                            <input type="text" class="task-input" placeholder="Task description" value="${task}">
+                            <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(${pIndex})">+ Add Task</button>
+            </div>
+        `).join('');
+        
+        const modal = document.getElementById('modal');
+        modal.innerHTML = `
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h3>Edit Template</h3>
+                    <button class="modal-close" onclick="app.closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-template-form">
+                        <input type="hidden" id="template-id" value="${templateId}">
+                        <div class="form-group">
+                            <label>Template Name <span class="required">*</span></label>
+                            <input type="text" id="template-name" required value="${template.name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="template-description" rows="2">${template.description || ''}</textarea>
+                        </div>
+                        
+                        <div class="template-phases-editor" id="template-phases-editor">
+                            <h4>Task Phases</h4>
+                            <p class="help-text">Add phases and tasks that will be included in events using this template.</p>
+                            
+                            <div id="phases-container">
+                                ${phasesHtml || `
+                                    <div class="phase-item" data-phase-index="0">
+                                        <div class="phase-header">
+                                            <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Planning)" value="">
+                                            <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(0)">Remove Phase</button>
+                                        </div>
+                                        <div class="phase-tasks-list">
+                                            <div class="task-input-row">
+                                                <input type="text" class="task-input" placeholder="Task description">
+                                                <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(0)">+ Add Task</button>
+                                    </div>
+                                `}
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.updateTemplate()">Save Changes</button>
+                </div>
+            </div>
+        `;
+        modal.classList.add('active');
+    }
+    
+    addPhase() {
+        const container = document.getElementById('phases-container');
+        const phaseIndex = container.querySelectorAll('.phase-item').length;
+        
+        const phaseHtml = `
+            <div class="phase-item" data-phase-index="${phaseIndex}">
+                <div class="phase-header">
+                    <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Logistics)">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(${phaseIndex})">Remove Phase</button>
+                </div>
+                <div class="phase-tasks-list">
+                    <div class="task-input-row">
+                        <input type="text" class="task-input" placeholder="Task description">
+                        <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(${phaseIndex})">+ Add Task</button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', phaseHtml);
+    }
+    
+    removePhase(index) {
+        const phase = document.querySelector(`.phase-item[data-phase-index="${index}"]`);
+        if (phase && document.querySelectorAll('.phase-item').length > 1) {
+            phase.remove();
+        } else {
+            this.showToast('Must have at least one phase', 'error');
+        }
+    }
+    
+    addTaskToPhase(phaseIndex) {
+        const phase = document.querySelector(`.phase-item[data-phase-index="${phaseIndex}"]`);
+        if (!phase) return;
+        
+        const tasksList = phase.querySelector('.phase-tasks-list');
+        const taskHtml = `
+            <div class="task-input-row">
+                <input type="text" class="task-input" placeholder="Task description">
+                <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+            </div>
+        `;
+        tasksList.insertAdjacentHTML('beforeend', taskHtml);
+    }
+    
+    removeTask(button) {
+        const row = button.closest('.task-input-row');
+        const tasksList = row.closest('.phase-tasks-list');
+        if (tasksList.querySelectorAll('.task-input-row').length > 1) {
+            row.remove();
+        }
+    }
+    
+    async saveTemplate() {
+        const name = document.getElementById('template-name').value.trim();
+        const description = document.getElementById('template-description').value.trim();
+        
+        if (!name) {
+            this.showToast('Please enter a template name', 'error');
+            return;
+        }
+        
+        // Gather phases and tasks
+        const tasks = [];
+        document.querySelectorAll('.phase-item').forEach((phase, order) => {
+            const phaseName = phase.querySelector('.phase-name-input').value.trim();
+            const items = [];
+            phase.querySelectorAll('.task-input').forEach(input => {
+                const task = input.value.trim();
+                if (task) items.push(task);
+            });
+            
+            if (phaseName && items.length > 0) {
+                tasks.push({ phase: phaseName, order: order + 1, items });
+            }
+        });
+        
+        if (tasks.length === 0) {
+            this.showToast('Please add at least one phase with tasks', 'error');
+            return;
+        }
+        
+        try {
+            await DatabaseService.addTemplate({
+                name,
+                description,
+                tasks
+            });
+            
+            await this.loadAllData();
+            this.renderTemplates();
+            this.closeModal();
+            this.showToast('Template created successfully', 'success');
+        } catch (error) {
+            console.error('Error creating template:', error);
+            this.showToast('Error creating template', 'error');
+        }
+    }
+    
+    async updateTemplate() {
+        const id = document.getElementById('template-id').value;
+        const name = document.getElementById('template-name').value.trim();
+        const description = document.getElementById('template-description').value.trim();
+        
+        if (!name) {
+            this.showToast('Please enter a template name', 'error');
+            return;
+        }
+        
+        // Gather phases and tasks
+        const tasks = [];
+        document.querySelectorAll('.phase-item').forEach((phase, order) => {
+            const phaseName = phase.querySelector('.phase-name-input').value.trim();
+            const items = [];
+            phase.querySelectorAll('.task-input').forEach(input => {
+                const task = input.value.trim();
+                if (task) items.push(task);
+            });
+            
+            if (phaseName && items.length > 0) {
+                tasks.push({ phase: phaseName, order: order + 1, items });
+            }
+        });
+        
+        if (tasks.length === 0) {
+            this.showToast('Please add at least one phase with tasks', 'error');
+            return;
+        }
+        
+        try {
+            await DatabaseService.updateTemplate(id, {
+                name,
+                description,
+                tasks
+            });
+            
+            await this.loadAllData();
+            this.renderTemplates();
+            this.closeModal();
+            this.showToast('Template updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating template:', error);
+            this.showToast('Error updating template', 'error');
+        }
+    }
+    
+    async deleteTemplate(templateId) {
+        const template = this.data.templates?.find(t => t.id === templateId);
+        if (!template) return;
+        
+        if (!confirm(`Are you sure you want to delete "${template.name}"? This cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            await DatabaseService.deleteTemplate(templateId);
+            await this.loadAllData();
+            this.renderTemplates();
+            this.showToast('Template deleted', 'success');
+        } catch (error) {
+            console.error('Error deleting template:', error);
+            this.showToast('Error deleting template', 'error');
+        }
+    }
+
+    // ========================================
     // Settings Rendering
     // ========================================
 
     renderSettings() {
         // Render term dates
         const termContainer = document.getElementById('term-dates-list');
-        if (termContainer && this.data.settings?.termDates) {
-            const terms = this.data.settings.termDates;
+        if (termContainer) {
+            const terms = this.data.settings?.termDates || {
+                term1: { start: '2026-02-02', end: '2026-04-17' },
+                term2: { start: '2026-05-04', end: '2026-07-10' },
+                term3: { start: '2026-07-27', end: '2026-10-02' },
+                term4: { start: '2026-10-19', end: '2026-12-11' }
+            };
             termContainer.innerHTML = Object.entries(terms).map(([term, dates]) => `
-                <div class="term-date-item">
+                <div class="term-date-item" data-term="${term}">
                     <span class="term-name">${term.replace('term', 'Term ')}</span>
                     <span class="term-range">${this.formatDate(dates.start)} — ${this.formatDate(dates.end)}</span>
+                    <button class="btn btn-outline btn-sm" onclick="app.showEditTermModal('${term}')">Edit</button>
                 </div>
-            `).join('');
+            `).join('') + `
+                <div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+                    <button class="btn btn-outline" onclick="app.showEditAllTermsModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        Edit All Term Dates
+                    </button>
+                </div>
+            `;
         }
         
         // Fill school settings
@@ -1180,8 +1567,65 @@ class App {
             document.getElementById('setting-academy-name').value = this.data.settings.academyName;
         }
         
+        // Render users
+        this.renderUsers();
+        
         // Render categories
         this.renderCategories();
+    }
+    
+    renderUsers() {
+        const container = document.getElementById('users-list');
+        if (!container) return;
+        
+        // Get users from database, fallback to current logged in user
+        const users = this.data.users || [];
+        
+        // If no users in database, show current logged in user
+        if (users.length === 0) {
+            const currentUser = this.user;
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="user-row">
+                        <div class="user-avatar admin">${this.getInitials(currentUser.displayName || currentUser.email)}</div>
+                        <div class="user-info">
+                            <span class="user-name">${currentUser.displayName || 'Current User'}</span>
+                            <span class="user-email">${currentUser.email}</span>
+                        </div>
+                        <span class="user-role role-admin">Admin</span>
+                        <span class="user-badge">Current User</span>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '<p style="padding: var(--spacing-md); color: var(--color-text-secondary);">No users configured.</p>';
+            }
+            return;
+        }
+        
+        container.innerHTML = users.map(user => `
+            <div class="user-row" data-id="${user.id}">
+                <div class="user-avatar ${user.role || 'staff'}">${this.getInitials(user.name)}</div>
+                <div class="user-info">
+                    <span class="user-name">${user.name}</span>
+                    <span class="user-email">${user.email}</span>
+                </div>
+                <span class="user-role role-${user.role || 'staff'}">${this.formatRole(user.role || 'staff')}</span>
+                <div class="user-actions">
+                    <button class="btn btn-outline btn-sm" onclick="app.showEditUserModal('${user.id}')">Edit</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.deleteUser('${user.id}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    formatRole(role) {
+        const roleMap = {
+            'admin': 'Admin',
+            'staff': 'Staff',
+            'tutor': 'Tutor',
+            'viewer': 'View Only'
+        };
+        return roleMap[role] || role;
     }
     
     renderCategories() {
@@ -1267,6 +1711,372 @@ class App {
         this.data.settings = { ...this.data.settings, categories };
         this.renderCategories();
         this.showToast('Categories updated', 'success');
+    }
+    
+    // ========================================
+    // User Management
+    // ========================================
+    
+    showAddUserModal() {
+        const modal = document.getElementById('modal');
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Portal User</h3>
+                    <button class="modal-close" onclick="app.closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-user-form">
+                        <div class="form-group">
+                            <label>Full Name <span class="required">*</span></label>
+                            <input type="text" id="user-name" required placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span class="required">*</span></label>
+                            <input type="email" id="user-email" required placeholder="Enter email address">
+                        </div>
+                        <div class="form-group">
+                            <label>Role <span class="required">*</span></label>
+                            <select id="user-role" required>
+                                <option value="admin">Admin - Full access</option>
+                                <option value="staff" selected>Staff - Can manage students & events</option>
+                                <option value="tutor">Tutor - Can view assigned students</option>
+                                <option value="viewer">View Only - Read-only access</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone (optional)</label>
+                            <input type="tel" id="user-phone" placeholder="Enter phone number">
+                        </div>
+                        <div class="form-group">
+                            <label>Notes (optional)</label>
+                            <textarea id="user-notes" rows="2" placeholder="Any notes about this user"></textarea>
+                        </div>
+                        <p class="help-text" style="margin-top: var(--spacing-md); padding: var(--spacing-sm); background: var(--color-surface); border-radius: var(--radius-sm);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                            Note: This creates a portal user record. For login access, the user must also be added to Firebase Authentication separately.
+                        </p>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.saveUser()">Add User</button>
+                </div>
+            </div>
+        `;
+        modal.classList.add('active');
+    }
+    
+    showEditUserModal(userId) {
+        const user = this.data.users?.find(u => u.id === userId);
+        if (!user) {
+            this.showToast('User not found', 'error');
+            return;
+        }
+        
+        const modal = document.getElementById('modal');
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit User</h3>
+                    <button class="modal-close" onclick="app.closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-user-form">
+                        <input type="hidden" id="edit-user-id" value="${user.id}">
+                        <div class="form-group">
+                            <label>Full Name <span class="required">*</span></label>
+                            <input type="text" id="user-name" required value="${user.name || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span class="required">*</span></label>
+                            <input type="email" id="user-email" required value="${user.email || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Role <span class="required">*</span></label>
+                            <select id="user-role" required>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin - Full access</option>
+                                <option value="staff" ${user.role === 'staff' ? 'selected' : ''}>Staff - Can manage students & events</option>
+                                <option value="tutor" ${user.role === 'tutor' ? 'selected' : ''}>Tutor - Can view assigned students</option>
+                                <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>View Only - Read-only access</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="user-phone" value="${user.phone || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea id="user-notes" rows="2">${user.notes || ''}</textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.updateUser()">Save Changes</button>
+                </div>
+            </div>
+        `;
+        modal.classList.add('active');
+    }
+    
+    async saveUser() {
+        const name = document.getElementById('user-name').value.trim();
+        const email = document.getElementById('user-email').value.trim();
+        const role = document.getElementById('user-role').value;
+        const phone = document.getElementById('user-phone').value.trim();
+        const notes = document.getElementById('user-notes').value.trim();
+        
+        if (!name || !email) {
+            this.showToast('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        // Check if email already exists
+        const existingUser = this.data.users?.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (existingUser) {
+            this.showToast('A user with this email already exists', 'error');
+            return;
+        }
+        
+        try {
+            await DatabaseService.addUser({
+                name,
+                email,
+                role,
+                phone,
+                notes,
+                active: true
+            });
+            
+            await this.loadAllData();
+            this.renderUsers();
+            this.closeModal();
+            this.showToast('User added successfully', 'success');
+        } catch (error) {
+            console.error('Error adding user:', error);
+            this.showToast('Error adding user', 'error');
+        }
+    }
+    
+    async updateUser() {
+        const id = document.getElementById('edit-user-id').value;
+        const name = document.getElementById('user-name').value.trim();
+        const email = document.getElementById('user-email').value.trim();
+        const role = document.getElementById('user-role').value;
+        const phone = document.getElementById('user-phone').value.trim();
+        const notes = document.getElementById('user-notes').value.trim();
+        
+        if (!name || !email) {
+            this.showToast('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        // Check if email already exists (excluding current user)
+        const existingUser = this.data.users?.find(u => u.email.toLowerCase() === email.toLowerCase() && u.id !== id);
+        if (existingUser) {
+            this.showToast('A user with this email already exists', 'error');
+            return;
+        }
+        
+        try {
+            await DatabaseService.updateUser(id, {
+                name,
+                email,
+                role,
+                phone,
+                notes
+            });
+            
+            await this.loadAllData();
+            this.renderUsers();
+            this.closeModal();
+            this.showToast('User updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating user:', error);
+            this.showToast('Error updating user', 'error');
+        }
+    }
+    
+    async deleteUser(userId) {
+        const user = this.data.users?.find(u => u.id === userId);
+        if (!user) return;
+        
+        if (!confirm(`Are you sure you want to delete ${user.name}? This cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            await DatabaseService.deleteUser(userId);
+            await this.loadAllData();
+            this.renderUsers();
+            this.showToast('User deleted', 'success');
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            this.showToast('Error deleting user', 'error');
+        }
+    }
+    
+    // ========================================
+    // Term Dates Management
+    // ========================================
+    
+    showEditTermModal(termKey) {
+        const terms = this.data.settings?.termDates || {};
+        const term = terms[termKey] || { start: '', end: '' };
+        const termNum = termKey.replace('term', '');
+        
+        const modal = document.getElementById('modal');
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit Term ${termNum} Dates</h3>
+                    <button class="modal-close" onclick="app.closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-term-form">
+                        <input type="hidden" id="term-key" value="${termKey}">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Start Date <span class="required">*</span></label>
+                                <input type="date" id="term-start" required value="${term.start || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>End Date <span class="required">*</span></label>
+                                <input type="date" id="term-end" required value="${term.end || ''}">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.saveTermDates()">Save</button>
+                </div>
+            </div>
+        `;
+        modal.classList.add('active');
+    }
+    
+    showEditAllTermsModal() {
+        const terms = this.data.settings?.termDates || {
+            term1: { start: '2026-02-02', end: '2026-04-17' },
+            term2: { start: '2026-05-04', end: '2026-07-10' },
+            term3: { start: '2026-07-27', end: '2026-10-02' },
+            term4: { start: '2026-10-19', end: '2026-12-11' }
+        };
+        
+        const modal = document.getElementById('modal');
+        modal.innerHTML = `
+            <div class="modal-content modal-lg">
+                <div class="modal-header">
+                    <h3>Edit Term Dates</h3>
+                    <button class="modal-close" onclick="app.closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-all-terms-form">
+                        <div class="term-dates-grid">
+                            ${[1, 2, 3, 4].map(num => `
+                                <div class="term-date-edit-row">
+                                    <h4>Term ${num}</h4>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>Start Date</label>
+                                            <input type="date" id="term${num}-start" value="${terms[`term${num}`]?.start || ''}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>End Date</label>
+                                            <input type="date" id="term${num}-end" value="${terms[`term${num}`]?.end || ''}">
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p class="help-text" style="margin-top: var(--spacing-md);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                            Term dates are used to calculate lesson schedules and event planning.
+                        </p>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.saveAllTermDates()">Save All</button>
+                </div>
+            </div>
+        `;
+        modal.classList.add('active');
+    }
+    
+    async saveTermDates() {
+        const termKey = document.getElementById('term-key').value;
+        const start = document.getElementById('term-start').value;
+        const end = document.getElementById('term-end').value;
+        
+        if (!start || !end) {
+            this.showToast('Please enter both start and end dates', 'error');
+            return;
+        }
+        
+        if (new Date(start) >= new Date(end)) {
+            this.showToast('End date must be after start date', 'error');
+            return;
+        }
+        
+        try {
+            const termDates = this.data.settings?.termDates || {};
+            termDates[termKey] = { start, end };
+            
+            await DatabaseService.update('settings', 'general', { termDates });
+            this.data.settings = { ...this.data.settings, termDates };
+            
+            this.renderSettings();
+            this.closeModal();
+            this.showToast('Term dates updated', 'success');
+        } catch (error) {
+            console.error('Error saving term dates:', error);
+            this.showToast('Error saving term dates', 'error');
+        }
+    }
+    
+    async saveAllTermDates() {
+        const termDates = {};
+        let hasError = false;
+        
+        for (let i = 1; i <= 4; i++) {
+            const start = document.getElementById(`term${i}-start`).value;
+            const end = document.getElementById(`term${i}-end`).value;
+            
+            if (start && end) {
+                if (new Date(start) >= new Date(end)) {
+                    this.showToast(`Term ${i}: End date must be after start date`, 'error');
+                    hasError = true;
+                    break;
+                }
+                termDates[`term${i}`] = { start, end };
+            } else if (start || end) {
+                this.showToast(`Term ${i}: Please enter both start and end dates`, 'error');
+                hasError = true;
+                break;
+            }
+        }
+        
+        if (hasError) return;
+        
+        if (Object.keys(termDates).length === 0) {
+            this.showToast('Please enter at least one term date', 'error');
+            return;
+        }
+        
+        try {
+            await DatabaseService.update('settings', 'general', { termDates });
+            this.data.settings = { ...this.data.settings, termDates };
+            
+            this.renderSettings();
+            this.closeModal();
+            this.showToast('All term dates updated', 'success');
+        } catch (error) {
+            console.error('Error saving term dates:', error);
+            this.showToast('Error saving term dates', 'error');
+        }
     }
 
     // ========================================
@@ -1693,15 +2503,28 @@ class App {
         ).join('');
 
         const currentTemplate = event.template || event.templateType || '';
-        const templates = [
+        const builtInTemplates = [
             { value: 'school-during', label: 'School (During Hours)' },
             { value: 'school-after', label: 'School (After Hours)' },
             { value: 'offsite-during', label: 'Offsite (During Hours)' },
             { value: 'offsite-after', label: 'Offsite (After Hours)' }
         ];
-        const templateOptions = templates.map(t => 
-            `<option value="${t.value}" ${t.value === currentTemplate ? 'selected' : ''}>${t.label}</option>`
-        ).join('');
+        const customTemplates = this.data.templates || [];
+        
+        const templateOptions = `
+            <optgroup label="Built-in Templates">
+                ${builtInTemplates.map(t => 
+                    `<option value="${t.value}" ${t.value === currentTemplate ? 'selected' : ''}>${t.label}</option>`
+                ).join('')}
+            </optgroup>
+            ${customTemplates.length > 0 ? `
+                <optgroup label="Custom Templates">
+                    ${customTemplates.map(t => 
+                        `<option value="${t.id}" ${t.id === currentTemplate ? 'selected' : ''}>${t.name}</option>`
+                    ).join('')}
+                </optgroup>
+            ` : ''}
+        `;
 
         // Groups checkboxes
         const eventGroupIds = event.groupIds || [];
@@ -1842,7 +2665,8 @@ class App {
 
     // Event Task Templates - tasks with days before event, organized by phase
     getEventTemplateTasks(templateType) {
-        const templates = {
+        // Built-in templates
+        const builtInTemplates = {
             'school-during': [
                 { phase: 'Planning', name: 'Book venue/room', daysBefore: 28, assignTo: 'coordinator' },
                 { phase: 'Planning', name: 'Create event on school calendar', daysBefore: 21, assignTo: 'coordinator' },
@@ -1888,7 +2712,35 @@ class App {
                 { phase: 'Event Day', name: 'Event day - check roll', daysBefore: 0, assignTo: 'all' }
             ]
         };
-        return templates[templateType] || templates['school-during'];
+        
+        // Check built-in templates first
+        if (builtInTemplates[templateType]) {
+            return builtInTemplates[templateType];
+        }
+        
+        // Check custom templates from database
+        const customTemplate = this.data.templates?.find(t => t.id === templateType);
+        if (customTemplate && customTemplate.tasks) {
+            // Convert custom template format to task list format
+            const tasks = [];
+            customTemplate.tasks.forEach((phase, phaseIndex) => {
+                // Calculate default daysBefore based on phase order (spread across 4 weeks)
+                const baseDays = Math.max(0, (customTemplate.tasks.length - phaseIndex) * 7);
+                
+                (phase.items || []).forEach((taskName, taskIndex) => {
+                    tasks.push({
+                        phase: phase.phase,
+                        name: taskName,
+                        daysBefore: Math.max(0, baseDays - taskIndex),
+                        assignTo: 'coordinator'
+                    });
+                });
+            });
+            return tasks;
+        }
+        
+        // Default fallback
+        return builtInTemplates['school-during'];
     }
 
     showEventTasksModal(eventId) {
@@ -2821,6 +3673,22 @@ class App {
             </label>`
         ).join('');
 
+        // Build template options including custom templates
+        const customTemplates = this.data.templates || [];
+        const templateOptions = `
+            <optgroup label="Built-in Templates">
+                <option value="school-during">School (During Hours)</option>
+                <option value="school-after">School (After Hours)</option>
+                <option value="offsite-during">Offsite (During Hours)</option>
+                <option value="offsite-after">Offsite (After Hours)</option>
+            </optgroup>
+            ${customTemplates.length > 0 ? `
+                <optgroup label="Custom Templates">
+                    ${customTemplates.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                </optgroup>
+            ` : ''}
+        `;
+
         const content = `
             <form id="add-event-form" class="modal-form">
                 <div class="form-group">
@@ -2872,10 +3740,7 @@ class App {
                     <div class="form-group">
                         <label>Template</label>
                         <select name="template">
-                            <option value="school-during">School (During Hours)</option>
-                            <option value="school-after">School (After Hours)</option>
-                            <option value="offsite-during">Offsite (During Hours)</option>
-                            <option value="offsite-after">Offsite (After Hours)</option>
+                            ${templateOptions}
                         </select>
                     </div>
                 </div>
@@ -3272,8 +4137,21 @@ class App {
     }
 
     showTemplateModal(templateId) {
-        const template = EventTemplates[templateId];
-        if (!template) return;
+        // First check built-in templates
+        let template = EventTemplates[templateId];
+        
+        // If not found in built-in, check custom templates from database
+        if (!template) {
+            const customTemplate = this.data.templates?.find(t => t.id === templateId);
+            if (customTemplate) {
+                template = customTemplate;
+            }
+        }
+        
+        if (!template) {
+            this.showToast('Template not found', 'error');
+            return;
+        }
         
         const content = `
             <div class="template-detail">
@@ -3412,20 +4290,49 @@ class App {
 
     handleSearch(type, query) {
         // Implement search filtering
-        query = query.toLowerCase();
+        query = query.toLowerCase().trim();
         
-        if (type === 'lessons') {
-            const tbody = document.getElementById('lessons-body');
-            tbody.querySelectorAll('tr').forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
-        } else if (type === 'students') {
-            const tbody = document.getElementById('students-body');
-            tbody.querySelectorAll('tr').forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
+        // Table-based pages
+        const tableTypes = {
+            'lessons': 'lessons-body',
+            'students': 'students-body',
+            'events': 'events-body',
+            'instruments': 'instruments-body',
+            'hires': 'hires-body'
+        };
+        
+        if (tableTypes[type]) {
+            const tbody = document.getElementById(tableTypes[type]);
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(query) ? '' : 'none';
+                });
+            }
+            return;
+        }
+        
+        // Grid-based pages (tutors and groups)
+        if (type === 'tutors') {
+            const grid = document.getElementById('tutors-grid');
+            if (grid) {
+                grid.querySelectorAll('.tutor-card').forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(query) ? '' : 'none';
+                });
+            }
+            return;
+        }
+        
+        if (type === 'groups') {
+            const grid = document.getElementById('groups-grid');
+            if (grid) {
+                grid.querySelectorAll('.group-card').forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(query) ? '' : 'none';
+                });
+            }
+            return;
         }
     }
 

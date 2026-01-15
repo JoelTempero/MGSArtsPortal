@@ -618,6 +618,16 @@
                     </div>
                 </div>
 
+                <div class="page-toolbar">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" placeholder="Search staff..." id="tutors-search">
+                    </div>
+                </div>
+
                 <div class="tutors-grid" id="tutors-grid">
                     <!-- Populated by JS -->
                 </div>
@@ -641,6 +651,16 @@
                             </svg>
                             Add Event
                         </button>
+                    </div>
+                </div>
+
+                <div class="page-toolbar">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" placeholder="Search events..." id="events-search">
                     </div>
                 </div>
 
@@ -729,6 +749,16 @@
                     </div>
                 </div>
 
+                <div class="page-toolbar">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" placeholder="Search groups..." id="groups-search">
+                    </div>
+                </div>
+
                 <div class="groups-grid" id="groups-grid">
                     <!-- Populated by JS -->
                 </div>
@@ -752,6 +782,16 @@
                             </svg>
                             Add Instrument
                         </button>
+                    </div>
+                </div>
+
+                <div class="page-toolbar">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" placeholder="Search instruments..." id="instruments-search">
                     </div>
                 </div>
 
@@ -796,6 +836,16 @@
                             </svg>
                             New Hire
                         </button>
+                    </div>
+                </div>
+
+                <div class="page-toolbar">
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" placeholder="Search hires..." id="hires-search">
                     </div>
                 </div>
 
@@ -922,14 +972,13 @@
                         <h2 class="settings-section-title">Users</h2>
                         <div class="card">
                             <div class="users-list" id="users-list">
-                                <div class="user-row">
-                                    <div class="user-avatar admin">RH</div>
-                                    <div class="user-info">
-                                        <span class="user-name">Rhian Horn</span>
-                                        <span class="user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="483a6620273a260825212c2c242d3c2726663b2b20272724662632">[email&#160;protected]</a></span>
-                                    </div>
-                                    <span class="user-role role-admin">Admin</span>
-                                </div>
+                                <!-- Populated by JS -->
+                            </div>
+                            <div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px solid var(--color-border);">
+                                <button class="btn btn-primary" onclick="app.showAddUserModal()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                                    Add User
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -970,75 +1019,18 @@
                         <h1 class="page-title">Event Templates</h1>
                         <p class="page-subtitle">Pre-configured task checklists based on event type and location</p>
                     </div>
+                    <div class="page-header-actions">
+                        <button class="btn btn-primary" onclick="app.showAddTemplateModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Add Template
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="templates-grid" id="templates-grid">
-                    <div class="template-card" data-template="school-during">
-                        <div class="template-icon school">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                                <path d="M9 22V12h6v10"/>
-                            </svg>
-                        </div>
-                        <div class="template-content">
-                            <h3 class="template-name">School Performance During School Hours</h3>
-                            <p class="template-description">For performances held at school during the school day</p>
-                            <div class="template-meta">
-                                <span class="template-tasks">6 phases • 24 tasks</span>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="school-during">View Template</button>
-                    </div>
-
-                    <div class="template-card" data-template="school-after">
-                        <div class="template-icon evening">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-                            </svg>
-                        </div>
-                        <div class="template-content">
-                            <h3 class="template-name">School Performance After School Hours</h3>
-                            <p class="template-description">For performances held at school after the school day</p>
-                            <div class="template-meta">
-                                <span class="template-tasks">6 phases • 22 tasks</span>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="school-after">View Template</button>
-                    </div>
-
-                    <div class="template-card" data-template="offsite-during">
-                        <div class="template-icon offsite">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="10" r="3"/>
-                                <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 7 8 11.7z"/>
-                            </svg>
-                        </div>
-                        <div class="template-content">
-                            <h3 class="template-name">Offsite Performance During School Hours</h3>
-                            <p class="template-description">For performances held at external venues during school hours</p>
-                            <div class="template-meta">
-                                <span class="template-tasks">6 phases • 26 tasks</span>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="offsite-during">View Template</button>
-                    </div>
-
-                    <div class="template-card" data-template="offsite-after">
-                        <div class="template-icon offsite-evening">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </div>
-                        <div class="template-content">
-                            <h3 class="template-name">Offsite Performance After School Hours</h3>
-                            <p class="template-description">For performances held at external venues after school hours</p>
-                            <div class="template-meta">
-                                <span class="template-tasks">6 phases • 25 tasks</span>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline btn-sm" data-action="view-template" data-template-id="offsite-after">View Template</button>
-                    </div>
+                    <!-- Populated by JS -->
                 </div>
             </div>
         </main>

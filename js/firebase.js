@@ -393,6 +393,40 @@ const DatabaseService = {
         return this.delete('forms', id);
     },
 
+    // Users (portal access)
+    async getUsers() {
+        return this.getAll('users');
+    },
+
+    async addUser(userData) {
+        return this.add('users', userData);
+    },
+
+    async updateUser(id, userData) {
+        return this.update('users', id, userData);
+    },
+
+    async deleteUser(id) {
+        return this.delete('users', id);
+    },
+
+    // Templates (custom event templates)
+    async getTemplates() {
+        return this.getAll('templates');
+    },
+
+    async addTemplate(templateData) {
+        return this.add('templates', templateData);
+    },
+
+    async updateTemplate(id, templateData) {
+        return this.update('templates', id, templateData);
+    },
+
+    async deleteTemplate(id) {
+        return this.delete('templates', id);
+    },
+
     // ---- Batch Operations ----
 
     // Import all data (for seeding/restoring)
@@ -425,7 +459,7 @@ const DatabaseService = {
 
     // Export all data
     async exportAllData() {
-        const collections = ['students', 'tutors', 'lessons', 'events', 'eventTasks', 'groups', 'instruments', 'instrumentHires', 'lessonRequests', 'settings'];
+        const collections = ['students', 'tutors', 'lessons', 'events', 'eventTasks', 'groups', 'instruments', 'instrumentHires', 'lessonRequests', 'settings', 'forms', 'users'];
         const data = {};
 
         for (const collectionName of collections) {
