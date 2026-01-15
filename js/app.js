@@ -68,13 +68,16 @@ class App {
     async showApp() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-container').style.display = 'flex';
-        
+
         // Update user display
         this.updateUserDisplay();
-        
+
         // Load data
         await this.loadAllData();
-        
+
+        // Initialize Joel counter
+        this.initJoelCounter();
+
         // Render dashboard
         this.renderCurrentPage();
     }
@@ -83,14 +86,64 @@ class App {
         const user = this.currentUser;
         if (!user) return;
         
-        // Extract name from email for display
+        // Extract name from displayName or email for display
         const email = user.email || '';
-        const name = email.split('@')[0].split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
+        let name = user.displayName || email.split('@')[0].split('.').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(' ');
+
+        // If name is just initials like "R", try to get a better display name
+        const firstName = name.split(' ')[0];
+        const displayFirstName = firstName.length > 2 ? firstName : name;
+
         const initials = name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2);
-        
+
         document.getElementById('user-name').textContent = name;
         document.getElementById('user-avatar').textContent = initials;
-        document.getElementById('welcome-name').textContent = name.split(' ')[0];
+        document.getElementById('welcome-name').textContent = displayFirstName;
+    }
+
+    initJoelCounter() {
+        const JOEL_COUNTER_KEY = 'joelCounterData';
+        const countEl = document.getElementById('joel-day-count');
+        const resetBtn = document.getElementById('reset-joel-counter');
+
+        if (!countEl || !resetBtn) return;
+
+        // Get stored data or initialize
+        const getCounterData = () => {
+            const stored = localStorage.getItem(JOEL_COUNTER_KEY);
+            if (stored) {
+                return JSON.parse(stored);
+            }
+            return { startDate: new Date().toISOString().split('T')[0], count: 0 };
+        };
+
+        const saveCounterData = (data) => {
+            localStorage.setItem(JOEL_COUNTER_KEY, JSON.stringify(data));
+        };
+
+        const updateDisplay = () => {
+            const data = getCounterData();
+            const startDate = new Date(data.startDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            startDate.setHours(0, 0, 0, 0);
+
+            // Calculate days since start date
+            const diffTime = today - startDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            countEl.textContent = Math.max(0, diffDays);
+        };
+
+        // Initial display update
+        updateDisplay();
+
+        // Reset button handler
+        resetBtn.addEventListener('click', () => {
+            saveCounterData({ startDate: new Date().toISOString().split('T')[0], count: 0 });
+            updateDisplay();
+            this.showToast('Joel counter reset!', 'success');
+        });
     }
 
     async loadAllData() {
@@ -156,7 +209,17 @@ class App {
         document.getElementById('hamburger-btn')?.addEventListener('click', () => this.toggleSidebar(true));
         document.getElementById('sidebar-close')?.addEventListener('click', () => this.toggleSidebar(false));
         document.getElementById('sidebar-overlay')?.addEventListener('click', () => this.toggleSidebar(false));
-        
+
+        // Mobile bottom navigation
+        document.querySelectorAll('.mobile-bottom-nav .bottom-nav-btn[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const page = btn.dataset.page;
+                this.navigateTo(page);
+                this.updateBottomNavActive(page);
+            });
+        });
+        document.getElementById('mobile-hamburger')?.addEventListener('click', () => this.toggleSidebar(true));
+
         // Theme toggle
         document.querySelectorAll('#theme-toggle, #theme-toggle-mobile').forEach(btn => {
             btn.addEventListener('click', () => this.toggleTheme());
@@ -288,17 +351,20 @@ class App {
         // Update active nav item
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
-        
+
         // Show page
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(`page-${page}`)?.classList.add('active');
-        
+
         // Close mobile sidebar
         this.toggleSidebar(false);
-        
+
+        // Update mobile bottom nav
+        this.updateBottomNavActive(page);
+
         // Store current page
         this.currentPage = page;
-        
+
         // Render page content
         this.renderCurrentPage();
     }
@@ -366,7 +432,7 @@ class App {
     toggleSidebar(open) {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
-        
+
         if (open) {
             sidebar.classList.add('open');
             overlay.classList.add('visible');
@@ -374,6 +440,16 @@ class App {
             sidebar.classList.remove('open');
             overlay.classList.remove('visible');
         }
+    }
+
+    updateBottomNavActive(page) {
+        // Update mobile bottom nav active state
+        document.querySelectorAll('.mobile-bottom-nav .bottom-nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.page === page) {
+                btn.classList.add('active');
+            }
+        });
     }
 
     // ========================================
@@ -2485,6 +2561,9 @@ class App {
                 break;
             case 'add-form':
                 this.showAddFormModal();
+                break;
+            case 'notify-staff':
+                this.showNotifyStaffModal();
                 break;
         }
     }
@@ -5802,6 +5881,93 @@ class App {
         let notifyFn = null;
         let entity = null;
         let staffList = [];
+
+        // If called without type (from quick actions), show custom notification form
+        if (!type) {
+            const allStaff = this.data.tutors || [];
+            const staffWithEmail = allStaff.filter(s => s.email);
+
+            const staffOptions = allStaff.map(s => `
+                <option value="${s.id}" ${!s.email ? 'disabled' : ''}>${s.name}${!s.email ? ' (no email)' : ''}</option>
+            `).join('');
+
+            const emailConfigured = EmailService.isConfigured();
+            const emailMethodMessage = emailConfigured
+                ? `<span class="email-method native">Email will be sent directly from the app.</span>`
+                : `<span class="email-method mailto">This will open your email client with a pre-filled message.</span>`;
+
+            content = `
+                <div class="notify-staff-modal">
+                    <div class="form-group">
+                        <label>Select Staff Member</label>
+                        <select id="notify-staff-select" class="form-control">
+                            <option value="">-- Select staff member --</option>
+                            ${staffOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="notify-staff-subject" class="form-control" placeholder="Email subject">
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea id="notify-staff-message" class="form-control" rows="5" placeholder="Type your message here..."></textarea>
+                    </div>
+                    <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
+                        ${emailMethodMessage}
+                    </p>
+                </div>
+            `;
+
+            this.showModal('Notify Staff', content, async () => {
+                const staffId = document.getElementById('notify-staff-select').value;
+                const subject = document.getElementById('notify-staff-subject').value;
+                const message = document.getElementById('notify-staff-message').value;
+
+                if (!staffId) {
+                    this.showToast('Please select a staff member', 'warning');
+                    return;
+                }
+                if (!subject.trim()) {
+                    this.showToast('Please enter a subject', 'warning');
+                    return;
+                }
+                if (!message.trim()) {
+                    this.showToast('Please enter a message', 'warning');
+                    return;
+                }
+
+                const staff = this.data.tutors.find(t => t.id === staffId);
+                if (!staff || !staff.email) {
+                    this.showToast('Selected staff has no email', 'error');
+                    return;
+                }
+
+                this.closeModal();
+
+                if (emailConfigured) {
+                    const result = await EmailService.send({
+                        to_email: staff.email,
+                        to_name: staff.name,
+                        subject: subject,
+                        message: message,
+                        type: 'general'
+                    });
+                    if (result.success) {
+                        this.showToast('Email sent successfully!', 'success');
+                    } else {
+                        this.showToast('Failed to send email', 'error');
+                    }
+                } else {
+                    const mailtoSubject = encodeURIComponent(subject);
+                    const mailtoBody = encodeURIComponent(message);
+                    window.open(`mailto:${staff.email}?subject=${mailtoSubject}&body=${mailtoBody}`, '_blank');
+                    this.showToast('Email draft opened', 'info');
+                }
+            });
+            document.getElementById('modal-save').textContent = 'Send Email';
+            return;
+        }
 
         if (type === 'event') {
             entity = this.data.events.find(e => e.id === id);
