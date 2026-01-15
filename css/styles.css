@@ -5196,3 +5196,41 @@ button, a, .nav-item {
     height: 18px;
 }
 
+/* ========================================
+   CSV IMPORT/EXPORT
+   ======================================== */
+
+.csv-preview {
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    overflow-x: auto;
+}
+
+.csv-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.csv-preview-table th,
+.csv-preview-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    text-align: left;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.csv-preview-table th {
+    background: var(--color-bg-secondary);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.csv-preview-table td {
+    background: var(--color-bg-card);
+}
+
