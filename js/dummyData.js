@@ -293,7 +293,10 @@ const DummyData = {
     }
 };
 
-// Export for use
+// Export for ES6 modules
+export { DummyData };
+
+// Export for CommonJS
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = DummyData;
 }

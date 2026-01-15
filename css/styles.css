@@ -1577,6 +1577,19 @@ input, textarea, select {
     transform: translateX(4px);
 }
 
+/* Clickable items */
+.clickable {
+    cursor: pointer;
+}
+
+.clickable:hover {
+    background: var(--color-bg-elevated) !important;
+}
+
+tr.clickable:hover td {
+    background: var(--color-bg-elevated);
+}
+
 .event-info {
     display: flex;
     flex-direction: column;
