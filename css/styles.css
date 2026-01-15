@@ -4152,3 +4152,319 @@ button, a, .nav-item {
     position: relative;
 }
 
+/* ========================================
+   Event Progress Indicators
+   ======================================== */
+
+.event-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.event-name-cell strong {
+    font-weight: 600;
+}
+
+.view-tasks-btn {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    opacity: 0.8;
+    transition: var(--transition-fast);
+}
+
+.view-tasks-btn:hover {
+    opacity: 1;
+}
+
+.event-progress-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.progress-bar-mini {
+    width: 60px;
+    height: 6px;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progress-bar-mini .progress-fill {
+    height: 100%;
+    background: var(--color-success);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+}
+
+.event-progress-indicator.has-overdue .progress-bar-mini .progress-fill {
+    background: var(--color-warning);
+}
+
+.event-progress-indicator.complete .progress-bar-mini .progress-fill {
+    background: var(--color-success);
+}
+
+.event-progress-indicator .progress-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    min-width: 35px;
+}
+
+.event-progress-indicator.has-overdue .progress-text {
+    color: var(--color-warning);
+}
+
+.event-progress-indicator.complete .progress-text {
+    color: var(--color-success);
+}
+
+.overdue-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.overdue-badge svg {
+    stroke: var(--color-danger);
+}
+
+/* ========================================
+   Event Details Page
+   ======================================== */
+
+.event-details-header {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--color-border);
+}
+
+.event-details-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-primary);
+}
+
+.event-details-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+}
+
+.event-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.event-meta-item svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--color-gold);
+}
+
+.event-meta-item strong {
+    color: var(--color-text-primary);
+}
+
+.event-staff-avatars {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin-left: auto;
+}
+
+.event-staff-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+    border: 2px solid var(--color-bg-card);
+    margin-left: -8px;
+}
+
+.event-staff-avatar:first-child {
+    margin-left: 0;
+}
+
+.event-tasks-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.event-tasks-phase {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--color-border);
+}
+
+.event-tasks-phase-header {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.event-task-row {
+    display: grid;
+    grid-template-columns: 1fr 150px 120px 100px;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+    gap: var(--spacing-md);
+}
+
+.event-task-row:last-child {
+    border-bottom: none;
+}
+
+.event-task-name {
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.event-task-name.overdue {
+    color: var(--color-danger);
+}
+
+.event-task-name .overdue-label {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    margin-left: var(--spacing-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.event-task-assigned {
+    display: flex;
+    justify-content: center;
+}
+
+.event-task-date {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+
+.event-task-date.overdue {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.event-task-status {
+    display: flex;
+    justify-content: center;
+}
+
+.status-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.status-icon.pending {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+}
+
+.status-icon.pending:hover {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-icon.completed {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-icon.overdue {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.event-task-header-row {
+    display: grid;
+    grid-template-columns: 1fr 150px 120px 100px;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    gap: var(--spacing-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Description Notes Box */
+.event-description-box {
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.event-description-box h4 {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.event-description-box p {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+/* Back button */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    text-decoration: none;
+    margin-bottom: var(--spacing-md);
+    transition: var(--transition-fast);
+}
+
+.back-link:hover {
+    color: var(--color-gold);
+}
+
+.back-link svg {
+    width: 18px;
+    height: 18px;
+}
+

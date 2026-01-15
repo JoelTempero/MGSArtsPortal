@@ -320,6 +320,9 @@ class App {
             case 'settings':
                 this.renderSettings();
                 break;
+            case 'event-details':
+                this.renderEventDetails();
+                break;
         }
     }
 
@@ -706,40 +709,78 @@ class App {
         
         tbody.innerHTML = this.data.events.map(event => {
             const templateLabel = templateLabels[event.template] || event.template || '—';
-            // Calculate task progress if tasks exist
-            const tasks = event.tasks || [];
-            const completedTasks = tasks.filter(t => t.completed).length;
-            const overdueTasks = tasks.filter(t => !t.completed && new Date(t.dueDate) < new Date()).length;
-            const taskStatus = tasks.length > 0 
-                ? `<span class="task-progress ${overdueTasks > 0 ? 'has-overdue' : ''}">${completedTasks}/${tasks.length}</span>`
-                : '';
-            
+
+            // Calculate task progress from template tasks
+            const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+            const savedTasks = event.tasks || [];
+            const totalTasks = templateTasks.length;
+            const completedTasks = savedTasks.filter(t => t.completed).length;
+            const eventDate = new Date(event.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Calculate overdue tasks based on template due dates
+            let overdueTasks = 0;
+            templateTasks.forEach(task => {
+                const savedTask = savedTasks.find(t => t.name === task.name);
+                if (!savedTask?.completed) {
+                    const dueDate = new Date(eventDate);
+                    dueDate.setDate(dueDate.getDate() - task.daysBefore);
+                    if (dueDate < today) {
+                        overdueTasks++;
+                    }
+                }
+            });
+
+            const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            const progressClass = overdueTasks > 0 ? 'has-overdue' : (progressPercent === 100 ? 'complete' : '');
+
+            const taskProgressDisplay = totalTasks > 0 ? `
+                <div class="event-progress-indicator ${progressClass}">
+                    <div class="progress-bar-mini">
+                        <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <span class="progress-text">${progressPercent}%</span>
+                    ${overdueTasks > 0 ? `
+                        <span class="overdue-badge" title="${overdueTasks} overdue task${overdueTasks > 1 ? 's' : ''}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            ${overdueTasks}
+                        </span>
+                    ` : ''}
+                </div>
+            ` : '<span class="text-muted">No tasks</span>';
+
             // Get group names
             const eventGroups = (event.groupIds || [])
                 .map(gid => this.data.groups.find(g => g.id === gid))
                 .filter(g => g)
                 .map(g => g.name);
-            const groupsDisplay = eventGroups.length > 0 
+            const groupsDisplay = eventGroups.length > 0
                 ? eventGroups.map(name => `<span class="mini-tag">${name}</span>`).join('')
                 : '<span class="text-muted">—</span>';
-            
+
             return `
                 <tr data-id="${event.id}">
-                    <td><strong>${event.name}</strong></td>
+                    <td>
+                        <div class="event-name-cell">
+                            <strong>${event.name}</strong>
+                            <button class="btn btn-sm btn-outline view-tasks-btn" data-action="view-event-details" data-id="${event.id}">
+                                View Tasks
+                            </button>
+                        </div>
+                    </td>
                     <td>${this.formatDate(event.date)}${event.time ? ' · ' + event.time : ''}</td>
                     <td>${event.location || '—'}</td>
                     <td>${event.term || '—'}</td>
                     <td><div class="mini-tags">${groupsDisplay}</div></td>
-                    <td><span class="template-badge">${templateLabel}</span> ${taskStatus}</td>
+                    <td>${taskProgressDisplay}</td>
                     <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
                     <td>
                         <div class="row-actions">
-                            <button class="row-action-btn" title="View Tasks" data-action="view-event-tasks" data-id="${event.id}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 11l3 3L22 4"/>
-                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                                </svg>
-                            </button>
                             <button class="row-action-btn" title="Edit" data-action="edit-event" data-id="${event.id}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -881,9 +922,9 @@ class App {
                         </div>
                     </div>
                     <div class="group-card-actions">
-                        <button class="btn btn-outline btn-sm" data-action="view-group-members" data-id="${group.id}">Members</button>
-                        <button class="btn btn-outline btn-sm" data-action="edit-group" data-id="${group.id}">Edit</button>
-                        <button class="btn btn-outline btn-sm" data-action="delete-group" data-id="${group.id}">Delete</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.showGroupMembersModal('${group.id}')">Members</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.showEditGroupModal('${group.id}')">Edit</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.handleDelete('group', '${group.id}')">Delete</button>
                     </div>
                 </div>
             `;
@@ -934,13 +975,13 @@ class App {
                     <td><span class="status-badge status-${inst.status === 'Available' ? 'active' : 'assigned'}">${inst.status}</span></td>
                     <td>
                         <div class="row-actions">
-                            <button class="row-action-btn" title="Edit" data-action="edit-instrument" data-id="${inst.id}">
+                            <button class="row-action-btn" title="Edit" onclick="app.showEditInstrumentModal('${inst.id}')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                 </svg>
                             </button>
-                            <button class="row-action-btn" title="Delete" data-action="delete-instrument" data-id="${inst.id}">
+                            <button class="row-action-btn" title="Delete" onclick="app.handleDelete('instrument', '${inst.id}')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"/>
                                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -1224,65 +1265,53 @@ class App {
                 </div>
                 <div class="template-actions">
                     <button class="btn btn-outline btn-sm" onclick="app.showTemplateModal('${template.id}')">View</button>
-                    ${!template.isBuiltIn ? `
+                    ${template.isBuiltIn ? `
+                        <button class="btn btn-outline btn-sm" onclick="app.customizeBuiltInTemplate('${template.id}')">Customize</button>
+                    ` : `
                         <button class="btn btn-outline btn-sm" onclick="app.showEditTemplateModal('${template.id}')">Edit</button>
                         <button class="btn btn-outline btn-sm" onclick="app.deleteTemplate('${template.id}')">Delete</button>
-                    ` : ''}
+                    `}
                 </div>
             </div>
         `).join('');
     }
     
     showAddTemplateModal() {
-        const modal = document.getElementById('modal');
-        modal.innerHTML = `
-            <div class="modal-content modal-lg">
-                <div class="modal-header">
-                    <h3>Create Event Template</h3>
-                    <button class="modal-close" onclick="app.closeModal()">×</button>
+        const content = `
+            <div class="template-phases-editor" id="template-phases-editor">
+                <div class="form-group">
+                    <label>Template Name <span class="required">*</span></label>
+                    <input type="text" id="template-name" required placeholder="e.g., Community Concert">
                 </div>
-                <div class="modal-body">
-                    <form id="add-template-form">
-                        <div class="form-group">
-                            <label>Template Name <span class="required">*</span></label>
-                            <input type="text" id="template-name" required placeholder="e.g., Community Concert">
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="template-description" rows="2" placeholder="Brief description of when to use this template"></textarea>
+                </div>
+
+                <h4 style="margin-top: var(--spacing-lg);">Task Phases</h4>
+                <p class="help-text">Add phases and tasks that will be included in events using this template.</p>
+
+                <div id="phases-container">
+                    <div class="phase-item" data-phase-index="0">
+                        <div class="phase-header">
+                            <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Planning)" value="Planning">
+                            <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(0)">Remove Phase</button>
                         </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea id="template-description" rows="2" placeholder="Brief description of when to use this template"></textarea>
-                        </div>
-                        
-                        <div class="template-phases-editor" id="template-phases-editor">
-                            <h4>Task Phases</h4>
-                            <p class="help-text">Add phases and tasks that will be included in events using this template.</p>
-                            
-                            <div id="phases-container">
-                                <div class="phase-item" data-phase-index="0">
-                                    <div class="phase-header">
-                                        <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Planning)" value="Planning">
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(0)">Remove Phase</button>
-                                    </div>
-                                    <div class="phase-tasks-list">
-                                        <div class="task-input-row">
-                                            <input type="text" class="task-input" placeholder="Task description">
-                                            <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(0)">+ Add Task</button>
-                                </div>
+                        <div class="phase-tasks-list">
+                            <div class="task-input-row">
+                                <input type="text" class="task-input" placeholder="Task description">
+                                <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
                             </div>
-                            
-                            <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
                         </div>
-                    </form>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(0)">+ Add Task</button>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="app.saveTemplate()">Create Template</button>
-                </div>
+
+                <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
             </div>
         `;
-        modal.classList.add('active');
+
+        this.showModal('Create Event Template', content, () => this.saveTemplate());
     }
     
     showEditTemplateModal(templateId) {
@@ -1291,7 +1320,10 @@ class App {
             this.showToast('Template not found', 'error');
             return;
         }
-        
+
+        // Store the template ID for the update function
+        this.editingTemplateId = templateId;
+
         const phasesHtml = (template.tasks || []).map((phase, pIndex) => `
             <div class="phase-item" data-phase-index="${pIndex}">
                 <div class="phase-header">
@@ -1309,59 +1341,47 @@ class App {
                 <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(${pIndex})">+ Add Task</button>
             </div>
         `).join('');
-        
-        const modal = document.getElementById('modal');
-        modal.innerHTML = `
-            <div class="modal-content modal-lg">
-                <div class="modal-header">
-                    <h3>Edit Template</h3>
-                    <button class="modal-close" onclick="app.closeModal()">×</button>
+
+        const defaultPhaseHtml = `
+            <div class="phase-item" data-phase-index="0">
+                <div class="phase-header">
+                    <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Planning)" value="">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(0)">Remove Phase</button>
                 </div>
-                <div class="modal-body">
-                    <form id="edit-template-form">
-                        <input type="hidden" id="template-id" value="${templateId}">
-                        <div class="form-group">
-                            <label>Template Name <span class="required">*</span></label>
-                            <input type="text" id="template-name" required value="${template.name || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea id="template-description" rows="2">${template.description || ''}</textarea>
-                        </div>
-                        
-                        <div class="template-phases-editor" id="template-phases-editor">
-                            <h4>Task Phases</h4>
-                            <p class="help-text">Add phases and tasks that will be included in events using this template.</p>
-                            
-                            <div id="phases-container">
-                                ${phasesHtml || `
-                                    <div class="phase-item" data-phase-index="0">
-                                        <div class="phase-header">
-                                            <input type="text" class="phase-name-input" placeholder="Phase name (e.g., Planning)" value="">
-                                            <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(0)">Remove Phase</button>
-                                        </div>
-                                        <div class="phase-tasks-list">
-                                            <div class="task-input-row">
-                                                <input type="text" class="task-input" placeholder="Task description">
-                                                <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(0)">+ Add Task</button>
-                                    </div>
-                                `}
-                            </div>
-                            
-                            <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
-                        </div>
-                    </form>
+                <div class="phase-tasks-list">
+                    <div class="task-input-row">
+                        <input type="text" class="task-input" placeholder="Task description">
+                        <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="app.updateTemplate()">Save Changes</button>
-                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(0)">+ Add Task</button>
             </div>
         `;
-        modal.classList.add('active');
+
+        const content = `
+            <div class="template-phases-editor" id="template-phases-editor">
+                <input type="hidden" id="template-id" value="${templateId}">
+                <div class="form-group">
+                    <label>Template Name <span class="required">*</span></label>
+                    <input type="text" id="template-name" required value="${template.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="template-description" rows="2">${template.description || ''}</textarea>
+                </div>
+
+                <h4 style="margin-top: var(--spacing-lg);">Task Phases</h4>
+                <p class="help-text">Add phases and tasks that will be included in events using this template.</p>
+
+                <div id="phases-container">
+                    ${phasesHtml || defaultPhaseHtml}
+                </div>
+
+                <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
+            </div>
+        `;
+
+        this.showModal('Edit Template', content, () => this.updateTemplate());
     }
     
     addPhase() {
@@ -1464,7 +1484,7 @@ class App {
     }
     
     async updateTemplate() {
-        const id = document.getElementById('template-id').value;
+        const id = document.getElementById('template-id')?.value || this.editingTemplateId;
         const name = document.getElementById('template-name').value.trim();
         const description = document.getElementById('template-description').value.trim();
         
@@ -1513,11 +1533,11 @@ class App {
     async deleteTemplate(templateId) {
         const template = this.data.templates?.find(t => t.id === templateId);
         if (!template) return;
-        
+
         if (!confirm(`Are you sure you want to delete "${template.name}"? This cannot be undone.`)) {
             return;
         }
-        
+
         try {
             await DatabaseService.deleteTemplate(templateId);
             await this.loadAllData();
@@ -1526,6 +1546,39 @@ class App {
         } catch (error) {
             console.error('Error deleting template:', error);
             this.showToast('Error deleting template', 'error');
+        }
+    }
+
+    async customizeBuiltInTemplate(templateId) {
+        // Get the built-in template data
+        const builtInTemplate = EventTemplates[templateId];
+        if (!builtInTemplate) {
+            this.showToast('Template not found', 'error');
+            return;
+        }
+
+        // Create a copy with a new name
+        const customTemplate = {
+            name: `${builtInTemplate.name} (Custom)`,
+            description: builtInTemplate.description,
+            tasks: JSON.parse(JSON.stringify(builtInTemplate.tasks)) // Deep copy
+        };
+
+        try {
+            // Save as new custom template
+            const result = await DatabaseService.addTemplate(customTemplate);
+            if (result.success) {
+                await this.loadAllData();
+                this.renderTemplates();
+                this.showToast('Template customized! You can now edit it.', 'success');
+                // Open the edit modal for the new template
+                this.showEditTemplateModal(result.id);
+            } else {
+                this.showToast('Error creating custom template', 'error');
+            }
+        } catch (error) {
+            console.error('Error customizing template:', error);
+            this.showToast('Error customizing template', 'error');
         }
     }
 
@@ -1661,16 +1714,26 @@ class App {
     async addCategory() {
         const nameInput = document.getElementById('new-category-name');
         const colorInput = document.getElementById('new-category-color');
-        
+
         const name = nameInput.value.trim();
         const color = colorInput.value;
-        
+
         if (!name) {
             this.showToast('Please enter a category name', 'error');
             return;
         }
-        
-        const categories = this.data.settings?.categories || [];
+
+        // Make a copy of the categories array to avoid mutating defaults
+        const defaultCategories = [
+            { name: 'Music', color: '#8b5cf6' },
+            { name: 'Performing Arts', color: '#ec4899' },
+            { name: 'Production', color: '#06b6d4' },
+            { name: 'Concert', color: '#c9a962' },
+            { name: 'Competition', color: '#ef4444' },
+            { name: 'Workshop', color: '#22c55e' },
+            { name: 'Exam', color: '#3b82f6' }
+        ];
+        const categories = [...(this.data.settings?.categories || defaultCategories)];
         categories.push({ name, color });
         
         // Save to Firebase
@@ -1684,24 +1747,44 @@ class App {
     }
     
     editCategory(index) {
-        const categories = this.data.settings?.categories || [];
+        // Make a copy of the categories array to avoid mutating defaults
+        const defaultCategories = [
+            { name: 'Music', color: '#8b5cf6' },
+            { name: 'Performing Arts', color: '#ec4899' },
+            { name: 'Production', color: '#06b6d4' },
+            { name: 'Concert', color: '#c9a962' },
+            { name: 'Competition', color: '#ef4444' },
+            { name: 'Workshop', color: '#22c55e' },
+            { name: 'Exam', color: '#3b82f6' }
+        ];
+        const categories = [...(this.data.settings?.categories || defaultCategories)];
         const cat = categories[index];
         if (!cat) return;
-        
+
         const newName = prompt('Category name:', cat.name);
         if (newName === null) return;
-        
+
         const newColor = prompt('Category color (hex):', cat.color);
         if (newColor === null) return;
-        
+
         categories[index] = { name: newName || cat.name, color: newColor || cat.color };
         this.saveCategoriesAndRefresh(categories);
     }
     
     async deleteCategory(index) {
         if (!confirm('Delete this category?')) return;
-        
-        const categories = this.data.settings?.categories || [];
+
+        // Make a copy of the categories array to avoid mutating defaults
+        const defaultCategories = [
+            { name: 'Music', color: '#8b5cf6' },
+            { name: 'Performing Arts', color: '#ec4899' },
+            { name: 'Production', color: '#06b6d4' },
+            { name: 'Concert', color: '#c9a962' },
+            { name: 'Competition', color: '#ef4444' },
+            { name: 'Workshop', color: '#22c55e' },
+            { name: 'Exam', color: '#3b82f6' }
+        ];
+        const categories = [...(this.data.settings?.categories || defaultCategories)];
         categories.splice(index, 1);
         this.saveCategoriesAndRefresh(categories);
     }
@@ -2146,6 +2229,9 @@ class App {
         if (type === 'event') {
             document.querySelectorAll('[data-action="view-event-tasks"]').forEach(btn => {
                 btn.addEventListener('click', () => this.showEventTasksModal(btn.dataset.id));
+            });
+            document.querySelectorAll('[data-action="view-event-details"]').forEach(btn => {
+                btn.addEventListener('click', () => this.showEventDetailsPage(btn.dataset.id));
             });
         }
         
@@ -2907,6 +2993,208 @@ class App {
                 });
             });
         }, 100);
+    }
+
+    // Show full-page event details
+    showEventDetailsPage(eventId) {
+        this.currentEventId = eventId;
+        this.navigateTo('event-details');
+    }
+
+    renderEventDetails() {
+        const container = document.getElementById('event-details-content');
+        const titleEl = document.getElementById('event-details-title');
+        if (!container || !this.currentEventId) return;
+
+        const event = this.data.events.find(e => e.id === this.currentEventId);
+        if (!event) {
+            container.innerHTML = '<div class="no-data-card">Event not found</div>';
+            return;
+        }
+
+        // Update page title
+        titleEl.textContent = `${event.name} - Event Details`;
+
+        const eventDate = new Date(event.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
+
+        // Get template tasks
+        const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+        const savedTasks = event.tasks || [];
+
+        // Process tasks with due dates and status
+        const tasks = templateTasks.map((task, index) => {
+            const savedTask = savedTasks.find(t => t.name === task.name) || {};
+            const dueDate = new Date(eventDate);
+            dueDate.setDate(dueDate.getDate() - task.daysBefore);
+
+            const isOverdue = !savedTask.completed && dueDate < today;
+            const isDueToday = dueDate.toDateString() === today.toDateString();
+
+            return {
+                ...task,
+                id: index,
+                dueDate: dueDate,
+                completed: savedTask.completed || false,
+                assignedTo: savedTask.assignedTo || null,
+                isOverdue,
+                isDueToday
+            };
+        });
+
+        // Group tasks by phase
+        const phases = [...new Set(tasks.map(t => t.phase))];
+        const tasksByPhase = phases.map(phase => ({
+            name: phase,
+            tasks: tasks.filter(t => t.phase === phase)
+        }));
+
+        // Staff avatars HTML
+        const staffAvatarsHtml = eventStaff.length > 0 ? `
+            <div class="event-staff-avatars">
+                ${eventStaff.map(s => `
+                    <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'};" title="${s.name}">
+                        ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                `).join('')}
+            </div>
+        ` : '';
+
+        // Staff options for assignment dropdown
+        const staffOptions = eventStaff.map(s =>
+            `<option value="${s.id}">${s.name}</option>`
+        ).join('');
+
+        container.innerHTML = `
+            <div class="event-details-header">
+                <div class="event-details-meta">
+                    <div class="event-meta-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="10" r="3"/>
+                            <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 7 8 11.7z"/>
+                        </svg>
+                        <span>Location:</span>
+                        <strong>${event.location || 'TBD'}</strong>
+                    </div>
+                    <div class="event-meta-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <span>Date:</span>
+                        <strong>${this.formatDate(event.date)}</strong>
+                    </div>
+                    <div class="event-meta-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span>Time:</span>
+                        <strong>${event.time || 'TBD'}</strong>
+                    </div>
+                    ${staffAvatarsHtml ? `
+                        <div class="event-meta-item" style="margin-left: auto;">
+                            <span>Linked Staff:</span>
+                            ${staffAvatarsHtml}
+                        </div>
+                    ` : ''}
+                </div>
+                ${event.notes ? `
+                    <div class="event-description-box">
+                        <h4>Description:</h4>
+                        <p>${event.notes}</p>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="event-task-header-row">
+                <div>Description</div>
+                <div style="text-align: center;">Assigned:</div>
+                <div style="text-align: center;">Due Date:</div>
+                <div style="text-align: center;">Status:</div>
+            </div>
+
+            <div class="event-tasks-section">
+                ${tasksByPhase.map(phase => `
+                    <div class="event-tasks-phase">
+                        <div class="event-tasks-phase-header">${phase.name}</div>
+                        ${phase.tasks.map(task => {
+                            const assignedStaff = task.assignedTo ? eventStaff.find(s => s.id === task.assignedTo) : null;
+                            const statusClass = task.completed ? 'completed' : (task.isOverdue ? 'overdue' : 'pending');
+
+                            return `
+                                <div class="event-task-row" data-task-id="${task.id}">
+                                    <div class="event-task-name ${task.isOverdue && !task.completed ? 'overdue' : ''}">
+                                        ${task.name}
+                                        ${task.isOverdue && !task.completed ? '<span class="overdue-label">OVERDUE</span>' : ''}
+                                    </div>
+                                    <div class="event-task-assigned">
+                                        ${eventStaff.length > 0 ? `
+                                            ${assignedStaff ? `
+                                                <div class="event-staff-avatar" style="background: ${assignedStaff.color || '#8b5cf6'}; width: 28px; height: 28px; font-size: 0.7rem;" title="${assignedStaff.name}">
+                                                    ${assignedStaff.initials || assignedStaff.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                </div>
+                                            ` : `
+                                                <select class="task-assign-select" data-event-id="${event.id}" data-task-name="${task.name}" style="font-size: 0.75rem; padding: 2px 4px;">
+                                                    <option value="">Assign...</option>
+                                                    ${staffOptions}
+                                                </select>
+                                            `}
+                                        ` : '—'}
+                                    </div>
+                                    <div class="event-task-date ${task.isOverdue && !task.completed ? 'overdue' : ''}">
+                                        ${this.formatDate(task.dueDate)}
+                                    </div>
+                                    <div class="event-task-status">
+                                        <div class="status-icon ${statusClass}" data-event-id="${event.id}" data-task-name="${task.name}" data-completed="${task.completed}" onclick="app.toggleEventTaskFromDetails('${event.id}', '${task.name.replace(/'/g, "\\'")}', ${!task.completed})">
+                                            ${task.completed ? `
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
+                                                    <polyline points="20 6 9 17 4 12"/>
+                                                </svg>
+                                            ` : `
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                    <circle cx="12" cy="12" r="10"/>
+                                                    <path d="M12 16v-4M12 8h.01"/>
+                                                </svg>
+                                            `}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        // Bind assignment dropdowns
+        setTimeout(() => {
+            document.querySelectorAll('.task-assign-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    this.assignEventTaskFromDetails(e.target.dataset.eventId, e.target.dataset.taskName, e.target.value);
+                });
+            });
+        }, 100);
+    }
+
+    async toggleEventTaskFromDetails(eventId, taskName, completed) {
+        await this.toggleEventTask(eventId, taskName, completed);
+        // Re-render the details page to reflect changes
+        this.renderEventDetails();
+    }
+
+    async assignEventTaskFromDetails(eventId, taskName, staffId) {
+        await this.assignEventTask(eventId, taskName, staffId);
+        // Re-render the details page to reflect changes
+        this.renderEventDetails();
     }
 
     async toggleEventTask(eventId, taskName, completed) {
