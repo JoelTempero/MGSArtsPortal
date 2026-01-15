@@ -1151,6 +1151,138 @@ input, textarea, select {
     line-height: 1;
 }
 
+/* Overdue Event Tasks Card */
+.card-overdue-tasks {
+    grid-column: span 2;
+}
+
+@media (max-width: 1279px) {
+    .card-overdue-tasks {
+        grid-column: span 1;
+    }
+}
+
+.overdue-count-badge {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+}
+
+.overdue-count-badge.has-items {
+    color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.overdue-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.overdue-task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-left: 3px solid var(--color-danger);
+}
+
+.overdue-task-item:hover {
+    background: var(--color-bg-tertiary);
+}
+
+.overdue-task-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.overdue-task-name {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.overdue-task-event {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.overdue-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.15);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.success-text {
+    color: var(--color-success);
+}
+
+/* Overdue Hires List */
+.overdue-hires-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.overdue-hire-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-warning);
+}
+
+.overdue-hire-item.is-overdue {
+    border-left-color: var(--color-danger);
+}
+
+.overdue-hire-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.overdue-hire-instrument {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.overdue-hire-student {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.hire-status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+}
+
+.hire-status-badge.overdue {
+    color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.hire-status-badge.due-soon {
+    color: var(--color-warning);
+    background: rgba(245, 158, 11, 0.15);
+}
+
 /* Today's Lessons Card */
 .card-todays-lessons {
     grid-column: span 2;
@@ -3236,6 +3368,101 @@ input, textarea, select {
     color: var(--color-warning);
 }
 
+/* File Upload Area */
+.file-upload-area {
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.file-upload-area:hover {
+    border-color: var(--color-gold);
+    background: rgba(201, 169, 98, 0.05);
+}
+
+.file-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    color: var(--color-text-secondary);
+}
+
+.file-upload-content svg {
+    color: var(--color-text-muted);
+}
+
+.file-upload-text {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.file-upload-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.file-selected {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: var(--radius-md);
+}
+
+.file-selected svg {
+    color: var(--color-success);
+    flex-shrink: 0;
+}
+
+.file-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-selected .remove-file {
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+}
+
+.file-selected .remove-file:hover {
+    color: var(--color-danger);
+}
+
+.existing-file {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.existing-file svg {
+    color: var(--color-success);
+    flex-shrink: 0;
+}
+
+.existing-file-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.existing-file-date {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
 /* Checkbox Groups in Forms */
 .checkbox-group {
     display: flex;
@@ -4520,5 +4747,78 @@ button, a, .nav-item {
     height: 1px;
     background: var(--color-border);
     margin: var(--spacing-sm) 0;
+}
+
+/* Primary row action button (View Tasks) */
+.row-action-btn.primary {
+    background: var(--color-gold);
+    color: var(--color-bg-primary);
+}
+
+.row-action-btn.primary:hover {
+    background: var(--color-gold-light);
+}
+
+.row-action-btn.primary svg {
+    stroke: var(--color-bg-primary);
+}
+
+/* Confirm delete modal styling */
+.confirm-delete {
+    text-align: center;
+    padding: var(--spacing-lg) 0;
+}
+
+.confirm-delete .confirm-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--spacing-lg);
+}
+
+.confirm-delete .confirm-icon.warning {
+    background: var(--color-warning-bg);
+}
+
+.confirm-delete .confirm-icon.warning svg {
+    width: 32px;
+    height: 32px;
+    stroke: var(--color-warning);
+}
+
+.confirm-delete h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-primary);
+}
+
+.confirm-delete p {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Warning button variant */
+.btn-warning {
+    background: var(--color-warning) !important;
+    border-color: var(--color-warning) !important;
+    color: white !important;
+}
+
+.btn-warning:hover {
+    background: #d97706 !important;
+}
+
+/* Danger button variant */
+.btn-danger {
+    background: var(--color-danger) !important;
+    border-color: var(--color-danger) !important;
+    color: white !important;
+}
+
+.btn-danger:hover {
+    background: #dc2626 !important;
 }
 

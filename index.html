@@ -314,38 +314,26 @@
                 </div>
 
                 <div class="dashboard-grid">
-                    <!-- Today's Lessons Card -->
-                    <div class="card card-todays-lessons">
+                    <!-- 1. Overdue Event Tasks Card -->
+                    <div class="card card-overdue-tasks">
                         <div class="card-header">
                             <h2 class="card-title">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
                                 </svg>
-                                Today's Lessons
+                                Overdue Event Tasks
                             </h2>
-                            <span class="lessons-count-badge" id="total-lessons-badge">0 lessons</span>
+                            <span class="overdue-count-badge" id="overdue-tasks-badge">0 overdue</span>
                         </div>
-                        <div class="card-body card-body-table">
-                            <div class="table-container">
-                                <table class="data-table compact" id="todays-lessons-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Time</th>
-                                            <th>Student</th>
-                                            <th>Instrument</th>
-                                            <th>Tutor</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="todays-lessons-body">
-                                        <!-- Populated by JS -->
-                                    </tbody>
-                                </table>
+                        <div class="card-body">
+                            <div class="overdue-tasks-list" id="overdue-tasks-list">
+                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
 
-                    <!-- Upcoming Events Card -->
+                    <!-- 2. Upcoming Events Card -->
                     <div class="card card-events">
                         <div class="card-header">
                             <h2 class="card-title">
@@ -363,7 +351,7 @@
                         </div>
                     </div>
 
-                    <!-- Pending Requests Card -->
+                    <!-- 3. Pending Lesson Requests Card -->
                     <div class="card card-requests">
                         <div class="card-header">
                             <h2 class="card-title">
@@ -371,7 +359,7 @@
                                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                                     <path d="M14 2v6h6M12 18v-6M9 15h6"/>
                                 </svg>
-                                Pending Requests
+                                Pending Lesson Requests
                             </h2>
                             <a href="#requests" class="card-action" data-page="requests">View All →</a>
                         </div>
@@ -392,7 +380,7 @@
                         </div>
                     </div>
 
-                    <!-- Instrument Hires Card -->
+                    <!-- 4. Overdue Hire Agreements Card -->
                     <div class="card card-hires">
                         <div class="card-header">
                             <h2 class="card-title">
@@ -401,29 +389,32 @@
                                     <circle cx="6" cy="18" r="3"/>
                                     <circle cx="18" cy="16" r="3"/>
                                 </svg>
-                                Instrument Hires
+                                Overdue Hire Agreements
                             </h2>
                             <a href="#hires" class="card-action" data-page="hires">Manage →</a>
                         </div>
                         <div class="card-body">
                             <div class="requests-summary">
-                                <div class="request-stat active">
-                                    <span class="request-count" id="hires-active">0</span>
-                                    <span class="request-label">Active</span>
+                                <div class="request-stat overdue">
+                                    <span class="request-count" id="hires-overdue">0</span>
+                                    <span class="request-label">Overdue</span>
                                 </div>
                                 <div class="request-stat due-soon">
                                     <span class="request-count" id="hires-due-soon">0</span>
                                     <span class="request-label">Due Soon</span>
                                 </div>
-                                <div class="request-stat overdue">
-                                    <span class="request-count" id="hires-overdue">0</span>
-                                    <span class="request-label">Overdue</span>
+                                <div class="request-stat active">
+                                    <span class="request-count" id="hires-active">0</span>
+                                    <span class="request-label">Active</span>
                                 </div>
+                            </div>
+                            <div class="overdue-hires-list" id="overdue-hires-list">
+                                <!-- Populated by JS -->
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quick Actions Card -->
+                    <!-- 5. Quick Actions Card -->
                     <div class="card card-quick-actions">
                         <div class="card-header">
                             <h2 class="card-title">
@@ -476,6 +467,37 @@
                                     </svg>
                                     <span>Create Group</span>
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Today's Lessons Card -->
+                    <div class="card card-todays-lessons">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                                </svg>
+                                Today's Lessons
+                            </h2>
+                            <span class="lessons-count-badge" id="total-lessons-badge">0 lessons</span>
+                        </div>
+                        <div class="card-body card-body-table">
+                            <div class="table-container">
+                                <table class="data-table compact" id="todays-lessons-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Student</th>
+                                            <th>Instrument</th>
+                                            <th>Tutor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="todays-lessons-body">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>

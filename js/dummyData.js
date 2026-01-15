@@ -156,31 +156,97 @@ const DummyData = {
         { name: 'Orchestra', type: 'Ensemble', category: 'Music', memberCount: 28, meetingTime: 'Tuesday 3:30 PM', leader: 'Mr Chen' }
     ],
 
-    // Instruments
+    // Instruments (68 instruments - Full School Inventory)
     instruments: [
+        // Cellos (6)
         { name: 'Cello 1', type: 'Cello', size: '4/4', condition: 'Good', status: 'Available', serialNumber: 'CEL-001' },
         { name: 'Cello 2', type: 'Cello', size: '4/4', condition: 'Good', status: 'Available', serialNumber: 'CEL-002' },
         { name: 'Cello 3', type: 'Cello', size: '4/4', condition: 'Fair', status: 'On Hire', serialNumber: 'CEL-003' },
         { name: 'Cello 4', type: 'Cello', size: '1/2', condition: 'Good', status: 'On Hire', serialNumber: 'CEL-004' },
         { name: 'Cello 5', type: 'Cello', size: '1/2', condition: 'Good', status: 'On Hire', serialNumber: 'CEL-005' },
         { name: 'Cello 6', type: 'Cello', size: '3/4', condition: 'Excellent', status: 'On Hire', serialNumber: 'CEL-006' },
+        // Violins (8)
         { name: 'Violin 1', type: 'Violin', size: '4/4', condition: 'Good', status: 'Available', serialNumber: 'VLN-001' },
         { name: 'Violin 2', type: 'Violin', size: '4/4', condition: 'Fair', status: 'Available', serialNumber: 'VLN-002' },
         { name: 'Violin 3', type: 'Violin', size: '3/4', condition: 'Good', status: 'Available', serialNumber: 'VLN-003' },
         { name: 'Violin 4', type: 'Violin', size: '1/2', condition: 'Good', status: 'Available', serialNumber: 'VLN-004' },
         { name: 'Violin 5', type: 'Violin', size: '3/4', condition: 'Good', status: 'On Hire', serialNumber: 'VLN-005' },
-        { name: 'Trombone 1', type: 'Trombone', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'TRB-001' },
-        { name: 'Trombone 2', type: 'Trombone', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'TRB-002' },
-        { name: 'Trombone 3', type: 'Trombone', size: 'Standard', condition: 'Fair', status: 'On Hire', serialNumber: 'TRB-003' },
-        { name: 'Trumpet 1', type: 'Trumpet', size: 'Standard', condition: 'Excellent', status: 'Available', serialNumber: 'TPT-001' },
-        { name: 'Trumpet 2', type: 'Trumpet', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'TPT-002' },
-        { name: 'Trumpet 3', type: 'Trumpet', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'TPT-003' },
+        { name: 'Violin 6', type: 'Violin', size: '1/4', condition: 'Good', status: 'Available', serialNumber: 'VLN-006' },
+        { name: 'Violin 7', type: 'Violin', size: '4/4', condition: 'Excellent', status: 'On Hire', serialNumber: 'VLN-007' },
+        { name: 'Violin 8', type: 'Violin', size: '3/4', condition: 'Good', status: 'Available', serialNumber: 'VLN-008' },
+        // Double Bass (2)
+        { name: 'Double Bass 1', type: 'Double Bass', size: '3/4', condition: 'Good', status: 'Available', serialNumber: 'DBB-001' },
+        { name: 'Double Bass 2', type: 'Double Bass', size: '1/2', condition: 'Fair', status: 'On Hire', serialNumber: 'DBB-002' },
+        // Violas (3)
+        { name: 'Viola 1', type: 'Viola', size: '15"', condition: 'Good', status: 'Available', serialNumber: 'VLA-001' },
+        { name: 'Viola 2', type: 'Viola', size: '14"', condition: 'Good', status: 'On Hire', serialNumber: 'VLA-002' },
+        { name: 'Viola 3', type: 'Viola', size: '16"', condition: 'Excellent', status: 'Available', serialNumber: 'VLA-003' },
+        // Flutes (6)
         { name: 'Flute 1', type: 'Flute', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'FLT-001' },
         { name: 'Flute 2', type: 'Flute', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'FLT-002' },
+        { name: 'Flute 3', type: 'Flute', size: 'Standard', condition: 'Fair', status: 'Available', serialNumber: 'FLT-003' },
+        { name: 'Flute 4', type: 'Flute', size: 'Standard', condition: 'Excellent', status: 'Available', serialNumber: 'FLT-004' },
+        { name: 'Flute 5', type: 'Flute', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'FLT-005' },
+        { name: 'Flute 6', type: 'Flute', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'FLT-006' },
+        // Piccolo (1)
+        { name: 'Piccolo 1', type: 'Piccolo', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'PIC-001' },
+        // Clarinets (6)
         { name: 'Clarinet 1', type: 'Clarinet', size: 'Bb', condition: 'Good', status: 'Available', serialNumber: 'CLR-001' },
         { name: 'Clarinet 2', type: 'Clarinet', size: 'Bb', condition: 'Fair', status: 'Available', serialNumber: 'CLR-002' },
-        { name: 'Saxophone 1', type: 'Saxophone', size: 'Alto', condition: 'Good', status: 'On Hire', serialNumber: 'SAX-001' },
-        { name: 'Saxophone 2', type: 'Saxophone', size: 'Alto', condition: 'Excellent', status: 'Available', serialNumber: 'SAX-002' }
+        { name: 'Clarinet 3', type: 'Clarinet', size: 'Bb', condition: 'Good', status: 'On Hire', serialNumber: 'CLR-003' },
+        { name: 'Clarinet 4', type: 'Clarinet', size: 'Bb', condition: 'Excellent', status: 'Available', serialNumber: 'CLR-004' },
+        { name: 'Clarinet 5', type: 'Clarinet', size: 'Bb', condition: 'Good', status: 'On Hire', serialNumber: 'CLR-005' },
+        { name: 'Clarinet 6', type: 'Clarinet', size: 'Bb', condition: 'Good', status: 'Available', serialNumber: 'CLR-006' },
+        // Oboes (2)
+        { name: 'Oboe 1', type: 'Oboe', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'OBO-001' },
+        { name: 'Oboe 2', type: 'Oboe', size: 'Standard', condition: 'Fair', status: 'On Hire', serialNumber: 'OBO-002' },
+        // Bassoon (1)
+        { name: 'Bassoon 1', type: 'Bassoon', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'BSN-001' },
+        // Alto Saxophones (4)
+        { name: 'Alto Sax 1', type: 'Alto Saxophone', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'ASX-001' },
+        { name: 'Alto Sax 2', type: 'Alto Saxophone', size: 'Standard', condition: 'Excellent', status: 'Available', serialNumber: 'ASX-002' },
+        { name: 'Alto Sax 3', type: 'Alto Saxophone', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'ASX-003' },
+        { name: 'Alto Sax 4', type: 'Alto Saxophone', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'ASX-004' },
+        // Tenor Saxophones (2)
+        { name: 'Tenor Sax 1', type: 'Tenor Saxophone', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'TSX-001' },
+        { name: 'Tenor Sax 2', type: 'Tenor Saxophone', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'TSX-002' },
+        // Baritone Saxophone (1)
+        { name: 'Bari Sax 1', type: 'Baritone Saxophone', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'BSX-001' },
+        // Trumpets (6)
+        { name: 'Trumpet 1', type: 'Trumpet', size: 'Bb', condition: 'Excellent', status: 'Available', serialNumber: 'TPT-001' },
+        { name: 'Trumpet 2', type: 'Trumpet', size: 'Bb', condition: 'Good', status: 'Available', serialNumber: 'TPT-002' },
+        { name: 'Trumpet 3', type: 'Trumpet', size: 'Bb', condition: 'Good', status: 'On Hire', serialNumber: 'TPT-003' },
+        { name: 'Trumpet 4', type: 'Trumpet', size: 'Bb', condition: 'Fair', status: 'Available', serialNumber: 'TPT-004' },
+        { name: 'Trumpet 5', type: 'Trumpet', size: 'Bb', condition: 'Good', status: 'On Hire', serialNumber: 'TPT-005' },
+        { name: 'Trumpet 6', type: 'Trumpet', size: 'Bb', condition: 'Good', status: 'Available', serialNumber: 'TPT-006' },
+        // French Horns (3)
+        { name: 'French Horn 1', type: 'French Horn', size: 'F/Bb', condition: 'Good', status: 'Available', serialNumber: 'FHN-001' },
+        { name: 'French Horn 2', type: 'French Horn', size: 'F/Bb', condition: 'Good', status: 'On Hire', serialNumber: 'FHN-002' },
+        { name: 'French Horn 3', type: 'French Horn', size: 'Single F', condition: 'Fair', status: 'Available', serialNumber: 'FHN-003' },
+        // Trombones (5)
+        { name: 'Trombone 1', type: 'Trombone', size: 'Tenor', condition: 'Good', status: 'On Hire', serialNumber: 'TRB-001' },
+        { name: 'Trombone 2', type: 'Trombone', size: 'Tenor', condition: 'Good', status: 'Available', serialNumber: 'TRB-002' },
+        { name: 'Trombone 3', type: 'Trombone', size: 'Tenor', condition: 'Fair', status: 'On Hire', serialNumber: 'TRB-003' },
+        { name: 'Trombone 4', type: 'Trombone', size: 'Tenor', condition: 'Excellent', status: 'Available', serialNumber: 'TRB-004' },
+        { name: 'Trombone 5', type: 'Trombone', size: 'Bass', condition: 'Good', status: 'Available', serialNumber: 'TRB-005' },
+        // Euphoniums (2)
+        { name: 'Euphonium 1', type: 'Euphonium', size: 'Standard', condition: 'Good', status: 'Available', serialNumber: 'EUP-001' },
+        { name: 'Euphonium 2', type: 'Euphonium', size: 'Standard', condition: 'Good', status: 'On Hire', serialNumber: 'EUP-002' },
+        // Tubas (2)
+        { name: 'Tuba 1', type: 'Tuba', size: 'BBb', condition: 'Good', status: 'Available', serialNumber: 'TBA-001' },
+        { name: 'Tuba 2', type: 'Tuba', size: 'Eb', condition: 'Fair', status: 'Available', serialNumber: 'TBA-002' },
+        // Percussion
+        { name: 'Snare Drum 1', type: 'Snare Drum', size: '14"', condition: 'Good', status: 'Available', serialNumber: 'SNR-001' },
+        { name: 'Snare Drum 2', type: 'Snare Drum', size: '14"', condition: 'Good', status: 'Available', serialNumber: 'SNR-002' },
+        { name: 'Timpani Set', type: 'Timpani', size: '4-piece', condition: 'Good', status: 'Available', serialNumber: 'TMP-001' },
+        { name: 'Xylophone 1', type: 'Xylophone', size: '3 Octave', condition: 'Good', status: 'Available', serialNumber: 'XYL-001' },
+        { name: 'Glockenspiel 1', type: 'Glockenspiel', size: '2.5 Octave', condition: 'Excellent', status: 'Available', serialNumber: 'GLK-001' },
+        { name: 'Drum Kit 1', type: 'Drum Kit', size: '5-piece', condition: 'Good', status: 'Available', serialNumber: 'DRM-001' },
+        { name: 'Drum Kit 2', type: 'Drum Kit', size: '5-piece', condition: 'Fair', status: 'Available', serialNumber: 'DRM-002' },
+        // Guitars (3)
+        { name: 'Acoustic Guitar 1', type: 'Acoustic Guitar', size: 'Full', condition: 'Good', status: 'Available', serialNumber: 'GTR-001' },
+        { name: 'Acoustic Guitar 2', type: 'Acoustic Guitar', size: '3/4', condition: 'Good', status: 'On Hire', serialNumber: 'GTR-002' },
+        { name: 'Electric Guitar 1', type: 'Electric Guitar', size: 'Full', condition: 'Good', status: 'Available', serialNumber: 'EGT-001' }
     ],
 
     // Instrument Hires

@@ -360,10 +360,70 @@ class App {
     // ========================================
 
     renderDashboard() {
-        this.renderTodaysLessons();
+        this.renderOverdueEventTasks();
         this.renderUpcomingEvents();
         this.renderRecentRequests();
-        this.renderHiresSummary();
+        this.renderOverdueHires();
+        this.renderTodaysLessons();
+    }
+
+    renderOverdueEventTasks() {
+        const container = document.getElementById('overdue-tasks-list');
+        const badge = document.getElementById('overdue-tasks-badge');
+        if (!container) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Collect all overdue tasks from all events
+        const overdueTasks = [];
+        this.data.events.forEach(event => {
+            const eventTasks = event.tasks || [];
+            eventTasks.forEach(phase => {
+                (phase.items || []).forEach((task, taskIndex) => {
+                    if (task.completed) return;
+
+                    // Check if task has a due date that's passed
+                    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+                    if (dueDate && dueDate < today) {
+                        overdueTasks.push({
+                            eventId: event.id,
+                            eventName: event.name,
+                            taskName: task.name || task,
+                            dueDate: dueDate,
+                            phase: phase.phase,
+                            taskIndex: taskIndex
+                        });
+                    }
+                });
+            });
+        });
+
+        // Sort by due date (oldest first)
+        overdueTasks.sort((a, b) => a.dueDate - b.dueDate);
+
+        if (badge) {
+            badge.textContent = `${overdueTasks.length} overdue`;
+            badge.classList.toggle('has-items', overdueTasks.length > 0);
+        }
+
+        if (overdueTasks.length === 0) {
+            container.innerHTML = '<p class="no-data success-text">No overdue tasks!</p>';
+            return;
+        }
+
+        container.innerHTML = overdueTasks.slice(0, 5).map(task => {
+            const daysOverdue = Math.floor((today - task.dueDate) / (1000 * 60 * 60 * 24));
+            return `
+                <div class="overdue-task-item" onclick="app.showEventDetailsPage('${task.eventId}')">
+                    <div class="overdue-task-info">
+                        <span class="overdue-task-name">${typeof task.taskName === 'string' ? task.taskName : task.taskName.name || 'Task'}</span>
+                        <span class="overdue-task-event">${task.eventName}</span>
+                    </div>
+                    <span class="overdue-badge">${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue</span>
+                </div>
+            `;
+        }).join('');
     }
 
     renderTodaysLessons() {
@@ -479,19 +539,44 @@ class App {
         `).join('');
     }
 
-    renderHiresSummary() {
+    renderOverdueHires() {
         const hires = this.data.instrumentHires;
-        const active = hires.filter(h => h.status === 'active').length;
-        const dueSoon = hires.filter(h => h.status === 'due-soon').length;
-        const overdue = hires.filter(h => h.status === 'overdue').length;
-        
+        const activeHires = hires.filter(h => h.status === 'active');
+        const dueSoonHires = hires.filter(h => h.status === 'due-soon');
+        const overdueHires = hires.filter(h => h.status === 'overdue');
+
         const activeEl = document.getElementById('hires-active');
         const dueSoonEl = document.getElementById('hires-due-soon');
         const overdueEl = document.getElementById('hires-overdue');
-        
-        if (activeEl) activeEl.textContent = active;
-        if (dueSoonEl) dueSoonEl.textContent = dueSoon;
-        if (overdueEl) overdueEl.textContent = overdue;
+
+        if (activeEl) activeEl.textContent = activeHires.length;
+        if (dueSoonEl) dueSoonEl.textContent = dueSoonHires.length;
+        if (overdueEl) overdueEl.textContent = overdueHires.length;
+
+        // Render overdue hires list
+        const container = document.getElementById('overdue-hires-list');
+        if (!container) return;
+
+        const combinedOverdue = [...overdueHires, ...dueSoonHires];
+        if (combinedOverdue.length === 0) {
+            container.innerHTML = '<p class="no-data success-text">No overdue agreements!</p>';
+            return;
+        }
+
+        container.innerHTML = combinedOverdue.slice(0, 4).map(hire => {
+            const instrument = this.data.instruments.find(i => i.id === hire.instrumentId);
+            const student = this.data.students.find(s => s.id === hire.studentId);
+            const isOverdue = hire.status === 'overdue';
+            return `
+                <div class="overdue-hire-item ${isOverdue ? 'is-overdue' : 'is-due-soon'}">
+                    <div class="overdue-hire-info">
+                        <span class="overdue-hire-instrument">${instrument?.name || 'Unknown Instrument'}</span>
+                        <span class="overdue-hire-student">${student?.name || hire.studentName || 'Unknown'}</span>
+                    </div>
+                    <span class="hire-status-badge ${hire.status}">${isOverdue ? 'Overdue' : 'Due Soon'}</span>
+                </div>
+            `;
+        }).join('');
     }
 
     // ========================================
@@ -765,14 +850,7 @@ class App {
 
             return `
                 <tr data-id="${event.id}">
-                    <td>
-                        <div class="event-name-cell">
-                            <strong>${event.name}</strong>
-                            <button class="btn btn-sm btn-outline view-tasks-btn" data-action="view-event-details" data-id="${event.id}">
-                                View Tasks
-                            </button>
-                        </div>
-                    </td>
+                    <td><strong>${event.name}</strong></td>
                     <td>${this.formatDate(event.date)}${event.time ? ' · ' + event.time : ''}</td>
                     <td>${event.location || '—'}</td>
                     <td>${event.term || '—'}</td>
@@ -781,6 +859,12 @@ class App {
                     <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
                     <td>
                         <div class="row-actions">
+                            <button class="row-action-btn primary" title="View Tasks" data-action="view-event-details" data-id="${event.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                                </svg>
+                            </button>
                             <button class="row-action-btn" title="Edit" data-action="edit-event" data-id="${event.id}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -1530,17 +1614,36 @@ class App {
         }
     }
     
-    async deleteTemplate(templateId) {
+    deleteTemplate(templateId) {
         const template = this.data.templates?.find(t => t.id === templateId);
         if (!template) return;
 
-        if (!confirm(`Are you sure you want to delete "${template.name}"? This cannot be undone.`)) {
-            return;
-        }
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3>Delete Template?</h3>
+                <p>Are you sure you want to delete "${template.name}"? This cannot be undone.</p>
+            </div>
+        `;
 
+        this.showModal('Delete Template', content, () => this.confirmDeleteTemplate(templateId));
+        document.getElementById('modal-save').textContent = 'Delete';
+        document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    async confirmDeleteTemplate(templateId) {
         try {
             await DatabaseService.deleteTemplate(templateId);
             await this.loadAllData();
+            this.closeModal();
+            document.getElementById('modal-save').textContent = 'Save';
+            document.getElementById('modal-save').classList.remove('btn-danger');
             this.renderTemplates();
             this.showToast('Template deleted', 'success');
         } catch (error) {
@@ -1723,59 +1826,125 @@ class App {
             return;
         }
 
-        // Make a copy of the categories array to avoid mutating defaults
-        const defaultCategories = [
-            { name: 'Music', color: '#8b5cf6' },
-            { name: 'Performing Arts', color: '#ec4899' },
-            { name: 'Production', color: '#06b6d4' },
-            { name: 'Concert', color: '#c9a962' },
-            { name: 'Competition', color: '#ef4444' },
-            { name: 'Workshop', color: '#22c55e' },
-            { name: 'Exam', color: '#3b82f6' }
-        ];
-        const categories = [...(this.data.settings?.categories || defaultCategories)];
+        const categories = [...(this.data.settings?.categories || this.getDefaultCategories())];
         categories.push({ name, color });
-        
-        // Save to Firebase
-        await DatabaseService.update('settings', 'general', { categories });
-        this.data.settings = { ...this.data.settings, categories };
-        
+
         // Clear inputs and refresh
         nameInput.value = '';
-        this.renderCategories();
-        this.showToast('Category added successfully', 'success');
+        await this.saveCategoriesAndRefresh(categories);
     }
     
     editCategory(index) {
-        // Make a copy of the categories array to avoid mutating defaults
-        const defaultCategories = [
-            { name: 'Music', color: '#8b5cf6' },
-            { name: 'Performing Arts', color: '#ec4899' },
-            { name: 'Production', color: '#06b6d4' },
-            { name: 'Concert', color: '#c9a962' },
-            { name: 'Competition', color: '#ef4444' },
-            { name: 'Workshop', color: '#22c55e' },
-            { name: 'Exam', color: '#3b82f6' }
-        ];
+        const defaultCategories = this.getDefaultCategories();
         const categories = [...(this.data.settings?.categories || defaultCategories)];
         const cat = categories[index];
         if (!cat) return;
 
-        const newName = prompt('Category name:', cat.name);
-        if (newName === null) return;
+        this.editingCategoryIndex = index;
 
-        const newColor = prompt('Category color (hex):', cat.color);
-        if (newColor === null) return;
+        const content = `
+            <form id="edit-category-form">
+                <div class="form-group">
+                    <label>Category Name <span class="required">*</span></label>
+                    <input type="text" id="category-name" required value="${cat.name}">
+                </div>
+                <div class="form-group">
+                    <label>Category Color</label>
+                    <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+                        <input type="color" id="category-color" value="${cat.color}" style="width: 50px; height: 40px; border: none; cursor: pointer;">
+                        <input type="text" id="category-color-hex" value="${cat.color}" style="width: 100px;" placeholder="#000000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Preview</label>
+                    <span id="category-preview" class="category-badge-preview" style="background: ${cat.color}20; color: ${cat.color};">${cat.name}</span>
+                </div>
+            </form>
+        `;
 
-        categories[index] = { name: newName || cat.name, color: newColor || cat.color };
-        this.saveCategoriesAndRefresh(categories);
+        this.showModal('Edit Category', content, () => this.saveEditedCategory());
+
+        // Bind color picker to update preview
+        setTimeout(() => {
+            const colorInput = document.getElementById('category-color');
+            const hexInput = document.getElementById('category-color-hex');
+            const nameInput = document.getElementById('category-name');
+            const preview = document.getElementById('category-preview');
+
+            const updatePreview = () => {
+                const color = colorInput.value;
+                const name = nameInput.value || 'Category';
+                hexInput.value = color;
+                preview.style.background = color + '20';
+                preview.style.color = color;
+                preview.textContent = name;
+            };
+
+            colorInput?.addEventListener('input', updatePreview);
+            hexInput?.addEventListener('input', () => {
+                colorInput.value = hexInput.value;
+                updatePreview();
+            });
+            nameInput?.addEventListener('input', updatePreview);
+        }, 100);
     }
-    
-    async deleteCategory(index) {
-        if (!confirm('Delete this category?')) return;
 
-        // Make a copy of the categories array to avoid mutating defaults
-        const defaultCategories = [
+    async saveEditedCategory() {
+        const name = document.getElementById('category-name').value.trim();
+        const color = document.getElementById('category-color').value;
+
+        if (!name) {
+            this.showToast('Please enter a category name', 'error');
+            return;
+        }
+
+        const defaultCategories = this.getDefaultCategories();
+        const categories = [...(this.data.settings?.categories || defaultCategories)];
+        categories[this.editingCategoryIndex] = { name, color };
+
+        this.closeModal();
+        await this.saveCategoriesAndRefresh(categories);
+    }
+
+    deleteCategory(index) {
+        const defaultCategories = this.getDefaultCategories();
+        const categories = [...(this.data.settings?.categories || defaultCategories)];
+        const cat = categories[index];
+
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3>Delete Category?</h3>
+                <p>Are you sure you want to delete "${cat?.name || 'this category'}"?</p>
+            </div>
+        `;
+
+        this.deletingCategoryIndex = index;
+        this.showModal('Delete Category', content, () => this.confirmDeleteCategory());
+        document.getElementById('modal-save').textContent = 'Delete';
+        document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    async confirmDeleteCategory() {
+        const defaultCategories = this.getDefaultCategories();
+        const categories = [...(this.data.settings?.categories || defaultCategories)];
+        categories.splice(this.deletingCategoryIndex, 1);
+
+        this.closeModal();
+        document.getElementById('modal-save').textContent = 'Save';
+        document.getElementById('modal-save').classList.remove('btn-danger');
+
+        await this.saveCategoriesAndRefresh(categories);
+    }
+
+    getDefaultCategories() {
+        return [
             { name: 'Music', color: '#8b5cf6' },
             { name: 'Performing Arts', color: '#ec4899' },
             { name: 'Production', color: '#06b6d4' },
@@ -1784,9 +1953,6 @@ class App {
             { name: 'Workshop', color: '#22c55e' },
             { name: 'Exam', color: '#3b82f6' }
         ];
-        const categories = [...(this.data.settings?.categories || defaultCategories)];
-        categories.splice(index, 1);
-        this.saveCategoriesAndRefresh(categories);
     }
     
     async saveCategoriesAndRefresh(categories) {
@@ -2646,13 +2812,8 @@ class App {
                     <small class="form-hint">These staff will receive task notifications</small>
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
-                    <select name="status">
-                        <option value="upcoming" ${event.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
-                        <option value="in-progress" ${event.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
-                        <option value="completed" ${event.status === 'completed' ? 'selected' : ''}>Completed</option>
-                        <option value="cancelled" ${event.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                    </select>
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Additional notes about this event...">${event.notes || ''}</textarea>
                 </div>
             </form>
         `;
@@ -2684,7 +2845,7 @@ class App {
             template: formData.get('template'),
             groupIds: groupIds,
             staffIds: staffIds,
-            status: formData.get('status')
+            notes: formData.get('notes')
         };
         
         const result = await DatabaseService.updateEvent(id, event);
@@ -3155,28 +3316,28 @@ class App {
 
         const content = `
             <div class="actions-menu">
-                <button class="action-menu-item" onclick="app.showEditEventModal('${event.id}'); app.closeModal();">
+                <button class="action-menu-item" onclick="app.closeModal(); setTimeout(() => app.showEditEventModal('${event.id}'), 100);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                         <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                     Edit Event Details
                 </button>
-                <button class="action-menu-item" onclick="app.duplicateEvent('${event.id}'); app.closeModal();">
+                <button class="action-menu-item" onclick="app.closeModal(); app.duplicateEvent('${event.id}');">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                         <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                     </svg>
                     Duplicate Event
                 </button>
-                <button class="action-menu-item" onclick="app.markAllTasksComplete('${event.id}'); app.closeModal();">
+                <button class="action-menu-item" onclick="app.closeModal(); app.markAllTasksComplete('${event.id}');">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                         <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
                         <polyline points="22 4 12 14.01 9 11.01"/>
                     </svg>
                     Mark All Tasks Complete
                 </button>
-                <button class="action-menu-item" onclick="app.resetAllTasks('${event.id}'); app.closeModal();">
+                <button class="action-menu-item" onclick="app.closeModal(); app.confirmResetAllTasks('${event.id}');">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                         <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
                         <path d="M21 3v5h-5"/>
@@ -3186,7 +3347,7 @@ class App {
                     Reset All Tasks
                 </button>
                 <div class="action-menu-divider"></div>
-                <button class="action-menu-item danger" onclick="app.handleDelete('event', '${event.id}'); app.closeModal();">
+                <button class="action-menu-item danger" onclick="app.closeModal(); setTimeout(() => app.handleDelete('event', '${event.id}'), 100);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                         <polyline points="3 6 5 6 21 6"/>
                         <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -3197,6 +3358,26 @@ class App {
         `;
         this.showModal('Event Actions', content, null);
         document.getElementById('modal-save').style.display = 'none';
+    }
+
+    // In-app confirmation for reset all tasks
+    confirmResetAllTasks(eventId) {
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3>Reset All Tasks?</h3>
+                <p>This will mark all tasks as incomplete. This action cannot be undone.</p>
+            </div>
+        `;
+        this.showModal('Confirm Reset', content, () => this.resetAllTasks(eventId));
+        document.getElementById('modal-save').textContent = 'Reset Tasks';
+        document.getElementById('modal-save').classList.add('btn-warning');
     }
 
     async duplicateEvent(eventId) {
@@ -3247,11 +3428,8 @@ class App {
         const event = this.data.events.find(e => e.id === eventId);
         if (!event) return;
 
-        if (!confirm('Are you sure you want to reset all tasks? This will mark all tasks as incomplete.')) {
-            return;
-        }
-
         try {
+            this.closeModal();
             await DatabaseService.updateEvent(eventId, { tasks: [] });
             event.tasks = [];
             this.renderEventDetails();
@@ -3352,14 +3530,26 @@ class App {
         if (!group) return;
 
         const types = ['Ensemble', 'Choir', 'Band', 'Club', 'Crew', 'Group', 'Chamber'];
-        const typeOptions = types.map(t => 
+        const typeOptions = types.map(t =>
             `<option value="${t}" ${t === group.type ? 'selected' : ''}>${t}</option>`
         ).join('');
 
         const categories = ['Music', 'Drama', 'Dance', 'Kapa Haka', 'Pasifika'];
-        const categoryOptions = categories.map(c => 
+        const categoryOptions = categories.map(c =>
             `<option value="${c}" ${c === group.category ? 'selected' : ''}>${c}</option>`
         ).join('');
+
+        // Get current leader IDs (handle both array and legacy string format)
+        const currentLeaderIds = group.leaderIds || [];
+
+        // Create staff checkboxes with current leaders checked
+        const staffCheckboxes = this.data.tutors.map(t => {
+            const isChecked = currentLeaderIds.includes(t.id) || group.leader === t.name;
+            return `<label class="checkbox-label">
+                <input type="checkbox" name="leaderIds" value="${t.id}" ${isChecked ? 'checked' : ''}>
+                <span>${t.name}</span>
+            </label>`;
+        }).join('');
 
         const content = `
             <form id="edit-group-form" class="modal-form">
@@ -3387,8 +3577,11 @@ class App {
                     <input type="text" name="meetingTime" value="${group.meetingTime || ''}">
                 </div>
                 <div class="form-group">
-                    <label>Group Leader</label>
-                    <input type="text" name="leader" value="${group.leader || ''}">
+                    <label>Group Leaders</label>
+                    <div class="checkbox-group">
+                        ${staffCheckboxes || '<span class="text-muted">No staff added yet.</span>'}
+                    </div>
+                    <small class="form-hint">Selected staff will be assigned as leaders</small>
                 </div>
                 <div class="form-group">
                     <label>Member Count</label>
@@ -3396,7 +3589,7 @@ class App {
                 </div>
             </form>
         `;
-        
+
         this.showModal('Edit Group', content, () => this.updateGroup());
     }
 
@@ -3404,25 +3597,55 @@ class App {
         const form = document.getElementById('edit-group-form');
         const formData = new FormData(form);
         const id = formData.get('id');
-        
+
+        // Get selected leader IDs from checkboxes
+        const leaderIds = formData.getAll('leaderIds');
+        const leaderNames = leaderIds.map(lid => {
+            const tutor = this.data.tutors.find(t => t.id === lid);
+            return tutor?.name;
+        }).filter(Boolean);
+
         const group = {
             name: formData.get('name'),
             type: formData.get('type'),
             category: formData.get('category'),
             meetingTime: formData.get('meetingTime'),
-            leader: formData.get('leader'),
+            leaderIds: leaderIds,
+            leader: leaderNames.join(', '),
             memberCount: parseInt(formData.get('memberCount')) || 0
         };
-        
+
         const result = await DatabaseService.updateGroup(id, group);
-        
+
         if (result.success) {
+            // Update staff profiles to reflect group leadership
+            await this.updateStaffGroupAssignments(id, leaderIds);
+
             this.showToast('Group updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
             this.renderCurrentPage();
         } else {
             this.showToast('Error updating group', 'error');
+        }
+    }
+
+    async updateStaffGroupAssignments(groupId, newLeaderIds) {
+        // Update each staff member's groupIds based on whether they're assigned as leader
+        for (const tutor of this.data.tutors) {
+            const currentGroupIds = tutor.groupIds || [];
+            const isCurrentlyInGroup = currentGroupIds.includes(groupId);
+            const shouldBeInGroup = newLeaderIds.includes(tutor.id);
+
+            if (shouldBeInGroup && !isCurrentlyInGroup) {
+                // Add group to staff
+                const updatedGroupIds = [...currentGroupIds, groupId];
+                await DatabaseService.updateTutor(tutor.id, { groupIds: updatedGroupIds });
+            } else if (!shouldBeInGroup && isCurrentlyInGroup) {
+                // Remove group from staff
+                const updatedGroupIds = currentGroupIds.filter(gid => gid !== groupId);
+                await DatabaseService.updateTutor(tutor.id, { groupIds: updatedGroupIds });
+            }
         }
     }
 
@@ -3574,10 +3797,22 @@ class App {
         const hire = this.data.instrumentHires.find(h => h.id === id);
         if (!hire) return;
 
-        const statuses = ['active', 'returned', 'overdue'];
-        const statusOptions = statuses.map(s => 
-            `<option value="${s}" ${s === hire.status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+        const statuses = ['active', 'returned', 'overdue', 'due-soon'];
+        const statusOptions = statuses.map(s =>
+            `<option value="${s}" ${s === hire.status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}</option>`
         ).join('');
+
+        // Show existing file info if present
+        const existingFileHtml = hire.agreementFile ? `
+            <div class="existing-file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <path d="M14 2v6h6M9 15l2 2 4-4"/>
+                </svg>
+                <span class="existing-file-name">${hire.agreementFile.fileName}</span>
+                <span class="existing-file-date">Uploaded: ${this.formatDate(hire.agreementFile.uploadedAt)}</span>
+            </div>
+        ` : '';
 
         const content = `
             <form id="edit-hire-form" class="modal-form">
@@ -3600,42 +3835,78 @@ class App {
                         <input type="date" name="expectedReturn" value="${hire.expectedReturn || ''}">
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select name="status">
-                            ${statusOptions}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Agreement Uploaded</label>
-                        <select name="agreement">
-                            <option value="true" ${hire.agreement ? 'selected' : ''}>Yes</option>
-                            <option value="false" ${!hire.agreement ? 'selected' : ''}>No</option>
-                        </select>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        ${statusOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hire Agreement (PDF)</label>
+                    ${existingFileHtml}
+                    <div class="file-upload-area" id="agreement-upload-area">
+                        <input type="file" name="agreementFile" id="agreement-file-input" accept=".pdf" style="display: none;">
+                        <div class="file-upload-content" onclick="document.getElementById('agreement-file-input').click()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                            </svg>
+                            <span class="file-upload-text">${hire.agreementFile ? 'Upload new agreement to replace' : 'Click to upload agreement PDF'}</span>
+                            <span class="file-upload-hint">Max file size: 5MB</span>
+                        </div>
+                        <div class="file-selected" style="display: none;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <path d="M14 2v6h6M9 15l2 2 4-4"/>
+                            </svg>
+                            <span class="file-name"></span>
+                            <button type="button" class="btn-icon remove-file" onclick="app.clearAgreementFile()">×</button>
+                        </div>
                     </div>
                 </div>
             </form>
         `;
-        
+
         this.showModal('Edit Hire Record', content, () => this.updateHire());
+
+        // Attach file input change listener
+        setTimeout(() => {
+            const fileInput = document.getElementById('agreement-file-input');
+            if (fileInput) {
+                fileInput.addEventListener('change', (e) => this.handleAgreementFileSelect(e));
+            }
+        }, 100);
     }
 
     async updateHire() {
         const form = document.getElementById('edit-hire-form');
         const formData = new FormData(form);
         const id = formData.get('id');
-        
+        const agreementFile = formData.get('agreementFile');
+
+        // Get existing hire data
+        const existingHire = this.data.instrumentHires.find(h => h.id === id);
+
+        // Handle file upload if present
+        let agreementData = existingHire?.agreementFile || null;
+        if (agreementFile && agreementFile.size > 0) {
+            agreementData = {
+                fileName: agreementFile.name,
+                fileSize: agreementFile.size,
+                uploadedAt: new Date().toISOString()
+            };
+        }
+
         const hire = {
             studentName: formData.get('studentName'),
             hireDate: formData.get('hireDate'),
             expectedReturn: formData.get('expectedReturn'),
             status: formData.get('status'),
-            agreement: formData.get('agreement') === 'true'
+            agreement: !!agreementData,
+            agreementFile: agreementData
         };
-        
+
         const result = await DatabaseService.update('instrumentHires', id, hire);
-        
+
         if (result.success) {
             this.showToast('Hire record updated successfully!', 'success');
             this.closeModal();
@@ -3848,8 +4119,12 @@ class App {
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-body').innerHTML = content;
         document.getElementById('modal-overlay').classList.add('visible');
-        
+
         const saveBtn = document.getElementById('modal-save');
+        // Reset button state to defaults
+        saveBtn.textContent = 'Save';
+        saveBtn.classList.remove('btn-warning', 'btn-danger');
+
         if (onSave) {
             saveBtn.style.display = 'block';
             saveBtn.onclick = onSave;
@@ -4249,6 +4524,14 @@ class App {
     }
 
     showAddGroupModal() {
+        // Create staff checkboxes for leader selection
+        const staffCheckboxes = this.data.tutors.map(t =>
+            `<label class="checkbox-label">
+                <input type="checkbox" name="leaderIds" value="${t.id}">
+                <span>${t.name}</span>
+            </label>`
+        ).join('');
+
         const content = `
             <form id="add-group-form" class="modal-form">
                 <div class="form-group">
@@ -4284,31 +4567,45 @@ class App {
                     <input type="text" name="meetingTime" placeholder="e.g., Wednesday 3:30 PM">
                 </div>
                 <div class="form-group">
-                    <label>Group Leader</label>
-                    <input type="text" name="leader" placeholder="Leader name">
+                    <label>Group Leaders</label>
+                    <div class="checkbox-group">
+                        ${staffCheckboxes || '<span class="text-muted">No staff added yet. Add staff first.</span>'}
+                    </div>
+                    <small class="form-hint">Selected staff will be assigned as leaders of this group</small>
                 </div>
             </form>
         `;
-        
+
         this.showModal('Create New Group', content, () => this.saveGroup());
     }
 
     async saveGroup() {
         const form = document.getElementById('add-group-form');
         const formData = new FormData(form);
-        
+
+        // Get selected leader IDs from checkboxes
+        const leaderIds = formData.getAll('leaderIds');
+        const leaderNames = leaderIds.map(lid => {
+            const tutor = this.data.tutors.find(t => t.id === lid);
+            return tutor?.name;
+        }).filter(Boolean);
+
         const group = {
             name: formData.get('name'),
             type: formData.get('type'),
             category: formData.get('category'),
             meetingTime: formData.get('meetingTime'),
-            leader: formData.get('leader'),
+            leaderIds: leaderIds,
+            leader: leaderNames.join(', '),
             memberCount: 0
         };
-        
+
         const result = await DatabaseService.addGroup(group);
-        
+
         if (result.success) {
+            // Update staff profiles to reflect group leadership
+            await this.updateStaffGroupAssignments(result.id, leaderIds);
+
             this.showToast('Group created successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -4383,7 +4680,7 @@ class App {
         const instrumentOptions = this.data.instruments
             .filter(i => i.status === 'Available')
             .map(i => `<option value="${i.id}">${i.name} (${i.type})</option>`).join('');
-        
+
         const content = `
             <form id="add-hire-form" class="modal-form">
                 <div class="form-group">
@@ -4407,36 +4704,117 @@ class App {
                         <input type="date" name="expectedReturn" required>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Hire Agreement (PDF)</label>
+                    <div class="file-upload-area" id="agreement-upload-area">
+                        <input type="file" name="agreementFile" id="agreement-file-input" accept=".pdf" style="display: none;">
+                        <div class="file-upload-content" onclick="document.getElementById('agreement-file-input').click()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                            </svg>
+                            <span class="file-upload-text">Click to upload agreement PDF</span>
+                            <span class="file-upload-hint">Max file size: 5MB</span>
+                        </div>
+                        <div class="file-selected" style="display: none;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <path d="M14 2v6h6M9 15l2 2 4-4"/>
+                            </svg>
+                            <span class="file-name"></span>
+                            <button type="button" class="btn-icon remove-file" onclick="app.clearAgreementFile()">×</button>
+                        </div>
+                    </div>
+                    <small class="form-hint">Upload signed hire agreement document</small>
+                </div>
             </form>
         `;
-        
+
         this.showModal('New Instrument Hire', content, () => this.saveHire());
+
+        // Attach file input change listener
+        setTimeout(() => {
+            const fileInput = document.getElementById('agreement-file-input');
+            if (fileInput) {
+                fileInput.addEventListener('change', (e) => this.handleAgreementFileSelect(e));
+            }
+        }, 100);
+    }
+
+    handleAgreementFileSelect(e) {
+        const file = e.target.files[0];
+        const uploadArea = document.getElementById('agreement-upload-area');
+        if (!uploadArea) return;
+
+        const uploadContent = uploadArea.querySelector('.file-upload-content');
+        const fileSelected = uploadArea.querySelector('.file-selected');
+        const fileName = uploadArea.querySelector('.file-name');
+
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                this.showToast('File size must be less than 5MB', 'error');
+                e.target.value = '';
+                return;
+            }
+            if (file.type !== 'application/pdf') {
+                this.showToast('Please upload a PDF file', 'error');
+                e.target.value = '';
+                return;
+            }
+            uploadContent.style.display = 'none';
+            fileSelected.style.display = 'flex';
+            fileName.textContent = file.name;
+        } else {
+            uploadContent.style.display = 'flex';
+            fileSelected.style.display = 'none';
+        }
+    }
+
+    clearAgreementFile() {
+        const fileInput = document.getElementById('agreement-file-input');
+        const uploadArea = document.getElementById('agreement-upload-area');
+        if (fileInput) fileInput.value = '';
+        if (uploadArea) {
+            uploadArea.querySelector('.file-upload-content').style.display = 'flex';
+            uploadArea.querySelector('.file-selected').style.display = 'none';
+        }
     }
 
     async saveHire() {
         const form = document.getElementById('add-hire-form');
         const formData = new FormData(form);
-        
+
         const instrumentId = formData.get('instrumentId');
         const instrument = this.data.instruments.find(i => i.id === instrumentId);
-        
+        const agreementFile = formData.get('agreementFile');
+
+        // Handle file upload if present
+        let agreementData = null;
+        if (agreementFile && agreementFile.size > 0) {
+            agreementData = {
+                fileName: agreementFile.name,
+                fileSize: agreementFile.size,
+                uploadedAt: new Date().toISOString()
+            };
+        }
+
         const hire = {
             instrumentId: instrumentId,
             instrumentName: instrument?.name || 'Unknown',
             studentName: formData.get('studentName'),
             hireDate: formData.get('hireDate'),
             expectedReturn: formData.get('expectedReturn'),
-            agreement: false,
+            agreement: !!agreementData,
+            agreementFile: agreementData,
             status: 'active'
         };
-        
+
         const result = await DatabaseService.addInstrumentHire(hire);
-        
+
         if (result.success) {
             // Update instrument status
             await DatabaseService.updateInstrument(instrumentId, { status: 'On Hire' });
-            
-            this.showToast('Hire recorded successfully!', 'success');
+
+            this.showToast(agreementData ? 'Hire recorded with agreement!' : 'Hire recorded successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
             this.renderCurrentPage();
