@@ -4,6 +4,7 @@
 
 import { AuthService, DatabaseService, EventTemplates } from './firebase.js';
 import { EmailService } from './emailService.js';
+import { DummyData } from './dummyData.js';
 
 class App {
     constructor() {
@@ -470,9 +471,9 @@ class App {
         tbody.innerHTML = todaysLessons.map(lesson => {
             const student = this.getStudentById(lesson.studentId) || { name: lesson.studentName || 'Unknown' };
             const tutor = this.getTutorById(lesson.tutorId) || { name: lesson.tutorName || 'Unknown', initials: 'UN', color: '#888' };
-            
+
             return `
-                <tr>
+                <tr class="clickable" onclick="app.showEditLessonModal('${lesson.id}')">
                     <td>${lesson.time}</td>
                     <td>
                         <div class="cell-student">
@@ -506,18 +507,20 @@ class App {
     renderUpcomingEvents() {
         const container = document.getElementById('events-list');
         if (!container) return;
-        
-        const events = this.data.events.slice(0, 4);
-        
+
+        // Sort events by date and take first 4
+        const sortedEvents = [...this.data.events].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const events = sortedEvents.filter(e => new Date(e.date) >= new Date()).slice(0, 4);
+
         if (events.length === 0) {
             container.innerHTML = '<p class="no-data">No upcoming events</p>';
             return;
         }
-        
+
         container.innerHTML = events.map(event => {
             const categoryClass = (event.category || 'other').toLowerCase().replace(/\s+/g, '-');
             return `
-                <div class="event-item">
+                <div class="event-item clickable" onclick="app.showEventDetailsPage('${event.id}')">
                     <div class="event-info">
                         <span class="event-name">${event.name}</span>
                         <span class="event-date">${this.formatDate(event.date)}</span>
@@ -549,7 +552,7 @@ class App {
         }
         
         container.innerHTML = recent.map(req => `
-            <div class="request-item">
+            <div class="request-item clickable" onclick="app.${req.status === 'awaiting' ? `showApproveRequestModal('${req.id}')` : `navigateTo('requests')`}">
                 <div class="request-info">
                     <span class="request-name">${req.studentName.split('(')[0].trim()}</span>
                     <span class="request-detail">Year ${req.year} • ${req.instrument}</span>
@@ -588,7 +591,7 @@ class App {
             const student = this.data.students.find(s => s.id === hire.studentId);
             const isOverdue = hire.status === 'overdue';
             return `
-                <div class="overdue-hire-item ${isOverdue ? 'is-overdue' : 'is-due-soon'}">
+                <div class="overdue-hire-item clickable ${isOverdue ? 'is-overdue' : 'is-due-soon'}" onclick="app.showEditHireModal('${hire.id}')">
                     <div class="overdue-hire-info">
                         <span class="overdue-hire-instrument">${instrument?.name || 'Unknown Instrument'}</span>
                         <span class="overdue-hire-student">${student?.name || hire.studentName || 'Unknown'}</span>
@@ -4368,6 +4371,8 @@ class App {
         // Reset button state to defaults
         saveBtn.textContent = 'Save';
         saveBtn.classList.remove('btn-warning', 'btn-danger');
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = '1';
 
         if (onSave) {
             saveBtn.style.display = 'block';
