@@ -3842,16 +3842,16 @@ class App {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Hire Agreement (PDF)</label>
+                    <label>Hire Agreement</label>
                     ${existingFileHtml}
                     <div class="file-upload-area" id="agreement-upload-area">
-                        <input type="file" name="agreementFile" id="agreement-file-input" accept=".pdf" style="display: none;">
+                        <input type="file" name="agreementFile" id="agreement-file-input" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
                         <div class="file-upload-content" onclick="document.getElementById('agreement-file-input').click()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                             </svg>
-                            <span class="file-upload-text">${hire.agreementFile ? 'Upload new agreement to replace' : 'Click to upload agreement PDF'}</span>
-                            <span class="file-upload-hint">Max file size: 5MB</span>
+                            <span class="file-upload-text">${hire.agreementFile ? 'Upload new agreement to replace' : 'Click to upload agreement'}</span>
+                            <span class="file-upload-hint">PDF, JPG or PNG (max 5MB)</span>
                         </div>
                         <div class="file-selected" style="display: none;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
@@ -4705,15 +4705,15 @@ class App {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Hire Agreement (PDF)</label>
+                    <label>Hire Agreement</label>
                     <div class="file-upload-area" id="agreement-upload-area">
-                        <input type="file" name="agreementFile" id="agreement-file-input" accept=".pdf" style="display: none;">
+                        <input type="file" name="agreementFile" id="agreement-file-input" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
                         <div class="file-upload-content" onclick="document.getElementById('agreement-file-input').click()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
                             </svg>
-                            <span class="file-upload-text">Click to upload agreement PDF</span>
-                            <span class="file-upload-hint">Max file size: 5MB</span>
+                            <span class="file-upload-text">Click to upload agreement</span>
+                            <span class="file-upload-hint">PDF, JPG or PNG (max 5MB)</span>
                         </div>
                         <div class="file-selected" style="display: none;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
@@ -4755,8 +4755,9 @@ class App {
                 e.target.value = '';
                 return;
             }
-            if (file.type !== 'application/pdf') {
-                this.showToast('Please upload a PDF file', 'error');
+            const validTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                this.showToast('Please upload a PDF, JPG or PNG file', 'error');
                 e.target.value = '';
                 return;
             }
