@@ -1636,7 +1636,7 @@ class App {
         
         // If no users in database, show current logged in user
         if (users.length === 0) {
-            const currentUser = this.user;
+            const currentUser = this.currentUser;
             if (currentUser) {
                 container.innerHTML = `
                     <div class="user-row">
@@ -1801,53 +1801,40 @@ class App {
     // ========================================
     
     showAddUserModal() {
-        const modal = document.getElementById('modal');
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Add Portal User</h3>
-                    <button class="modal-close" onclick="app.closeModal()">×</button>
+        const content = `
+            <form id="add-user-form">
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" id="user-name" required placeholder="Enter full name">
                 </div>
-                <div class="modal-body">
-                    <form id="add-user-form">
-                        <div class="form-group">
-                            <label>Full Name <span class="required">*</span></label>
-                            <input type="text" id="user-name" required placeholder="Enter full name">
-                        </div>
-                        <div class="form-group">
-                            <label>Email <span class="required">*</span></label>
-                            <input type="email" id="user-email" required placeholder="Enter email address">
-                        </div>
-                        <div class="form-group">
-                            <label>Role <span class="required">*</span></label>
-                            <select id="user-role" required>
-                                <option value="admin">Admin - Full access</option>
-                                <option value="staff" selected>Staff - Can manage students & events</option>
-                                <option value="tutor">Tutor - Can view assigned students</option>
-                                <option value="viewer">View Only - Read-only access</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Phone (optional)</label>
-                            <input type="tel" id="user-phone" placeholder="Enter phone number">
-                        </div>
-                        <div class="form-group">
-                            <label>Notes (optional)</label>
-                            <textarea id="user-notes" rows="2" placeholder="Any notes about this user"></textarea>
-                        </div>
-                        <p class="help-text" style="margin-top: var(--spacing-md); padding: var(--spacing-sm); background: var(--color-surface); border-radius: var(--radius-sm);">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                            Note: This creates a portal user record. For login access, the user must also be added to Firebase Authentication separately.
-                        </p>
-                    </form>
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" id="user-email" required placeholder="Enter email address">
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="app.saveUser()">Add User</button>
+                <div class="form-group">
+                    <label>Role <span class="required">*</span></label>
+                    <select id="user-role" required>
+                        <option value="admin">Admin - Full access</option>
+                        <option value="staff" selected>Staff - Can manage students & events</option>
+                        <option value="tutor">Tutor - Can view assigned students</option>
+                        <option value="viewer">View Only - Read-only access</option>
+                    </select>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label>Phone (optional)</label>
+                    <input type="tel" id="user-phone" placeholder="Enter phone number">
+                </div>
+                <div class="form-group">
+                    <label>Notes (optional)</label>
+                    <textarea id="user-notes" rows="2" placeholder="Any notes about this user"></textarea>
+                </div>
+                <p class="help-text" style="margin-top: var(--spacing-md); padding: var(--spacing-sm); background: var(--color-bg-tertiary); border-radius: var(--radius-sm);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    Note: This creates a portal user record. For login access, the user must also be added to Firebase Authentication separately.
+                </p>
+            </form>
         `;
-        modal.classList.add('active');
+        this.showModal('Add Portal User', content, () => this.saveUser());
     }
     
     showEditUserModal(userId) {
@@ -1856,51 +1843,40 @@ class App {
             this.showToast('User not found', 'error');
             return;
         }
-        
-        const modal = document.getElementById('modal');
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Edit User</h3>
-                    <button class="modal-close" onclick="app.closeModal()">×</button>
+
+        this.editingUserId = userId;
+
+        const content = `
+            <form id="edit-user-form">
+                <input type="hidden" id="edit-user-id" value="${user.id}">
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" id="user-name" required value="${user.name || ''}">
                 </div>
-                <div class="modal-body">
-                    <form id="edit-user-form">
-                        <input type="hidden" id="edit-user-id" value="${user.id}">
-                        <div class="form-group">
-                            <label>Full Name <span class="required">*</span></label>
-                            <input type="text" id="user-name" required value="${user.name || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Email <span class="required">*</span></label>
-                            <input type="email" id="user-email" required value="${user.email || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Role <span class="required">*</span></label>
-                            <select id="user-role" required>
-                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin - Full access</option>
-                                <option value="staff" ${user.role === 'staff' ? 'selected' : ''}>Staff - Can manage students & events</option>
-                                <option value="tutor" ${user.role === 'tutor' ? 'selected' : ''}>Tutor - Can view assigned students</option>
-                                <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>View Only - Read-only access</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Phone</label>
-                            <input type="tel" id="user-phone" value="${user.phone || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Notes</label>
-                            <textarea id="user-notes" rows="2">${user.notes || ''}</textarea>
-                        </div>
-                    </form>
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" id="user-email" required value="${user.email || ''}">
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="app.updateUser()">Save Changes</button>
+                <div class="form-group">
+                    <label>Role <span class="required">*</span></label>
+                    <select id="user-role" required>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin - Full access</option>
+                        <option value="staff" ${user.role === 'staff' ? 'selected' : ''}>Staff - Can manage students & events</option>
+                        <option value="tutor" ${user.role === 'tutor' ? 'selected' : ''}>Tutor - Can view assigned students</option>
+                        <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>View Only - Read-only access</option>
+                    </select>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="user-phone" value="${user.phone || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="user-notes" rows="2">${user.notes || ''}</textarea>
+                </div>
+            </form>
         `;
-        modal.classList.add('active');
+        this.showModal('Edit User', content, () => this.updateUser());
     }
     
     async saveUser() {
@@ -2008,36 +1984,23 @@ class App {
         const terms = this.data.settings?.termDates || {};
         const term = terms[termKey] || { start: '', end: '' };
         const termNum = termKey.replace('term', '');
-        
-        const modal = document.getElementById('modal');
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Edit Term ${termNum} Dates</h3>
-                    <button class="modal-close" onclick="app.closeModal()">×</button>
+
+        const content = `
+            <form id="edit-term-form">
+                <input type="hidden" id="term-key" value="${termKey}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date <span class="required">*</span></label>
+                        <input type="date" id="term-start" required value="${term.start || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date <span class="required">*</span></label>
+                        <input type="date" id="term-end" required value="${term.end || ''}">
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <form id="edit-term-form">
-                        <input type="hidden" id="term-key" value="${termKey}">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Start Date <span class="required">*</span></label>
-                                <input type="date" id="term-start" required value="${term.start || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>End Date <span class="required">*</span></label>
-                                <input type="date" id="term-end" required value="${term.end || ''}">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="app.saveTermDates()">Save</button>
-                </div>
-            </div>
+            </form>
         `;
-        modal.classList.add('active');
+        this.showModal(`Edit Term ${termNum} Dates`, content, () => this.saveTermDates());
     }
     
     showEditAllTermsModal() {
@@ -2047,46 +2010,33 @@ class App {
             term3: { start: '2026-07-27', end: '2026-10-02' },
             term4: { start: '2026-10-19', end: '2026-12-11' }
         };
-        
-        const modal = document.getElementById('modal');
-        modal.innerHTML = `
-            <div class="modal-content modal-lg">
-                <div class="modal-header">
-                    <h3>Edit Term Dates</h3>
-                    <button class="modal-close" onclick="app.closeModal()">×</button>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-all-terms-form">
-                        <div class="term-dates-grid">
-                            ${[1, 2, 3, 4].map(num => `
-                                <div class="term-date-edit-row">
-                                    <h4>Term ${num}</h4>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label>Start Date</label>
-                                            <input type="date" id="term${num}-start" value="${terms[`term${num}`]?.start || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>End Date</label>
-                                            <input type="date" id="term${num}-end" value="${terms[`term${num}`]?.end || ''}">
-                                        </div>
-                                    </div>
+
+        const content = `
+            <form id="edit-all-terms-form">
+                <div class="term-dates-grid">
+                    ${[1, 2, 3, 4].map(num => `
+                        <div class="term-date-edit-row">
+                            <h4>Term ${num}</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="term${num}-start" value="${terms[`term${num}`]?.start || ''}">
                                 </div>
-                            `).join('')}
+                                <div class="form-group">
+                                    <label>End Date</label>
+                                    <input type="date" id="term${num}-end" value="${terms[`term${num}`]?.end || ''}">
+                                </div>
+                            </div>
                         </div>
-                        <p class="help-text" style="margin-top: var(--spacing-md);">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                            Term dates are used to calculate lesson schedules and event planning.
-                        </p>
-                    </form>
+                    `).join('')}
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="app.saveAllTermDates()">Save All</button>
-                </div>
-            </div>
+                <p class="help-text" style="margin-top: var(--spacing-md);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    Term dates are used to calculate lesson schedules and event planning.
+                </p>
+            </form>
         `;
-        modal.classList.add('active');
+        this.showModal('Edit Term Dates', content, () => this.saveAllTermDates());
     }
     
     async saveTermDates() {
@@ -3197,6 +3147,121 @@ class App {
         this.renderEventDetails();
     }
 
+    showEventActionsMenu() {
+        if (!this.currentEventId) return;
+
+        const event = this.data.events.find(e => e.id === this.currentEventId);
+        if (!event) return;
+
+        const content = `
+            <div class="actions-menu">
+                <button class="action-menu-item" onclick="app.showEditEventModal('${event.id}'); app.closeModal();">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit Event Details
+                </button>
+                <button class="action-menu-item" onclick="app.duplicateEvent('${event.id}'); app.closeModal();">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                    Duplicate Event
+                </button>
+                <button class="action-menu-item" onclick="app.markAllTasksComplete('${event.id}'); app.closeModal();">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Mark All Tasks Complete
+                </button>
+                <button class="action-menu-item" onclick="app.resetAllTasks('${event.id}'); app.closeModal();">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/>
+                        <path d="M8 16H3v5"/>
+                    </svg>
+                    Reset All Tasks
+                </button>
+                <div class="action-menu-divider"></div>
+                <button class="action-menu-item danger" onclick="app.handleDelete('event', '${event.id}'); app.closeModal();">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                    Delete Event
+                </button>
+            </div>
+        `;
+        this.showModal('Event Actions', content, null);
+        document.getElementById('modal-save').style.display = 'none';
+    }
+
+    async duplicateEvent(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        const newEvent = {
+            ...event,
+            name: `${event.name} (Copy)`,
+            tasks: [] // Reset tasks for the copy
+        };
+        delete newEvent.id;
+
+        try {
+            await DatabaseService.addEvent(newEvent);
+            await this.loadAllData();
+            this.showToast('Event duplicated successfully', 'success');
+            this.navigateTo('events');
+        } catch (error) {
+            console.error('Error duplicating event:', error);
+            this.showToast('Error duplicating event', 'error');
+        }
+    }
+
+    async markAllTasksComplete(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+        const tasks = templateTasks.map(task => ({
+            name: task.name,
+            completed: true,
+            completedDate: new Date().toISOString()
+        }));
+
+        try {
+            await DatabaseService.updateEvent(eventId, { tasks });
+            event.tasks = tasks;
+            this.renderEventDetails();
+            this.showToast('All tasks marked as complete', 'success');
+        } catch (error) {
+            console.error('Error marking tasks complete:', error);
+            this.showToast('Error updating tasks', 'error');
+        }
+    }
+
+    async resetAllTasks(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        if (!confirm('Are you sure you want to reset all tasks? This will mark all tasks as incomplete.')) {
+            return;
+        }
+
+        try {
+            await DatabaseService.updateEvent(eventId, { tasks: [] });
+            event.tasks = [];
+            this.renderEventDetails();
+            this.showToast('All tasks have been reset', 'success');
+        } catch (error) {
+            console.error('Error resetting tasks:', error);
+            this.showToast('Error resetting tasks', 'error');
+        }
+    }
+
     async toggleEventTask(eventId, taskName, completed) {
         const event = this.data.events.find(e => e.id === eventId);
         if (!event) return;
@@ -3223,22 +3288,32 @@ class App {
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
         
         if (result.success) {
-            // Update UI
-            const taskItem = document.querySelector(`[data-task-name="${taskName}"]`).closest('.task-item');
-            if (completed) {
-                taskItem.classList.add('completed');
-                taskItem.classList.remove('overdue', 'due-today', 'due-soon');
-                taskItem.querySelector('.task-status').innerHTML = '<span class="status-complete">✓</span>';
-            } else {
-                taskItem.classList.remove('completed');
-                // Recalculate status would require more logic, so just refresh
-                this.showEventTasksModal(eventId);
+            // Update UI - safely check for elements before manipulating
+            const taskElement = document.querySelector(`[data-task-name="${taskName}"]`);
+            const taskItem = taskElement?.closest('.task-item');
+
+            if (taskItem) {
+                if (completed) {
+                    taskItem.classList.add('completed');
+                    taskItem.classList.remove('overdue', 'due-today', 'due-soon');
+                    const statusEl = taskItem.querySelector('.task-status');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span class="status-complete">✓</span>';
+                    }
+                } else {
+                    taskItem.classList.remove('completed');
+                    // Recalculate status would require more logic, so just refresh
+                    this.showEventTasksModal(eventId);
+                }
             }
-            
-            // Update summary counts
-            const completedCount = event.tasks.filter(t => t.completed).length;
-            const totalCount = document.querySelectorAll('#event-tasks-list .task-item').length;
-            document.querySelector('.tasks-progress').textContent = `${completedCount}/${totalCount} complete`;
+
+            // Update summary counts - safely check for element
+            const progressEl = document.querySelector('.tasks-progress');
+            if (progressEl) {
+                const completedCount = event.tasks.filter(t => t.completed).length;
+                const totalCount = document.querySelectorAll('#event-tasks-list .task-item').length;
+                progressEl.textContent = `${completedCount}/${totalCount} complete`;
+            }
         }
     }
 
@@ -4574,6 +4649,16 @@ class App {
         const date = new Date(dateStr);
         if (isNaN(date)) return dateStr;
         return date.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    getInitials(name) {
+        if (!name) return '?';
+        return name
+            .split(' ')
+            .map(part => part.charAt(0))
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
     }
 
     handleSearch(type, query) {
