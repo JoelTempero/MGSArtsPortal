@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Tuition Signups 2026 - MGS Arts Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1f2e 0%, #0f1219 100%);
+            min-height: 100vh;
+            color: #1f2937;
+        }
+        
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .form-header {
+            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
+            color: #1a1f2e;
+            padding: 2rem;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        
+        .form-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-header p {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+        
+        .form-body {
+            background: white;
+            padding: 2rem;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .form-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1f2e;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-section h2 .emoji {
+            font-size: 1.25rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .form-group label .required {
+            color: #ef4444;
+        }
+        
+        .form-group input[type="text"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #c9a227;
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-group small {
+            display: block;
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+        
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .radio-group.inline, .checkbox-group.inline {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .radio-option input, .checkbox-option input {
+            margin-top: 3px;
+            accent-color: #c9a227;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .radio-option span, .checkbox-option span {
+            font-size: 0.95rem;
+            color: #374151;
+        }
+        
+        .instrument-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .instrument-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .instrument-option:hover {
+            border-color: #c9a227;
+            background: #fffbeb;
+        }
+        
+        .instrument-option.selected {
+            border-color: #c9a227;
+            background: #fef3c7;
+        }
+        
+        .instrument-option input {
+            accent-color: #c9a227;
+        }
+        
+        .instrument-option .emoji {
+            font-size: 1.25rem;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-box.warning {
+            background: #fef3c7;
+            border-color: #fcd34d;
+        }
+        
+        .info-box p {
+            font-size: 0.9rem;
+            color: #1e40af;
+        }
+        
+        .info-box.warning p {
+            color: #92400e;
+        }
+        
+        .tutor-select {
+            display: none;
+        }
+        
+        .tutor-select.visible {
+            display: block;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
+            color: #1a1f2e;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(201, 162, 39, 0.4);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        
+        .success-message.visible {
+            display: block;
+        }
+        
+        .success-message .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .success-message h2 {
+            color: #059669;
+            margin-bottom: 0.5rem;
+        }
+        
+        .success-message p {
+            color: #6b7280;
+        }
+        
+        .success-message .ref-number {
+            background: #f3f4f6;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        
+        @media (max-width: 640px) {
+            .form-container {
+                padding: 1rem 0.5rem;
+            }
+            
+            .form-header, .form-body {
+                padding: 1.5rem;
+            }
+            
+            .instrument-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div class="form-header">
+            <h1>🎵 Itinerant Music Lessons 2026</h1>
+            <p>Registration for music tuition at Middleton Grange School</p>
+        </div>
+        
+        <div class="form-body">
+            <form id="signup-form">
+                <!-- Student Details -->
+                <div class="form-section">
+                    <h2><span class="emoji">👤</span> Student Details</h2>
+                    
+                    <div class="form-group">
+                        <label>Child's Full Name <span class="required">*</span></label>
+                        <input type="text" name="studentName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Child's Email Address</label>
+                        <input type="email" name="studentEmail">
+                        <small>Year 9 and above only</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Year Level in 2026 <span class="required">*</span></label>
+                        <div class="radio-group inline">
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="3" required><span>Year 3</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="4"><span>Year 4</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="5"><span>Year 5</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="6"><span>Year 6</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="7"><span>Year 7</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="8"><span>Year 8</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="9"><span>Year 9</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="10"><span>Year 10</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="11"><span>Year 11</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="12"><span>Year 12</span></label>
+                            <label class="radio-option"><input type="radio" name="yearLevel" value="13"><span>Year 13</span></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parent/Guardian Details -->
+                <div class="form-section">
+                    <h2><span class="emoji">👨‍👩‍👧</span> Parent/Guardian Details</h2>
+                    
+                    <div class="form-group">
+                        <label>Parent/Guardian Full Name <span class="required">*</span></label>
+                        <input type="text" name="parentName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Parent/Guardian Email <span class="required">*</span></label>
+                        <input type="email" name="parentEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Parent/Guardian Phone <span class="required">*</span></label>
+                        <input type="tel" name="parentPhone" required>
+                    </div>
+                </div>
+                
+                <!-- Lesson Type -->
+                <div class="form-section">
+                    <h2><span class="emoji">📋</span> Lesson Type</h2>
+                    
+                    <div class="info-box warning">
+                        <p><strong>Please note:</strong> Requests for funded lessons will be reviewed. Priority will be given to those in curriculum music in Years 10-12 and to specific instruments. Some funded lessons may be delivered in group settings.</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="lessonType" value="funded" required>
+                                <span>I would like my child to be considered for <strong>funded</strong> itinerant lessons at school</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="lessonType" value="private">
+                                <span>I would like to book a <strong>private</strong> itinerant lesson at school</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Instrument Selection -->
+                <div class="form-section">
+                    <h2><span class="emoji">🎸</span> Instrument</h2>
+                    
+                    <div class="form-group">
+                        <label>Which instrument would you like lessons for? <span class="required">*</span></label>
+                        <div class="instrument-grid">
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Violin" required><span class="emoji">🎻</span><span>Violin</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Viola"><span class="emoji">🎻</span><span>Viola</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Cello"><span class="emoji">🎻</span><span>Cello</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Bass"><span class="emoji">🎻</span><span>Bass</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Guitar"><span class="emoji">🎸</span><span>Guitar</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Saxophone"><span class="emoji">🎷</span><span>Saxophone</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Clarinet"><span class="emoji">🎵</span><span>Clarinet</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Trumpet"><span class="emoji">🎺</span><span>Trumpet</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Trombone"><span class="emoji">🎺</span><span>Trombone</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Flute"><span class="emoji">🎵</span><span>Flute</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Drums"><span class="emoji">🥁</span><span>Drums</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Piano"><span class="emoji">🎹</span><span>Piano</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Vocals"><span class="emoji">🎤</span><span>Vocals</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Digital Music"><span class="emoji">💻</span><span>Digital Music</span></label>
+                        </div>
+                        <small>Vocals available for Year 9-13 only</small>
+                    </div>
+                </div>
+                
+                <!-- Tutor Preference (shown dynamically) -->
+                <div class="form-section tutor-select" id="tutor-section">
+                    <h2><span class="emoji">👨‍🏫</span> Tutor Preference</h2>
+                    
+                    <div class="form-group">
+                        <label>Do you have a tutor preference?</label>
+                        <select name="tutorPreference" id="tutor-dropdown">
+                            <option value="">No preference</option>
+                            <!-- Options populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Style Preference -->
+                <div class="form-section">
+                    <h2><span class="emoji">🎼</span> Style Preference</h2>
+                    
+                    <div class="form-group">
+                        <label>Please indicate your preferred style (tick all that apply)</label>
+                        <div class="checkbox-group inline">
+                            <label class="checkbox-option"><input type="checkbox" name="style" value="Classical"><span>Classical</span></label>
+                            <label class="checkbox-option"><input type="checkbox" name="style" value="Jazz"><span>Jazz</span></label>
+                            <label class="checkbox-option"><input type="checkbox" name="style" value="Pop"><span>Pop</span></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Experience -->
+                <div class="form-section">
+                    <h2><span class="emoji">📝</span> Experience</h2>
+                    
+                    <div class="form-group">
+                        <label>Please let us know about any previous experience and current grade</label>
+                        <textarea name="experience" placeholder="e.g., 2 years of piano lessons, currently at Grade 3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>If your child plays any other instruments, please let us know</label>
+                        <textarea name="otherInstruments" placeholder="Please state instrument and grade"></textarea>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submit-btn">Submit Registration</button>
+            </form>
+            
+            <div class="success-message" id="success-message">
+                <div class="icon">✅</div>
+                <h2>Registration Submitted!</h2>
+                <p>Thank you for registering for music lessons. We will be in touch soon.</p>
+                <div class="ref-number" id="ref-number">REF-2026-XXXX</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCL2ZHktfHNsFX6vI0mVY-i5WqM1Hb94RY",
+            authDomain: "mgs-performing-arts.firebaseapp.com",
+            projectId: "mgs-performing-arts",
+            storageBucket: "mgs-performing-arts.firebasestorage.app",
+            messagingSenderId: "968636316312",
+            appId: "1:968636316312:web:1b233ae8e176ceea85aeed"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Tutor data by instrument (would normally come from database)
+        const tutorsByInstrument = {
+            'Guitar': ['Cameron Finlay', 'Motoi Shibusawa'],
+            'Drums': ['Motoi Shibusawa'],
+            'Piano': ['Lynley Fuglestad'],
+            'Violin': ['Sarah Mitchell'],
+            'Viola': ['Sarah Mitchell'],
+            'Cello': ['Sarah Mitchell'],
+            'Vocals': ['Lynley Fuglestad'],
+            'Saxophone': ['David Thompson'],
+            'Clarinet': ['David Thompson'],
+            'Flute': ['David Thompson'],
+            'Trumpet': ['David Thompson'],
+            'Trombone': ['David Thompson']
+        };
+        
+        // Handle instrument selection to show/hide tutor preference
+        document.querySelectorAll('input[name="instrument"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const instrument = e.target.value;
+                const tutors = tutorsByInstrument[instrument] || [];
+                const tutorSection = document.getElementById('tutor-section');
+                const tutorDropdown = document.getElementById('tutor-dropdown');
+                
+                if (tutors.length > 1) {
+                    tutorSection.classList.add('visible');
+                    tutorDropdown.innerHTML = '<option value="">No preference</option>' + 
+                        tutors.map(t => `<option value="${t}">${t}</option>`).join('');
+                } else {
+                    tutorSection.classList.remove('visible');
+                }
+                
+                // Highlight selected instrument
+                document.querySelectorAll('.instrument-option').forEach(opt => opt.classList.remove('selected'));
+                e.target.closest('.instrument-option').classList.add('selected');
+            });
+        });
+        
+        // Form submission
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const form = e.target;
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            const formData = new FormData(form);
+            
+            // Collect style preferences
+            const styles = [];
+            form.querySelectorAll('input[name="style"]:checked').forEach(cb => styles.push(cb.value));
+            
+            const request = {
+                // Student info
+                studentName: formData.get('studentName'),
+                studentEmail: formData.get('studentEmail') || '',
+                yearLevel: formData.get('yearLevel'),
+                
+                // Parent info
+                parentName: formData.get('parentName'),
+                parentEmail: formData.get('parentEmail'),
+                parentPhone: formData.get('parentPhone'),
+                
+                // Lesson details
+                lessonType: formData.get('lessonType'),
+                instrument: formData.get('instrument'),
+                tutorPreference: formData.get('tutorPreference') || '',
+                styles: styles,
+                
+                // Experience
+                experience: formData.get('experience') || '',
+                otherInstruments: formData.get('otherInstruments') || '',
+                
+                // Meta
+                status: 'awaiting',
+                submittedAt: new Date().toISOString(),
+                source: 'music-tuition-2026'
+            };
+            
+            try {
+                const docRef = await addDoc(collection(db, 'lessonRequests'), request);
+                
+                // Show success message
+                form.style.display = 'none';
+                const successMsg = document.getElementById('success-message');
+                successMsg.classList.add('visible');
+                document.getElementById('ref-number').textContent = `REF-${docRef.id.slice(-8).toUpperCase()}`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('There was an error submitting your registration. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Registration';
+            }
+        });
+    </script>
+</body>
+</html>

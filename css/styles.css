@@ -3553,3 +3553,430 @@ button, a, .nav-item {
         min-height: 44px;
     }
 }
+
+/* ========================================
+   Group Members Modal
+   ======================================== */
+.group-members-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.members-section h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-md);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: white;
+    background: var(--color-gold);
+}
+
+.member-item.staff .member-avatar {
+    background: #8b5cf6;
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.member-role {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.no-members {
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.members-footer {
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.help-text {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* ========================================
+   Mini Tags (for groups in events)
+   ======================================== */
+.mini-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.mini-tag {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+/* ========================================
+   Task Phases (Event Tasks Modal)
+   ======================================== */
+.event-tasks-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.event-tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.event-info h3 {
+    margin: 0 0 var(--spacing-xs);
+    font-size: 1.125rem;
+}
+
+.event-info p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.tasks-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.progress-ring {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-full);
+    background: conic-gradient(var(--color-success) var(--progress, 0%), var(--color-bg-tertiary) 0%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-ring::before {
+    content: '';
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-secondary);
+}
+
+.progress-value {
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.progress-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tasks-phases {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.task-phase {
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.task-phase.phase-complete {
+    opacity: 0.7;
+}
+
+.task-phase.phase-overdue .phase-header {
+    border-left: 3px solid var(--color-danger);
+}
+
+.phase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.phase-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.phase-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+}
+
+.phase-progress {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    padding: 2px 8px;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+.phase-warning {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+    font-weight: 500;
+}
+
+.phase-tasks {
+    padding: var(--spacing-sm);
+}
+
+.task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+}
+
+.task-item:hover {
+    background: var(--color-bg-secondary);
+}
+
+.task-item.completed {
+    opacity: 0.6;
+}
+
+.task-item.completed .task-name {
+    text-decoration: line-through;
+}
+
+.task-item.overdue:not(.completed) {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.task-item.due-today:not(.completed) {
+    background: rgba(234, 179, 8, 0.1);
+}
+
+.task-checkbox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.task-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.task-checkbox .checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.task-checkbox input:checked + .checkmark {
+    background: var(--color-success);
+    border-color: var(--color-success);
+}
+
+.task-checkbox input:checked + .checkmark::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.task-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-name {
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    display: block;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: 4px;
+}
+
+.task-due {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.task-date {
+    color: var(--color-text-muted);
+}
+
+.task-assign {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.task-status {
+    flex-shrink: 0;
+}
+
+.status-complete {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+.status-overdue {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background: var(--color-danger);
+    color: white;
+    border-radius: var(--radius-sm);
+}
+
+.status-today {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background: var(--color-warning);
+    color: #000;
+    border-radius: var(--radius-sm);
+}
+
+.status-soon {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background: var(--color-info);
+    color: white;
+    border-radius: var(--radius-sm);
+}
+
+.tasks-staff {
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.tasks-staff h4 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-sm);
+}
+
+.staff-avatars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.staff-avatar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.staff-avatar-item span {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.staff-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+/* Form badge for built-in forms */
+.form-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-card {
+    position: relative;
+}
+

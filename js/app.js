@@ -77,7 +77,7 @@ class App {
         this.showLoading(true);
         
         try {
-            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings] = await Promise.all([
+            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms] = await Promise.all([
                 DatabaseService.getStudents(),
                 DatabaseService.getTutors(),
                 DatabaseService.getLessons(),
@@ -86,10 +86,11 @@ class App {
                 DatabaseService.getInstruments(),
                 DatabaseService.getInstrumentHires(),
                 DatabaseService.getLessonRequests(),
-                DatabaseService.getSettings()
+                DatabaseService.getSettings(),
+                DatabaseService.getForms()
             ]);
             
-            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings };
+            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms };
             
             // If no data, show welcome message
             if (students.length === 0 && tutors.length === 0) {
@@ -689,7 +690,7 @@ class App {
         };
         
         if (this.data.events.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No events found. Create your first event!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No events found. Create your first event!</td></tr>';
             return;
         }
         
@@ -703,12 +704,22 @@ class App {
                 ? `<span class="task-progress ${overdueTasks > 0 ? 'has-overdue' : ''}">${completedTasks}/${tasks.length}</span>`
                 : '';
             
+            // Get group names
+            const eventGroups = (event.groupIds || [])
+                .map(gid => this.data.groups.find(g => g.id === gid))
+                .filter(g => g)
+                .map(g => g.name);
+            const groupsDisplay = eventGroups.length > 0 
+                ? eventGroups.map(name => `<span class="mini-tag">${name}</span>`).join('')
+                : '<span class="text-muted">—</span>';
+            
             return `
                 <tr data-id="${event.id}">
                     <td><strong>${event.name}</strong></td>
-                    <td>${event.description || '—'}</td>
-                    <td>${this.formatDate(event.date)}</td>
+                    <td>${this.formatDate(event.date)}${event.time ? ' · ' + event.time : ''}</td>
+                    <td>${event.location || '—'}</td>
                     <td>${event.term || '—'}</td>
+                    <td><div class="mini-tags">${groupsDisplay}</div></td>
                     <td><span class="template-badge">${templateLabel}</span> ${taskStatus}</td>
                     <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
                     <td>
@@ -813,43 +824,60 @@ class App {
             return;
         }
         
-        container.innerHTML = this.data.groups.map(group => `
-            <div class="group-card" data-id="${group.id}">
-                <div class="group-card-header">
-                    <div class="group-name">${group.name}</div>
-                    <div class="group-type">${group.type}</div>
-                </div>
-                <div class="group-card-body">
-                    <div class="group-meta">
-                        <div class="group-meta-item">
-                            <span class="group-meta-value">${group.memberCount || 0}</span>
-                            <span class="group-meta-label">Members</span>
+        container.innerHTML = this.data.groups.map(group => {
+            // Get staff assigned to this group (tutors who lead this group)
+            const groupStaff = this.data.tutors.filter(t => {
+                const tutorGroupIds = t.groupIds || (t.groupId ? [t.groupId] : []);
+                return tutorGroupIds.includes(group.id);
+            });
+            const staffDisplay = groupStaff.length > 0 
+                ? groupStaff.map(s => s.name).join(', ')
+                : (group.leader || 'No leader assigned');
+            
+            // Count students in this group (students with this groupId)
+            const memberCount = group.memberCount || this.data.students.filter(s => 
+                s.groupIds && s.groupIds.includes(group.id)
+            ).length || 0;
+            
+            return `
+                <div class="group-card" data-id="${group.id}">
+                    <div class="group-card-header">
+                        <div class="group-name">${group.name}</div>
+                        <div class="group-type">${group.type}</div>
+                    </div>
+                    <div class="group-card-body">
+                        <div class="group-meta">
+                            <div class="group-meta-item">
+                                <span class="group-meta-value">${memberCount}</span>
+                                <span class="group-meta-label">Members</span>
+                            </div>
+                            <div class="group-meta-item">
+                                <span class="group-meta-value discipline-tag discipline-${categoryColors[group.category] || 'music'}">${group.category}</span>
+                            </div>
                         </div>
-                        <div class="group-meta-item">
-                            <span class="group-meta-value discipline-tag discipline-${categoryColors[group.category] || 'music'}">${group.category}</span>
+                        <div class="group-leader">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            ${staffDisplay}
+                        </div>
+                        <div class="group-meeting">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            ${group.meetingTime || 'TBA'}
                         </div>
                     </div>
-                    <div class="group-leader">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
-                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        ${group.leader || 'No leader assigned'}
-                    </div>
-                    <div class="group-meeting">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                        ${group.meetingTime || 'TBA'}
+                    <div class="group-card-actions">
+                        <button class="btn btn-outline btn-sm" data-action="view-group-members" data-id="${group.id}">Members</button>
+                        <button class="btn btn-outline btn-sm" data-action="edit-group" data-id="${group.id}">Edit</button>
+                        <button class="btn btn-outline btn-sm" data-action="delete-group" data-id="${group.id}">Delete</button>
                     </div>
                 </div>
-                <div class="group-card-actions">
-                    <button class="btn btn-outline btn-sm" data-action="edit-group" data-id="${group.id}">Edit</button>
-                    <button class="btn btn-outline btn-sm" data-action="delete-group" data-id="${group.id}">Delete</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         
         // Bind edit/delete buttons for groups
         this.bindRowActions('group');
@@ -976,50 +1004,125 @@ class App {
         const container = document.getElementById('forms-grid');
         if (!container) return;
         
-        // Default forms data if none exists
-        const forms = this.data.forms || [
+        // Map form IDs to actual HTML files
+        const formUrls = {
+            'music-tuition-2026': 'music-tuition-2026.html',
+            'pa-groups-2026': 'pa-groups-2026.html'
+        };
+        
+        // Default built-in forms (these always exist as static HTML)
+        const defaultForms = [
             {
                 id: 'music-tuition-2026',
                 name: 'Music Tuition Signups 2026',
                 description: 'Registration for itinerant music lessons',
                 status: 'active',
-                responses: this.data.lessonRequests?.length || 0,
-                createdAt: '2026-01-01'
+                responses: this.data.lessonRequests?.filter(r => r.source === 'music-tuition-2026').length || 0,
+                createdAt: '2026-01-01',
+                isBuiltIn: true
             },
             {
                 id: 'pa-groups-2026',
                 name: 'Performing Arts Groups 2026',
                 description: 'Expression of interest for all PA groups',
                 status: 'active',
-                responses: 28,
-                createdAt: '2026-01-01'
+                responses: 0,
+                createdAt: '2026-01-01',
+                isBuiltIn: true
             }
         ];
         
-        if (forms.length === 0) {
+        // Merge database forms with defaults (database forms can override defaults)
+        const databaseForms = this.data.forms || [];
+        const allForms = [...defaultForms, ...databaseForms];
+        
+        if (allForms.length === 0) {
             container.innerHTML = '<div class="no-data-card">No signup forms created yet. Create your first form!</div>';
             return;
         }
         
-        container.innerHTML = forms.map(form => `
-            <div class="form-card" data-id="${form.id}">
-                <div class="form-status ${form.status}">${form.status === 'active' ? 'Active' : form.status === 'draft' ? 'Draft' : 'Closed'}</div>
-                <h3 class="form-name">${form.name}</h3>
-                <p class="form-description">${form.description}</p>
-                <div class="form-stats">
-                    <span class="form-responses">${form.responses || 0} responses</span>
+        container.innerHTML = allForms.map(form => {
+            const formUrl = formUrls[form.id] || `${form.id}.html`;
+            const hasPublicPage = formUrls[form.id] !== undefined;
+            
+            return `
+                <div class="form-card" data-id="${form.id}">
+                    <div class="form-status ${form.status}">${form.status === 'active' ? 'Active' : form.status === 'draft' ? 'Draft' : 'Closed'}</div>
+                    ${form.isBuiltIn ? '<span class="form-badge">Built-in</span>' : ''}
+                    <h3 class="form-name">${form.name}</h3>
+                    <p class="form-description">${form.description}</p>
+                    <div class="form-stats">
+                        <span class="form-responses">${form.responses || 0} responses</span>
+                    </div>
+                    <div class="form-actions">
+                        ${hasPublicPage ? `<a href="${formUrl}" target="_blank" class="btn btn-primary btn-sm">Open Form</a>` : ''}
+                        ${!form.isBuiltIn ? `<button class="btn btn-outline btn-sm" onclick="app.showEditFormModal('${form.id}')">Edit</button>` : ''}
+                        <button class="btn btn-outline btn-sm" onclick="app.viewFormResponses('${form.id}')">Responses</button>
+                        ${hasPublicPage ? `<button class="btn btn-outline btn-sm" onclick="app.copyFormLink('${form.id}')">Copy Link</button>` : ''}
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button class="btn btn-outline btn-sm" onclick="app.showEditFormModal('${form.id}')">Edit</button>
-                    <button class="btn btn-outline btn-sm" onclick="app.viewFormResponses('${form.id}')">View Responses</button>
-                    <button class="btn btn-outline btn-sm" onclick="app.copyFormLink('${form.id}')">Copy Link</button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     showEditFormModal(formId) {
-        this.showToast('Form editor coming soon!', 'info');
+        const form = this.data.forms?.find(f => f.id === formId);
+        if (!form) {
+            this.showToast('Form not found', 'error');
+            return;
+        }
+        
+        const content = `
+            <form id="edit-form-form" class="modal-form">
+                <input type="hidden" name="id" value="${formId}">
+                <div class="form-group">
+                    <label>Form Name</label>
+                    <input type="text" name="name" value="${form.name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description">${form.description || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="draft" ${form.status === 'draft' ? 'selected' : ''}>Draft</option>
+                        <option value="active" ${form.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="closed" ${form.status === 'closed' ? 'selected' : ''}>Closed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Available Instruments (if music form)</label>
+                    <input type="text" name="instruments" value="${(form.instruments || []).join(', ')}" placeholder="Guitar, Piano, Drums">
+                </div>
+            </form>
+        `;
+        
+        this.showModal('Edit Form', content, () => this.updateForm());
+    }
+
+    async updateForm() {
+        const formEl = document.getElementById('edit-form-form');
+        const formData = new FormData(formEl);
+        const id = formData.get('id');
+        
+        const updates = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            status: formData.get('status'),
+            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i)
+        };
+        
+        const result = await DatabaseService.updateForm(id, updates);
+        
+        if (result.success) {
+            this.showToast('Form updated successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error updating form', 'error');
+        }
     }
 
     viewFormResponses(formId) {
@@ -1029,11 +1132,26 @@ class App {
     }
 
     copyFormLink(formId) {
-        const link = `${window.location.origin}/forms/${formId}`;
+        // Map form IDs to actual HTML files
+        const formUrls = {
+            'music-tuition-2026': 'music-tuition-2026.html',
+            'pa-groups-2026': 'pa-groups-2026.html'
+        };
+        
+        const filename = formUrls[formId] || `${formId}.html`;
+        const link = `${window.location.origin}/${filename}`;
+        
         navigator.clipboard.writeText(link).then(() => {
             this.showToast('Link copied to clipboard!', 'success');
         }).catch(() => {
-            this.showToast('Could not copy link', 'error');
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = link;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showToast('Link copied to clipboard!', 'success');
         });
     }
 
@@ -1220,6 +1338,13 @@ class App {
                 btn.addEventListener('click', () => this.showEventTasksModal(btn.dataset.id));
             });
         }
+        
+        // Group-specific actions
+        if (type === 'group') {
+            document.querySelectorAll('[data-action="view-group-members"]').forEach(btn => {
+                btn.addEventListener('click', () => this.showGroupMembersModal(btn.dataset.id));
+            });
+        }
     }
 
     async handleEdit(type, id) {
@@ -1363,6 +1488,15 @@ class App {
             `<option value="${t.id}" ${t.id === student.tutorId ? 'selected' : ''}>${t.name}</option>`
         ).join('');
         
+        // Group checkboxes
+        const studentGroupIds = student.groupIds || [];
+        const groupCheckboxes = this.data.groups.map(g => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="groups" value="${g.id}" ${studentGroupIds.includes(g.id) ? 'checked' : ''}>
+                <span>${g.name}</span>
+            </label>`
+        ).join('');
+        
         const content = `
             <form id="edit-student-form" class="modal-form">
                 <input type="hidden" name="id" value="${id}">
@@ -1392,6 +1526,13 @@ class App {
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Performing Arts Groups</label>
+                    <div class="checkbox-group">
+                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
+                    </div>
+                    <small class="form-hint">Select the groups this student is a member of</small>
+                </div>
+                <div class="form-group">
                     <label>Parent Email</label>
                     <input type="email" name="parentEmail" value="${student.parentEmail || ''}">
                 </div>
@@ -1415,12 +1556,17 @@ class App {
         const formData = new FormData(form);
         const id = formData.get('id');
         
+        // Get selected groups
+        const groupCheckboxes = form.querySelectorAll('input[name="groups"]:checked');
+        const groupIds = Array.from(groupCheckboxes).map(cb => cb.value);
+        
         const student = {
             name: formData.get('name'),
             year: parseInt(formData.get('year')),
             class: formData.get('class'),
             instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
             tutorId: formData.get('tutorId') || null,
+            groupIds: groupIds,
             parentEmail: formData.get('parentEmail'),
             status: formData.get('status')
         };
@@ -1557,6 +1703,24 @@ class App {
             `<option value="${t.value}" ${t.value === currentTemplate ? 'selected' : ''}>${t.label}</option>`
         ).join('');
 
+        // Groups checkboxes
+        const eventGroupIds = event.groupIds || [];
+        const groupCheckboxes = this.data.groups.map(g => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="groups" value="${g.id}" ${eventGroupIds.includes(g.id) ? 'checked' : ''}>
+                <span>${g.name}</span>
+            </label>`
+        ).join('');
+
+        // Staff checkboxes  
+        const eventStaffIds = event.staffIds || [];
+        const staffCheckboxes = this.data.tutors.map(t => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="staff" value="${t.id}" ${eventStaffIds.includes(t.id) ? 'checked' : ''}>
+                <span>${t.name}</span>
+            </label>`
+        ).join('');
+
         const content = `
             <form id="edit-event-form" class="modal-form">
                 <input type="hidden" name="id" value="${id}">
@@ -1572,6 +1736,16 @@ class App {
                     <div class="form-group">
                         <label>Date</label>
                         <input type="date" name="date" value="${event.date || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="text" name="time" value="${event.time || ''}" placeholder="e.g. 7:00 PM">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" name="location" value="${event.location || ''}" placeholder="e.g. Main Hall">
                     </div>
                     <div class="form-group">
                         <label>Term</label>
@@ -1599,6 +1773,20 @@ class App {
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Performing Groups</label>
+                    <div class="checkbox-group">
+                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
+                    </div>
+                    <small class="form-hint">Select the groups performing at this event</small>
+                </div>
+                <div class="form-group">
+                    <label>Staff Involved</label>
+                    <div class="checkbox-group">
+                        ${staffCheckboxes || '<span class="text-muted">No staff added yet</span>'}
+                    </div>
+                    <small class="form-hint">These staff will receive task notifications</small>
+                </div>
+                <div class="form-group">
                     <label>Status</label>
                     <select name="status">
                         <option value="upcoming" ${event.status === 'upcoming' ? 'selected' : ''}>Upcoming</option>
@@ -1618,13 +1806,25 @@ class App {
         const formData = new FormData(form);
         const id = formData.get('id');
         
+        // Get selected groups
+        const groupCheckboxes = form.querySelectorAll('input[name="groups"]:checked');
+        const groupIds = Array.from(groupCheckboxes).map(cb => cb.value);
+        
+        // Get selected staff
+        const staffCheckboxes = form.querySelectorAll('input[name="staff"]:checked');
+        const staffIds = Array.from(staffCheckboxes).map(cb => cb.value);
+        
         const event = {
             name: formData.get('name'),
             description: formData.get('description'),
             date: formData.get('date'),
+            time: formData.get('time'),
+            location: formData.get('location'),
             term: formData.get('term'),
             category: formData.get('category'),
             template: formData.get('template'),
+            groupIds: groupIds,
+            staffIds: staffIds,
             status: formData.get('status')
         };
         
@@ -1640,52 +1840,52 @@ class App {
         }
     }
 
-    // Event Task Templates - tasks with days before event
+    // Event Task Templates - tasks with days before event, organized by phase
     getEventTemplateTasks(templateType) {
         const templates = {
             'school-during': [
-                { name: 'Book venue/room', daysBefore: 28 },
-                { name: 'Create event on school calendar', daysBefore: 21 },
-                { name: 'Notify staff involved', daysBefore: 21 },
-                { name: 'Send parent notification', daysBefore: 14 },
-                { name: 'Confirm catering (if needed)', daysBefore: 7 },
-                { name: 'Prepare equipment/resources', daysBefore: 3 },
-                { name: 'Final run-through', daysBefore: 1 },
-                { name: 'Event day setup', daysBefore: 0 }
+                { phase: 'Planning', name: 'Book venue/room', daysBefore: 28, assignTo: 'coordinator' },
+                { phase: 'Planning', name: 'Create event on school calendar', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Notify staff involved', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Send parent notification', daysBefore: 14, assignTo: 'coordinator' },
+                { phase: 'Logistics', name: 'Confirm catering (if needed)', daysBefore: 7, assignTo: 'coordinator' },
+                { phase: 'Preparation', name: 'Prepare equipment/resources', daysBefore: 3, assignTo: 'group-leader' },
+                { phase: 'Preparation', name: 'Final run-through', daysBefore: 1, assignTo: 'group-leader' },
+                { phase: 'Event Day', name: 'Event day setup', daysBefore: 0, assignTo: 'all' }
             ],
             'school-after': [
-                { name: 'Book venue/room', daysBefore: 28 },
-                { name: 'Create event on school calendar', daysBefore: 21 },
-                { name: 'Arrange staff supervision', daysBefore: 21 },
-                { name: 'Send parent notification with pickup info', daysBefore: 14 },
-                { name: 'Confirm catering (if needed)', daysBefore: 7 },
-                { name: 'Arrange lighting/sound', daysBefore: 7 },
-                { name: 'Prepare equipment/resources', daysBefore: 3 },
-                { name: 'Final run-through', daysBefore: 1 },
-                { name: 'Event day setup', daysBefore: 0 }
+                { phase: 'Planning', name: 'Book venue/room', daysBefore: 28, assignTo: 'coordinator' },
+                { phase: 'Planning', name: 'Create event on school calendar', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Arrange staff supervision', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Send parent notification with pickup info', daysBefore: 14, assignTo: 'coordinator' },
+                { phase: 'Logistics', name: 'Confirm catering (if needed)', daysBefore: 7, assignTo: 'coordinator' },
+                { phase: 'Logistics', name: 'Arrange lighting/sound', daysBefore: 7, assignTo: 'group-leader' },
+                { phase: 'Preparation', name: 'Prepare equipment/resources', daysBefore: 3, assignTo: 'group-leader' },
+                { phase: 'Preparation', name: 'Final run-through', daysBefore: 1, assignTo: 'group-leader' },
+                { phase: 'Event Day', name: 'Event day setup', daysBefore: 0, assignTo: 'all' }
             ],
             'offsite-during': [
-                { name: 'Book external venue', daysBefore: 42 },
-                { name: 'Arrange transport', daysBefore: 28 },
-                { name: 'Complete RAMS form', daysBefore: 21 },
-                { name: 'Send permission slips', daysBefore: 21 },
-                { name: 'Collect permission slips', daysBefore: 7 },
-                { name: 'Confirm transport & numbers', daysBefore: 3 },
-                { name: 'Prepare equipment to take', daysBefore: 2 },
-                { name: 'Final briefing with students', daysBefore: 1 },
-                { name: 'Event day - check roll', daysBefore: 0 }
+                { phase: 'Planning', name: 'Book external venue', daysBefore: 42, assignTo: 'coordinator' },
+                { phase: 'Planning', name: 'Arrange transport', daysBefore: 28, assignTo: 'coordinator' },
+                { phase: 'Compliance', name: 'Complete RAMS form', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Send permission slips', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Collect permission slips', daysBefore: 7, assignTo: 'coordinator' },
+                { phase: 'Logistics', name: 'Confirm transport & numbers', daysBefore: 3, assignTo: 'coordinator' },
+                { phase: 'Preparation', name: 'Prepare equipment to take', daysBefore: 2, assignTo: 'group-leader' },
+                { phase: 'Preparation', name: 'Final briefing with students', daysBefore: 1, assignTo: 'group-leader' },
+                { phase: 'Event Day', name: 'Event day - check roll', daysBefore: 0, assignTo: 'all' }
             ],
             'offsite-after': [
-                { name: 'Book external venue', daysBefore: 42 },
-                { name: 'Arrange transport', daysBefore: 28 },
-                { name: 'Complete RAMS form', daysBefore: 21 },
-                { name: 'Send permission slips with return time', daysBefore: 21 },
-                { name: 'Arrange staff supervision for return', daysBefore: 14 },
-                { name: 'Collect permission slips', daysBefore: 7 },
-                { name: 'Confirm transport & numbers', daysBefore: 3 },
-                { name: 'Prepare equipment to take', daysBefore: 2 },
-                { name: 'Final briefing with students', daysBefore: 1 },
-                { name: 'Event day - check roll', daysBefore: 0 }
+                { phase: 'Planning', name: 'Book external venue', daysBefore: 42, assignTo: 'coordinator' },
+                { phase: 'Planning', name: 'Arrange transport', daysBefore: 28, assignTo: 'coordinator' },
+                { phase: 'Compliance', name: 'Complete RAMS form', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Send permission slips with return time', daysBefore: 21, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Arrange staff supervision for return', daysBefore: 14, assignTo: 'coordinator' },
+                { phase: 'Communication', name: 'Collect permission slips', daysBefore: 7, assignTo: 'coordinator' },
+                { phase: 'Logistics', name: 'Confirm transport & numbers', daysBefore: 3, assignTo: 'coordinator' },
+                { phase: 'Preparation', name: 'Prepare equipment to take', daysBefore: 2, assignTo: 'group-leader' },
+                { phase: 'Preparation', name: 'Final briefing with students', daysBefore: 1, assignTo: 'group-leader' },
+                { phase: 'Event Day', name: 'Event day - check roll', daysBefore: 0, assignTo: 'all' }
             ]
         };
         return templates[templateType] || templates['school-during'];
@@ -1698,6 +1898,11 @@ class App {
         const eventDate = new Date(event.date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
         
         // Get template tasks or use existing tasks
         const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
@@ -1718,53 +1923,118 @@ class App {
                 id: index,
                 dueDate: dueDate,
                 completed: savedTask.completed || false,
+                completedBy: savedTask.completedBy || null,
                 completedDate: savedTask.completedDate || null,
+                assignedTo: savedTask.assignedTo || null,
                 isOverdue,
                 isDueToday,
                 isDueSoon
             };
         });
         
+        // Group tasks by phase
+        const phases = [...new Set(tasks.map(t => t.phase))];
+        const tasksByPhase = phases.map(phase => ({
+            name: phase,
+            tasks: tasks.filter(t => t.phase === phase)
+        }));
+        
         const completedCount = tasks.filter(t => t.completed).length;
         const overdueCount = tasks.filter(t => t.isOverdue).length;
+        
+        // Staff options for assignment dropdown
+        const staffOptions = eventStaff.map(s => 
+            `<option value="${s.id}">${s.name}</option>`
+        ).join('');
         
         const content = `
             <div class="event-tasks-modal">
                 <div class="event-tasks-header">
                     <div class="event-info">
                         <h3>${event.name}</h3>
-                        <p>Event Date: <strong>${this.formatDate(event.date)}</strong></p>
+                        <p>Event Date: <strong>${this.formatDate(event.date)}</strong> ${event.time ? '· ' + event.time : ''}</p>
+                        ${event.location ? `<p>Location: <strong>${event.location}</strong></p>` : ''}
                     </div>
                     <div class="tasks-summary">
-                        <span class="tasks-progress">${completedCount}/${tasks.length} complete</span>
-                        ${overdueCount > 0 ? `<span class="tasks-overdue">${overdueCount} overdue</span>` : ''}
+                        <div class="progress-ring">
+                            <span class="progress-value">${Math.round((completedCount / tasks.length) * 100)}%</span>
+                        </div>
+                        <div class="progress-text">
+                            <span class="tasks-progress">${completedCount}/${tasks.length} complete</span>
+                            ${overdueCount > 0 ? `<span class="tasks-overdue">${overdueCount} overdue</span>` : ''}
+                        </div>
                     </div>
                 </div>
-                <div class="tasks-list" id="event-tasks-list">
-                    ${tasks.map(task => `
-                        <div class="task-item ${task.completed ? 'completed' : ''} ${task.isOverdue ? 'overdue' : ''} ${task.isDueToday ? 'due-today' : ''} ${task.isDueSoon ? 'due-soon' : ''}" data-task-id="${task.id}">
-                            <label class="task-checkbox">
-                                <input type="checkbox" ${task.completed ? 'checked' : ''} data-event-id="${eventId}" data-task-name="${task.name}">
-                                <span class="checkmark"></span>
-                            </label>
-                            <div class="task-content">
-                                <span class="task-name">${task.name}</span>
-                                <span class="task-due">
-                                    ${task.daysBefore === 0 ? 'Event day' : 
-                                      task.daysBefore === 1 ? '1 day before' :
-                                      `${task.daysBefore} days before`}
-                                    <span class="task-date">(${this.formatDate(task.dueDate)})</span>
-                                </span>
+                
+                <div class="tasks-phases" id="event-tasks-list">
+                    ${tasksByPhase.map(phase => {
+                        const phaseCompleted = phase.tasks.filter(t => t.completed).length;
+                        const phaseOverdue = phase.tasks.filter(t => t.isOverdue).length;
+                        
+                        return `
+                            <div class="task-phase ${phaseCompleted === phase.tasks.length ? 'phase-complete' : ''} ${phaseOverdue > 0 ? 'phase-overdue' : ''}">
+                                <div class="phase-header">
+                                    <div class="phase-title">
+                                        <span class="phase-name">${phase.name}</span>
+                                        <span class="phase-progress">${phaseCompleted}/${phase.tasks.length}</span>
+                                    </div>
+                                    ${phaseOverdue > 0 ? `<span class="phase-warning">${phaseOverdue} overdue</span>` : ''}
+                                </div>
+                                <div class="phase-tasks">
+                                    ${phase.tasks.map(task => {
+                                        const assignedStaff = task.assignedTo ? eventStaff.find(s => s.id === task.assignedTo) : null;
+                                        
+                                        return `
+                                            <div class="task-item ${task.completed ? 'completed' : ''} ${task.isOverdue ? 'overdue' : ''} ${task.isDueToday ? 'due-today' : ''} ${task.isDueSoon ? 'due-soon' : ''}" data-task-id="${task.id}">
+                                                <label class="task-checkbox">
+                                                    <input type="checkbox" ${task.completed ? 'checked' : ''} data-event-id="${eventId}" data-task-name="${task.name}">
+                                                    <span class="checkmark"></span>
+                                                </label>
+                                                <div class="task-content">
+                                                    <span class="task-name">${task.name}</span>
+                                                    <div class="task-meta">
+                                                        <span class="task-due">
+                                                            ${task.daysBefore === 0 ? 'Event day' : 
+                                                              task.daysBefore === 1 ? '1 day before' :
+                                                              `${task.daysBefore} days before`}
+                                                            <span class="task-date">(${this.formatDate(task.dueDate)})</span>
+                                                        </span>
+                                                        ${eventStaff.length > 0 ? `
+                                                            <select class="task-assign" data-event-id="${eventId}" data-task-name="${task.name}">
+                                                                <option value="">Assign to...</option>
+                                                                ${staffOptions}
+                                                            </select>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                                <div class="task-status">
+                                                    ${task.completed ? '<span class="status-complete">✓</span>' :
+                                                      task.isOverdue ? '<span class="status-overdue">Overdue</span>' :
+                                                      task.isDueToday ? '<span class="status-today">Today</span>' :
+                                                      task.isDueSoon ? '<span class="status-soon">Soon</span>' : ''}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
                             </div>
-                            <div class="task-status">
-                                ${task.completed ? '<span class="status-complete">✓</span>' :
-                                  task.isOverdue ? '<span class="status-overdue">Overdue</span>' :
-                                  task.isDueToday ? '<span class="status-today">Today</span>' :
-                                  task.isDueSoon ? '<span class="status-soon">Soon</span>' : ''}
-                            </div>
-                        </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
+                
+                ${eventStaff.length > 0 ? `
+                    <div class="tasks-staff">
+                        <h4>Staff Involved</h4>
+                        <div class="staff-avatars">
+                            ${eventStaff.map(s => `
+                                <div class="staff-avatar-item" title="${s.name}">
+                                    <div class="staff-avatar" style="background: ${s.color || '#8b5cf6'};">${s.initials}</div>
+                                    <span>${s.name.split(' ')[0]}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '<p class="help-text">Add staff to this event to assign tasks.</p>'}
             </div>
         `;
         
@@ -1776,6 +2046,12 @@ class App {
             document.querySelectorAll('#event-tasks-list input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', (e) => {
                     this.toggleEventTask(e.target.dataset.eventId, e.target.dataset.taskName, e.target.checked);
+                });
+            });
+            // Bind staff assignment changes
+            document.querySelectorAll('#event-tasks-list select.task-assign').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    this.assignEventTask(e.target.dataset.eventId, e.target.dataset.taskName, e.target.value);
                 });
             });
         }, 100);
@@ -1823,6 +2099,36 @@ class App {
             const completedCount = event.tasks.filter(t => t.completed).length;
             const totalCount = document.querySelectorAll('#event-tasks-list .task-item').length;
             document.querySelector('.tasks-progress').textContent = `${completedCount}/${totalCount} complete`;
+        }
+    }
+
+    async assignEventTask(eventId, taskName, staffId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+        
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+        
+        // Find or create task entry
+        let task = event.tasks.find(t => t.name === taskName);
+        if (task) {
+            task.assignedTo = staffId || null;
+        } else {
+            event.tasks.push({
+                name: taskName,
+                completed: false,
+                assignedTo: staffId || null
+            });
+        }
+        
+        // Update in database
+        const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
+        
+        if (result.success) {
+            const staff = staffId ? this.data.tutors.find(t => t.id === staffId) : null;
+            this.showToast(staff ? `Task assigned to ${staff.name}` : 'Task unassigned', 'success');
         }
     }
 
@@ -1903,6 +2209,69 @@ class App {
         } else {
             this.showToast('Error updating group', 'error');
         }
+    }
+
+    showGroupMembersModal(groupId) {
+        const group = this.data.groups.find(g => g.id === groupId);
+        if (!group) return;
+        
+        // Get staff leading this group
+        const groupStaff = this.data.tutors.filter(t => {
+            const tutorGroupIds = t.groupIds || (t.groupId ? [t.groupId] : []);
+            return tutorGroupIds.includes(groupId);
+        });
+        
+        // Get students in this group (students with this groupId)
+        const groupStudents = this.data.students.filter(s => 
+            s.groupIds && s.groupIds.includes(groupId)
+        );
+        
+        const staffList = groupStaff.length > 0
+            ? groupStaff.map(s => `
+                <div class="member-item staff">
+                    <div class="member-avatar" style="background: ${s.color || '#8b5cf6'};">${s.initials}</div>
+                    <div class="member-info">
+                        <div class="member-name">${s.name}</div>
+                        <div class="member-role">Staff Leader</div>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="no-members">No staff assigned</div>';
+        
+        const studentList = groupStudents.length > 0
+            ? groupStudents.map(s => `
+                <div class="member-item student">
+                    <div class="member-avatar">${s.name.charAt(0)}</div>
+                    <div class="member-info">
+                        <div class="member-name">${s.name}</div>
+                        <div class="member-role">Year ${s.year} · ${s.class}</div>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="no-members">No students in this group yet</div>';
+        
+        const content = `
+            <div class="group-members-modal">
+                <div class="members-section">
+                    <h4>Staff Leaders</h4>
+                    <div class="members-list">
+                        ${staffList}
+                    </div>
+                </div>
+                <div class="members-section">
+                    <h4>Student Members (${groupStudents.length})</h4>
+                    <div class="members-list">
+                        ${studentList}
+                    </div>
+                </div>
+                <div class="members-footer">
+                    <p class="help-text">To add students to this group, edit the student's profile and assign them to groups.</p>
+                </div>
+            </div>
+        `;
+        
+        this.showModal(`${group.name} Members`, content, null);
+        document.getElementById('modal-save').style.display = 'none';
     }
 
     showEditInstrumentModal(id) {
@@ -2352,6 +2721,14 @@ class App {
     showAddStudentModal() {
         const tutorOptions = this.data.tutors.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
         
+        // Group checkboxes
+        const groupCheckboxes = this.data.groups.map(g => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="groups" value="${g.id}">
+                <span>${g.name}</span>
+            </label>`
+        ).join('');
+        
         const content = `
             <form id="add-student-form" class="modal-form">
                 <div class="form-group">
@@ -2380,6 +2757,13 @@ class App {
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>Performing Arts Groups</label>
+                    <div class="checkbox-group">
+                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
+                    </div>
+                    <small class="form-hint">Select the groups this student is a member of</small>
+                </div>
+                <div class="form-group">
                     <label>Parent Email</label>
                     <input type="email" name="parentEmail" placeholder="parent@email.com">
                 </div>
@@ -2393,12 +2777,17 @@ class App {
         const form = document.getElementById('add-student-form');
         const formData = new FormData(form);
         
+        // Get selected groups
+        const groupCheckboxes = form.querySelectorAll('input[name="groups"]:checked');
+        const groupIds = Array.from(groupCheckboxes).map(cb => cb.value);
+        
         const student = {
             name: formData.get('name'),
             year: parseInt(formData.get('year')),
             class: formData.get('class'),
             instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
             tutorId: formData.get('tutorId') || null,
+            groupIds: groupIds,
             parentEmail: formData.get('parentEmail'),
             status: formData.get('tutorId') ? 'assigned' : 'waiting'
         };
@@ -2416,6 +2805,22 @@ class App {
     }
 
     showAddEventModal() {
+        // Groups checkboxes
+        const groupCheckboxes = this.data.groups.map(g => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="groups" value="${g.id}">
+                <span>${g.name}</span>
+            </label>`
+        ).join('');
+
+        // Staff checkboxes  
+        const staffCheckboxes = this.data.tutors.map(t => 
+            `<label class="checkbox-label">
+                <input type="checkbox" name="staff" value="${t.id}">
+                <span>${t.name}</span>
+            </label>`
+        ).join('');
+
         const content = `
             <form id="add-event-form" class="modal-form">
                 <div class="form-group">
@@ -2430,6 +2835,16 @@ class App {
                     <div class="form-group">
                         <label>Date</label>
                         <input type="date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="text" name="time" placeholder="e.g. 7:00 PM">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" name="location" placeholder="e.g. Main Hall">
                     </div>
                     <div class="form-group">
                         <label>Term</label>
@@ -2464,6 +2879,20 @@ class App {
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Performing Groups</label>
+                    <div class="checkbox-group">
+                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
+                    </div>
+                    <small class="form-hint">Select the groups performing at this event</small>
+                </div>
+                <div class="form-group">
+                    <label>Staff Involved</label>
+                    <div class="checkbox-group">
+                        ${staffCheckboxes || '<span class="text-muted">No staff added yet</span>'}
+                    </div>
+                    <small class="form-hint">These staff will receive task notifications</small>
+                </div>
             </form>
         `;
         
@@ -2474,13 +2903,25 @@ class App {
         const form = document.getElementById('add-event-form');
         const formData = new FormData(form);
         
+        // Get selected groups
+        const groupCheckboxes = form.querySelectorAll('input[name="groups"]:checked');
+        const groupIds = Array.from(groupCheckboxes).map(cb => cb.value);
+        
+        // Get selected staff
+        const staffCheckboxes = form.querySelectorAll('input[name="staff"]:checked');
+        const staffIds = Array.from(staffCheckboxes).map(cb => cb.value);
+        
         const event = {
             name: formData.get('name'),
             description: formData.get('description'),
             date: formData.get('date'),
+            time: formData.get('time'),
+            location: formData.get('location'),
             term: formData.get('term'),
             category: formData.get('category'),
             template: formData.get('template'),
+            groupIds: groupIds,
+            staffIds: staffIds,
             status: 'upcoming',
             tasks: [] // Initialize empty tasks array
         };
@@ -2818,9 +3259,16 @@ class App {
             createdAt: new Date().toISOString()
         };
         
-        // For now, show success - forms would be stored in a forms collection
-        this.showToast('Form created! (Form builder coming soon)', 'success');
-        this.closeModal();
+        const result = await DatabaseService.addForm(signupForm);
+        
+        if (result.success) {
+            this.showToast('Form created successfully!', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error creating form', 'error');
+        }
     }
 
     showTemplateModal(templateId) {

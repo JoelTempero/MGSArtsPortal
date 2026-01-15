@@ -376,6 +376,23 @@ const DatabaseService = {
         }
     },
 
+    // Forms (signup forms)
+    async getForms() {
+        return this.getAll('forms');
+    },
+
+    async addForm(formData) {
+        return this.add('forms', formData);
+    },
+
+    async updateForm(id, formData) {
+        return this.update('forms', id, formData);
+    },
+
+    async deleteForm(id) {
+        return this.delete('forms', id);
+    },
+
     // ---- Batch Operations ----
 
     // Import all data (for seeding/restoring)
