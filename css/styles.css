@@ -3414,6 +3414,32 @@ input, textarea, select {
     color: var(--color-text-muted);
 }
 
+.staff-notify-item .staff-email.no-email {
+    color: var(--color-warning);
+    font-style: italic;
+}
+
+.email-method {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.email-method.native {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.email-method.mailto {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.text-warning {
+    color: var(--color-warning);
+}
+
 /* Approve Request Modal */
 .approve-request-form {
     display: flex;

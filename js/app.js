@@ -3,6 +3,7 @@
 // ========================================
 
 import { AuthService, DatabaseService, EventTemplates } from './firebase.js';
+import { EmailService } from './emailService.js';
 
 class App {
     constructor() {
@@ -2269,16 +2270,32 @@ class App {
         }
     }
     
-    async deleteUser(userId) {
+    deleteUser(userId) {
         const user = this.data.users?.find(u => u.id === userId);
         if (!user) return;
-        
-        if (!confirm(`Are you sure you want to delete ${user.name}? This cannot be undone.`)) {
-            return;
-        }
-        
+
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon danger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </div>
+                <h3>Delete User?</h3>
+                <p>Are you sure you want to delete <strong>${user.name}</strong>? This cannot be undone.</p>
+            </div>
+        `;
+
+        this.showModal('Delete User', content, () => this.confirmDeleteUser(userId));
+        document.getElementById('modal-save').textContent = 'Delete';
+        document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    async confirmDeleteUser(userId) {
         try {
             await DatabaseService.deleteUser(userId);
+            this.closeModal();
             await this.loadAllData();
             this.renderUsers();
             this.showToast('User deleted', 'success');
@@ -5269,22 +5286,47 @@ class App {
         this.showLoading(false);
     }
 
-    async importData(e) {
+    importData(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        if (!confirm('This will import data from the file. Continue?')) {
-            e.target.value = '';
+
+        // Store the file for later processing
+        this.pendingImportFile = file;
+
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                </div>
+                <h3>Import Data?</h3>
+                <p>This will import data from <strong>${file.name}</strong>. Existing records may be updated.</p>
+            </div>
+        `;
+
+        this.showModal('Import Data', content, () => this.confirmImportData());
+        document.getElementById('modal-save').textContent = 'Import';
+
+        // Reset the file input
+        e.target.value = '';
+    }
+
+    async confirmImportData() {
+        const file = this.pendingImportFile;
+        if (!file) {
+            this.closeModal();
             return;
         }
-        
+
+        this.closeModal();
         this.showLoading(true);
-        
+
         try {
             const text = await file.text();
             const data = JSON.parse(text);
             const result = await DatabaseService.importAllData(data);
-            
+
             if (result.success) {
                 this.showToast(`Data imported! (${result.count} records)`, 'success');
                 await this.loadAllData();
@@ -5626,69 +5668,93 @@ class App {
     // Email Notifications
     // ========================================
 
-    sendEventNotification(eventId) {
+    async sendEventNotification(eventId) {
         const event = this.data.events.find(e => e.id === eventId);
         if (!event) return;
 
-        // Get staff emails
-        const staffEmails = (event.staffIds || [])
+        // Get staff with emails
+        const staff = (event.staffIds || [])
             .map(id => this.data.tutors.find(t => t.id === id))
-            .filter(t => t && t.email)
-            .map(t => t.email);
+            .filter(t => t && t.email);
 
-        if (staffEmails.length === 0) {
+        if (staff.length === 0) {
             this.showToast('No staff with email addresses assigned to this event', 'warning');
             return;
         }
 
-        const subject = encodeURIComponent(`Event Assignment: ${event.name}`);
-        const eventDate = this.formatDate(event.date);
-        const body = encodeURIComponent(
-            `You have been assigned to the following event:\n\n` +
-            `Event: ${event.name}\n` +
-            `Date: ${eventDate}\n` +
-            `Time: ${event.time || 'TBC'}\n` +
-            `Location: ${event.location || 'TBC'}\n\n` +
-            `Description: ${event.description || 'No description'}\n\n` +
-            `Please check the Arts Portal for task assignments and updates.`
-        );
-
-        window.open(`mailto:${staffEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
-        this.showToast('Email draft opened', 'success');
+        // Try EmailJS first, fall back to mailto:
+        if (EmailService.isConfigured()) {
+            this.showToast('Sending emails...', 'info');
+            const result = await EmailService.sendEventNotification(event, staff);
+            if (result.success || (Array.isArray(result) && result.some(r => r.success))) {
+                const successCount = Array.isArray(result) ? result.filter(r => r.success).length : 1;
+                this.showToast(`Email sent to ${successCount} staff member(s)`, 'success');
+            } else {
+                this.showToast('Failed to send emails: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } else {
+            // Fallback to mailto:
+            const staffEmails = staff.map(t => t.email);
+            const subject = encodeURIComponent(`Event Assignment: ${event.name}`);
+            const eventDate = this.formatDate(event.date);
+            const body = encodeURIComponent(
+                `You have been assigned to the following event:\n\n` +
+                `Event: ${event.name}\n` +
+                `Date: ${eventDate}\n` +
+                `Time: ${event.time || 'TBC'}\n` +
+                `Location: ${event.location || 'TBC'}\n\n` +
+                `Description: ${event.description || 'No description'}\n\n` +
+                `Please check the Arts Portal for task assignments and updates.`
+            );
+            window.open(`mailto:${staffEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
+            this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');
+        }
     }
 
-    sendGroupNotification(groupId) {
+    async sendGroupNotification(groupId) {
         const group = this.data.groups.find(g => g.id === groupId);
         if (!group) return;
 
-        // Get leader emails
-        const leaderEmails = (group.leaderIds || [])
+        // Get leaders with emails
+        const leaders = (group.leaderIds || [])
             .map(id => this.data.tutors.find(t => t.id === id))
-            .filter(t => t && t.email)
-            .map(t => t.email);
+            .filter(t => t && t.email);
 
-        if (leaderEmails.length === 0) {
+        if (leaders.length === 0) {
             this.showToast('No group leaders with email addresses assigned', 'warning');
             return;
         }
 
-        const subject = encodeURIComponent(`Group Assignment: ${group.name}`);
-        const body = encodeURIComponent(
-            `You have been assigned as a leader of the following group:\n\n` +
-            `Group: ${group.name}\n` +
-            `Type: ${group.type || 'N/A'}\n` +
-            `Category: ${group.category || 'N/A'}\n` +
-            `Members: ${group.members || 0}\n\n` +
-            `Meeting: ${group.meetingDay || 'TBC'} ${group.meetingTime || ''}\n` +
-            `Location: ${group.location || 'TBC'}\n\n` +
-            `Please check the Arts Portal for more details.`
-        );
-
-        window.open(`mailto:${leaderEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
-        this.showToast('Email draft opened', 'success');
+        // Try EmailJS first, fall back to mailto:
+        if (EmailService.isConfigured()) {
+            this.showToast('Sending emails...', 'info');
+            const result = await EmailService.sendGroupNotification(group, leaders);
+            if (result.success || (Array.isArray(result) && result.some(r => r.success))) {
+                const successCount = Array.isArray(result) ? result.filter(r => r.success).length : 1;
+                this.showToast(`Email sent to ${successCount} leader(s)`, 'success');
+            } else {
+                this.showToast('Failed to send emails: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } else {
+            // Fallback to mailto:
+            const leaderEmails = leaders.map(t => t.email);
+            const subject = encodeURIComponent(`Group Assignment: ${group.name}`);
+            const body = encodeURIComponent(
+                `You have been assigned as a leader of the following group:\n\n` +
+                `Group: ${group.name}\n` +
+                `Type: ${group.type || 'N/A'}\n` +
+                `Category: ${group.category || 'N/A'}\n` +
+                `Members: ${group.members || 0}\n\n` +
+                `Meeting: ${group.meetingDay || 'TBC'} ${group.meetingTime || ''}\n` +
+                `Location: ${group.location || 'TBC'}\n\n` +
+                `Please check the Arts Portal for more details.`
+            );
+            window.open(`mailto:${leaderEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
+            this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');
+        }
     }
 
-    sendLessonNotification(lessonId) {
+    async sendLessonNotification(lessonId) {
         const lesson = this.data.lessons.find(l => l.id === lessonId);
         if (!lesson) return;
 
@@ -5699,19 +5765,31 @@ class App {
         }
 
         const student = this.getStudentById(lesson.studentId);
-        const subject = encodeURIComponent(`New Lesson Assignment: ${student?.name || lesson.studentName || 'Student'}`);
-        const body = encodeURIComponent(
-            `You have been assigned a new lesson:\n\n` +
-            `Student: ${student?.name || lesson.studentName || 'Unknown'}\n` +
-            `Instrument: ${lesson.instrument || 'N/A'}\n` +
-            `Day: ${lesson.day || 'TBC'}\n` +
-            `Time: ${lesson.time || 'TBC'}\n` +
-            `Location: ${lesson.location || 'TBC'}\n\n` +
-            `Please check the Arts Portal for more details.`
-        );
 
-        window.open(`mailto:${tutor.email}?subject=${subject}&body=${body}`, '_blank');
-        this.showToast('Email draft opened', 'success');
+        // Try EmailJS first, fall back to mailto:
+        if (EmailService.isConfigured()) {
+            this.showToast('Sending email...', 'info');
+            const result = await EmailService.sendLessonNotification(lesson, tutor, student);
+            if (result.success) {
+                this.showToast(`Email sent to ${tutor.name}`, 'success');
+            } else {
+                this.showToast('Failed to send email: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } else {
+            // Fallback to mailto:
+            const subject = encodeURIComponent(`New Lesson Assignment: ${student?.name || lesson.studentName || 'Student'}`);
+            const body = encodeURIComponent(
+                `You have been assigned a new lesson:\n\n` +
+                `Student: ${student?.name || lesson.studentName || 'Unknown'}\n` +
+                `Instrument: ${lesson.instrument || 'N/A'}\n` +
+                `Day: ${lesson.day || 'TBC'}\n` +
+                `Time: ${lesson.time || 'TBC'}\n` +
+                `Location: ${lesson.location || 'TBC'}\n\n` +
+                `Please check the Arts Portal for more details.`
+            );
+            window.open(`mailto:${tutor.email}?subject=${subject}&body=${body}`, '_blank');
+            this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');
+        }
     }
 
     showNotifyStaffModal(type, id) {
@@ -5726,20 +5804,20 @@ class App {
             staffList = (entity.staffIds || [])
                 .map(sid => this.data.tutors.find(t => t.id === sid))
                 .filter(t => t);
-            notifyFn = () => this.sendEventNotification(id);
+            notifyFn = async () => await this.sendEventNotification(id);
         } else if (type === 'group') {
             entity = this.data.groups.find(g => g.id === id);
             if (!entity) return;
             staffList = (entity.leaderIds || [])
                 .map(lid => this.data.tutors.find(t => t.id === lid))
                 .filter(t => t);
-            notifyFn = () => this.sendGroupNotification(id);
+            notifyFn = async () => await this.sendGroupNotification(id);
         } else if (type === 'lesson') {
             entity = this.data.lessons.find(l => l.id === id);
             if (!entity) return;
             const tutor = this.getTutorById(entity.tutorId);
             if (tutor) staffList = [tutor];
-            notifyFn = () => this.sendLessonNotification(id);
+            notifyFn = async () => await this.sendLessonNotification(id);
         }
 
         if (staffList.length === 0) {
@@ -5747,15 +5825,22 @@ class App {
             return;
         }
 
+        const emailConfigured = EmailService.isConfigured();
+        const staffWithEmail = staffList.filter(s => s.email);
+
         const staffListHtml = staffList.map(s => `
             <div class="staff-notify-item">
                 <div class="avatar" style="background: ${s.color || '#888'}">${s.initials || this.getInitials(s.name)}</div>
                 <div class="staff-info">
                     <span class="staff-name">${s.name}</span>
-                    <span class="staff-email">${s.email || 'No email'}</span>
+                    <span class="staff-email ${!s.email ? 'no-email' : ''}">${s.email || 'No email address'}</span>
                 </div>
             </div>
         `).join('');
+
+        const emailMethodMessage = emailConfigured
+            ? `<span class="email-method native">Emails will be sent directly from the app.</span>`
+            : `<span class="email-method mailto">This will open your email client with a pre-filled message.</span>`;
 
         content = `
             <div class="notify-staff-modal">
@@ -5763,17 +5848,30 @@ class App {
                 <div class="staff-notify-list">
                     ${staffListHtml}
                 </div>
-                <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
-                    This will open your email client with a pre-filled message.
-                </p>
+                ${staffWithEmail.length === 0 ? `
+                    <p class="text-warning" style="margin-top: var(--spacing-md);">
+                        No staff members have email addresses configured.
+                    </p>
+                ` : `
+                    <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
+                        ${emailMethodMessage}
+                    </p>
+                `}
             </div>
         `;
 
-        this.showModal('Notify Staff', content, () => {
+        this.showModal('Notify Staff', content, async () => {
             this.closeModal();
-            notifyFn();
+            await notifyFn();
         });
         document.getElementById('modal-save').textContent = 'Send Email';
+
+        // Disable send button if no emails
+        if (staffWithEmail.length === 0) {
+            const saveBtn = document.getElementById('modal-save');
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.5';
+        }
     }
 }
 
