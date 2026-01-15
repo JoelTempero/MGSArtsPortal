@@ -2187,7 +2187,46 @@ class App {
         this.renderCategories();
         this.showToast('Categories updated', 'success');
     }
-    
+
+    // Calculate term from a date based on term dates in settings
+    getTermFromDate(dateStr) {
+        if (!dateStr) return 'Term 1';
+
+        const date = new Date(dateStr);
+        const termDates = this.data.settings?.termDates || {
+            term1: { start: '2026-02-02', end: '2026-04-17' },
+            term2: { start: '2026-05-04', end: '2026-07-10' },
+            term3: { start: '2026-07-27', end: '2026-10-02' },
+            term4: { start: '2026-10-19', end: '2026-12-11' }
+        };
+
+        for (let i = 1; i <= 4; i++) {
+            const term = termDates[`term${i}`];
+            if (term) {
+                const start = new Date(term.start);
+                const end = new Date(term.end);
+                if (date >= start && date <= end) {
+                    return `Term ${i}`;
+                }
+            }
+        }
+
+        // If date doesn't fall in any term, find the closest upcoming term
+        const year = date.getFullYear();
+        for (let i = 1; i <= 4; i++) {
+            const term = termDates[`term${i}`];
+            if (term) {
+                const start = new Date(term.start);
+                start.setFullYear(year);
+                if (date < start) {
+                    return `Term ${i}`;
+                }
+            }
+        }
+
+        return 'Term 4'; // Default to Term 4 if after all terms
+    }
+
     // ========================================
     // User Management
     // ========================================
@@ -2557,7 +2596,10 @@ class App {
                 document.getElementById('import-file').click();
                 break;
             case 'export-data':
-                this.exportData();
+                this.showExportModal();
+                break;
+            case 'import-csv':
+                this.showCSVImportModal();
                 break;
             case 'add-form':
                 this.showAddFormModal();
@@ -2952,9 +2994,10 @@ class App {
         const event = this.data.events.find(e => e.id === id);
         if (!event) return;
 
-        const categories = ['Music', 'Concert', 'Competition', 'Workshop', 'Exam', 'Performing Arts', 'Production', 'Drama', 'Dance', 'Kapa Haka', 'Pasifika'];
-        const categoryOptions = categories.map(c => 
-            `<option value="${c}" ${c === event.category ? 'selected' : ''}>${c}</option>`
+        // Get categories from settings or use defaults
+        const categories = this.data.settings?.categories || this.getDefaultCategories();
+        const categoryOptions = categories.map(c =>
+            `<option value="${c.name}" ${c.name === event.category ? 'selected' : ''}>${c.name}</option>`
         ).join('');
 
         const currentTemplate = event.template || event.templateType || '';
@@ -3013,7 +3056,7 @@ class App {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Date</label>
-                        <input type="date" name="date" value="${event.date || ''}" required>
+                        <input type="date" name="date" id="edit-event-date" value="${event.date || ''}" required>
                     </div>
                     <div class="form-group">
                         <label>Time</label>
@@ -3027,7 +3070,7 @@ class App {
                     </div>
                     <div class="form-group">
                         <label>Term</label>
-                        <select name="term">
+                        <select name="term" id="edit-event-term">
                             <option value="Term 1" ${event.term === 'Term 1' ? 'selected' : ''}>Term 1</option>
                             <option value="Term 2" ${event.term === 'Term 2' ? 'selected' : ''}>Term 2</option>
                             <option value="Term 3" ${event.term === 'Term 3' ? 'selected' : ''}>Term 3</option>
@@ -3072,6 +3115,18 @@ class App {
         `;
         
         this.showModal('Edit Event', content, () => this.updateEvent());
+
+        // Add date change listener to auto-update term
+        setTimeout(() => {
+            const dateInput = document.getElementById('edit-event-date');
+            const termSelect = document.getElementById('edit-event-term');
+            if (dateInput && termSelect) {
+                dateInput.addEventListener('change', () => {
+                    const term = this.getTermFromDate(dateInput.value);
+                    termSelect.value = term;
+                });
+            }
+        }, 100);
     }
 
     async updateEvent() {
@@ -4446,6 +4501,18 @@ class App {
         document.getElementById('modal-body').innerHTML = content;
         document.getElementById('modal-overlay').classList.add('visible');
 
+        // Ensure modal footer is always visible
+        const modalFooter = document.getElementById('modal-footer');
+        if (modalFooter) {
+            modalFooter.style.display = 'flex';
+        }
+
+        // Ensure cancel button is visible
+        const cancelBtn = document.getElementById('modal-cancel');
+        if (cancelBtn) {
+            cancelBtn.style.display = 'inline-flex';
+        }
+
         const saveBtn = document.getElementById('modal-save');
         // Reset button state to defaults
         saveBtn.textContent = 'Save';
@@ -4454,7 +4521,7 @@ class App {
         saveBtn.style.opacity = '1';
 
         if (onSave) {
-            saveBtn.style.display = 'block';
+            saveBtn.style.display = 'inline-flex';
             saveBtn.onclick = onSave;
         } else {
             saveBtn.style.display = 'none';
@@ -4623,16 +4690,22 @@ class App {
     }
 
     showAddEventModal() {
+        // Get categories from settings or use defaults
+        const categories = this.data.settings?.categories || this.getDefaultCategories();
+        const categoryOptions = categories.map(c =>
+            `<option value="${c.name}">${c.name}</option>`
+        ).join('');
+
         // Groups checkboxes
-        const groupCheckboxes = this.data.groups.map(g => 
+        const groupCheckboxes = this.data.groups.map(g =>
             `<label class="checkbox-label">
                 <input type="checkbox" name="groups" value="${g.id}">
                 <span>${g.name}</span>
             </label>`
         ).join('');
 
-        // Staff checkboxes  
-        const staffCheckboxes = this.data.tutors.map(t => 
+        // Staff checkboxes
+        const staffCheckboxes = this.data.tutors.map(t =>
             `<label class="checkbox-label">
                 <input type="checkbox" name="staff" value="${t.id}">
                 <span>${t.name}</span>
@@ -4668,7 +4741,7 @@ class App {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Date</label>
-                        <input type="date" name="date" required>
+                        <input type="date" name="date" id="add-event-date" required>
                     </div>
                     <div class="form-group">
                         <label>Time</label>
@@ -4682,7 +4755,7 @@ class App {
                     </div>
                     <div class="form-group">
                         <label>Term</label>
-                        <select name="term">
+                        <select name="term" id="add-event-term">
                             <option value="Term 1">Term 1</option>
                             <option value="Term 2">Term 2</option>
                             <option value="Term 3">Term 3</option>
@@ -4694,13 +4767,7 @@ class App {
                     <div class="form-group">
                         <label>Category</label>
                         <select name="category">
-                            <option value="Music">Music</option>
-                            <option value="Drama">Drama</option>
-                            <option value="Dance">Dance</option>
-                            <option value="Kapa Haka">Kapa Haka</option>
-                            <option value="Pasifika">Pasifika</option>
-                            <option value="Performing Arts">Performing Arts</option>
-                            <option value="Production">Production</option>
+                            ${categoryOptions}
                         </select>
                     </div>
                     <div class="form-group">
@@ -4728,6 +4795,18 @@ class App {
         `;
         
         this.showModal('Create New Event', content, () => this.saveEvent());
+
+        // Add date change listener to auto-update term
+        setTimeout(() => {
+            const dateInput = document.getElementById('add-event-date');
+            const termSelect = document.getElementById('add-event-term');
+            if (dateInput && termSelect) {
+                dateInput.addEventListener('change', () => {
+                    const term = this.getTermFromDate(dateInput.value);
+                    termSelect.value = term;
+                });
+            }
+        }, 100);
     }
 
     async saveEvent() {
@@ -5432,15 +5511,382 @@ class App {
             schoolName: document.getElementById('setting-school-name').value,
             academyName: document.getElementById('setting-academy-name').value
         };
-        
+
         const result = await DatabaseService.updateSettings({ ...this.data.settings, ...settings });
-        
+
         if (result.success) {
             this.showToast('Settings saved!', 'success');
             this.data.settings = { ...this.data.settings, ...settings };
         } else {
             this.showToast('Error saving settings', 'error');
         }
+    }
+
+    // ========================================
+    // CSV Import/Export
+    // ========================================
+
+    showExportModal() {
+        const dataTypes = [
+            { value: 'students', label: 'Students' },
+            { value: 'tutors', label: 'Staff/Tutors' },
+            { value: 'lessons', label: 'Lessons' },
+            { value: 'events', label: 'Events' },
+            { value: 'groups', label: 'Groups' },
+            { value: 'instruments', label: 'Instruments' },
+            { value: 'instrumentHires', label: 'Instrument Hires' }
+        ];
+
+        const typeOptions = dataTypes.map(t =>
+            `<option value="${t.value}">${t.label}</option>`
+        ).join('');
+
+        const content = `
+            <form id="export-form" class="modal-form">
+                <div class="form-group">
+                    <label>Data Type</label>
+                    <select id="export-type">
+                        <option value="all">All Data (JSON)</option>
+                        ${typeOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Format</label>
+                    <select id="export-format">
+                        <option value="csv">CSV (Spreadsheet)</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
+                <p class="help-text" style="margin-top: var(--spacing-md);">
+                    CSV format can be opened in Excel, Google Sheets, or any spreadsheet application.
+                </p>
+            </form>
+        `;
+
+        this.showModal('Export Data', content, () => this.performExport());
+        document.getElementById('modal-save').textContent = 'Export';
+
+        // Handle type change to update format options
+        setTimeout(() => {
+            const typeSelect = document.getElementById('export-type');
+            const formatSelect = document.getElementById('export-format');
+            typeSelect.addEventListener('change', () => {
+                if (typeSelect.value === 'all') {
+                    formatSelect.value = 'json';
+                    formatSelect.disabled = true;
+                } else {
+                    formatSelect.disabled = false;
+                }
+            });
+        }, 100);
+    }
+
+    async performExport() {
+        const type = document.getElementById('export-type').value;
+        const format = document.getElementById('export-format').value;
+
+        this.closeModal();
+        this.showLoading(true);
+
+        try {
+            if (type === 'all') {
+                await this.exportData();
+            } else if (format === 'csv') {
+                await this.exportAsCSV(type);
+            } else {
+                await this.exportTypeAsJSON(type);
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showToast('Error exporting data', 'error');
+        }
+
+        this.showLoading(false);
+    }
+
+    async exportAsCSV(type) {
+        const data = this.data[type] || [];
+        if (data.length === 0) {
+            this.showToast('No data to export', 'info');
+            return;
+        }
+
+        // Get headers from first item
+        const headers = Object.keys(data[0]).filter(h => h !== 'id' && h !== 'createdAt' && h !== 'updatedAt');
+
+        // Build CSV content
+        const csvRows = [];
+        csvRows.push(headers.join(','));
+
+        for (const item of data) {
+            const values = headers.map(h => {
+                let val = item[h];
+                if (val === null || val === undefined) val = '';
+                if (Array.isArray(val)) val = val.join('; ');
+                if (typeof val === 'object') val = JSON.stringify(val);
+                // Escape quotes and wrap in quotes if contains comma or quote
+                val = String(val).replace(/"/g, '""');
+                if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                    val = `"${val}"`;
+                }
+                return val;
+            });
+            csvRows.push(values.join(','));
+        }
+
+        const csv = csvRows.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mgs-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showToast('CSV exported successfully!', 'success');
+    }
+
+    async exportTypeAsJSON(type) {
+        const data = this.data[type] || [];
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mgs-${type}-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.showToast('JSON exported successfully!', 'success');
+    }
+
+    showCSVImportModal() {
+        const dataTypes = [
+            { value: 'students', label: 'Students', fields: ['name', 'class', 'year', 'email', 'parentEmail', 'instrument'] },
+            { value: 'tutors', label: 'Staff/Tutors', fields: ['name', 'email', 'phone', 'instruments', 'role'] },
+            { value: 'lessons', label: 'Lessons', fields: ['studentName', 'tutorName', 'instrument', 'day', 'time', 'location'] },
+            { value: 'events', label: 'Events', fields: ['name', 'date', 'time', 'location', 'category', 'term', 'description'] },
+            { value: 'groups', label: 'Groups', fields: ['name', 'type', 'category', 'meetingDay', 'meetingTime', 'location'] },
+            { value: 'instruments', label: 'Instruments', fields: ['name', 'type', 'brand', 'serialNumber', 'condition', 'location'] }
+        ];
+
+        const typeOptions = dataTypes.map(t =>
+            `<option value="${t.value}" data-fields="${t.fields.join(',')}">${t.label}</option>`
+        ).join('');
+
+        const content = `
+            <form id="csv-import-form" class="modal-form">
+                <div class="form-group">
+                    <label>Data Type to Import</label>
+                    <select id="csv-import-type">
+                        ${typeOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>CSV File</label>
+                    <input type="file" id="csv-import-file" accept=".csv" class="form-control">
+                </div>
+                <div id="csv-mapping-section" style="display: none;">
+                    <h4 style="margin: var(--spacing-lg) 0 var(--spacing-md);">Column Mapping</h4>
+                    <p class="help-text" style="margin-bottom: var(--spacing-md);">Map your CSV columns to the correct fields:</p>
+                    <div id="csv-mapping-fields"></div>
+                </div>
+                <div id="csv-preview-section" style="display: none;">
+                    <h4 style="margin: var(--spacing-lg) 0 var(--spacing-md);">Preview</h4>
+                    <div id="csv-preview" class="csv-preview"></div>
+                </div>
+            </form>
+        `;
+
+        this.showModal('Import CSV Data', content, () => this.performCSVImport());
+        document.getElementById('modal-save').textContent = 'Import';
+        document.getElementById('modal-save').disabled = true;
+        document.getElementById('modal-save').style.opacity = '0.5';
+
+        setTimeout(() => {
+            const fileInput = document.getElementById('csv-import-file');
+            fileInput.addEventListener('change', (e) => this.handleCSVFileSelect(e));
+        }, 100);
+    }
+
+    async handleCSVFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const rows = this.parseCSV(text);
+
+            if (rows.length < 2) {
+                this.showToast('CSV file must have headers and at least one data row', 'error');
+                return;
+            }
+
+            this.csvImportData = {
+                headers: rows[0],
+                rows: rows.slice(1)
+            };
+
+            // Show mapping section
+            this.showCSVMappingFields();
+
+        } catch (error) {
+            console.error('CSV parse error:', error);
+            this.showToast('Error reading CSV file', 'error');
+        }
+    }
+
+    parseCSV(text) {
+        const rows = [];
+        let currentRow = [];
+        let currentCell = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const nextChar = text[i + 1];
+
+            if (inQuotes) {
+                if (char === '"' && nextChar === '"') {
+                    currentCell += '"';
+                    i++; // Skip next quote
+                } else if (char === '"') {
+                    inQuotes = false;
+                } else {
+                    currentCell += char;
+                }
+            } else {
+                if (char === '"') {
+                    inQuotes = true;
+                } else if (char === ',') {
+                    currentRow.push(currentCell.trim());
+                    currentCell = '';
+                } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+                    currentRow.push(currentCell.trim());
+                    if (currentRow.some(c => c)) rows.push(currentRow);
+                    currentRow = [];
+                    currentCell = '';
+                    if (char === '\r') i++; // Skip \n in \r\n
+                } else if (char !== '\r') {
+                    currentCell += char;
+                }
+            }
+        }
+
+        // Handle last cell/row
+        if (currentCell || currentRow.length > 0) {
+            currentRow.push(currentCell.trim());
+            if (currentRow.some(c => c)) rows.push(currentRow);
+        }
+
+        return rows;
+    }
+
+    showCSVMappingFields() {
+        const type = document.getElementById('csv-import-type').value;
+        const typeSelect = document.getElementById('csv-import-type');
+        const selectedOption = typeSelect.options[typeSelect.selectedIndex];
+        const requiredFields = selectedOption.dataset.fields.split(',');
+
+        const csvHeaders = this.csvImportData.headers;
+
+        const mappingHtml = requiredFields.map(field => {
+            const options = csvHeaders.map((h, i) =>
+                `<option value="${i}" ${h.toLowerCase().includes(field.toLowerCase()) ? 'selected' : ''}>${h}</option>`
+            ).join('');
+
+            return `
+                <div class="form-row" style="margin-bottom: var(--spacing-sm);">
+                    <div class="form-group" style="flex: 1;">
+                        <label style="font-size: 0.85rem;">${this.formatFieldName(field)}</label>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <select id="csv-map-${field}" class="form-control">
+                            <option value="">-- Skip this field --</option>
+                            ${options}
+                        </select>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('csv-mapping-fields').innerHTML = mappingHtml;
+        document.getElementById('csv-mapping-section').style.display = 'block';
+
+        // Show preview
+        this.updateCSVPreview();
+
+        // Enable save button
+        document.getElementById('modal-save').disabled = false;
+        document.getElementById('modal-save').style.opacity = '1';
+    }
+
+    formatFieldName(field) {
+        return field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+    }
+
+    updateCSVPreview() {
+        const previewData = this.csvImportData.rows.slice(0, 3);
+        const previewHtml = `
+            <table class="csv-preview-table">
+                <thead>
+                    <tr>${this.csvImportData.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${previewData.map(row =>
+                        `<tr>${row.map(cell => `<td>${cell || '-'}</td>`).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+            <p class="help-text">${this.csvImportData.rows.length} rows to import</p>
+        `;
+
+        document.getElementById('csv-preview').innerHTML = previewHtml;
+        document.getElementById('csv-preview-section').style.display = 'block';
+    }
+
+    async performCSVImport() {
+        const type = document.getElementById('csv-import-type').value;
+        const typeSelect = document.getElementById('csv-import-type');
+        const selectedOption = typeSelect.options[typeSelect.selectedIndex];
+        const requiredFields = selectedOption.dataset.fields.split(',');
+
+        // Build column mapping
+        const mapping = {};
+        for (const field of requiredFields) {
+            const select = document.getElementById(`csv-map-${field}`);
+            if (select && select.value !== '') {
+                mapping[field] = parseInt(select.value);
+            }
+        }
+
+        this.closeModal();
+        this.showLoading(true);
+
+        try {
+            const records = [];
+            for (const row of this.csvImportData.rows) {
+                const record = {};
+                for (const [field, colIndex] of Object.entries(mapping)) {
+                    record[field] = row[colIndex] || '';
+                }
+                records.push(record);
+            }
+
+            // Add records to database
+            let successCount = 0;
+            for (const record of records) {
+                const result = await DatabaseService.add(type, record);
+                if (result.success) successCount++;
+            }
+
+            this.showToast(`Imported ${successCount} of ${records.length} records`, 'success');
+            await this.loadAllData();
+            this.renderCurrentPage();
+
+        } catch (error) {
+            console.error('CSV import error:', error);
+            this.showToast('Error importing CSV data', 'error');
+        }
+
+        this.showLoading(false);
     }
 
     // ========================================
