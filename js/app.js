@@ -21,7 +21,25 @@ class App {
         };
         this.isLoading = false;
         this.currentUser = null;
-        
+
+        // Sorting state for tables
+        this.sortState = {
+            lessons: { column: null, direction: 'asc' },
+            students: { column: null, direction: 'asc' },
+            events: { column: null, direction: 'asc' },
+            instruments: { column: null, direction: 'asc' },
+            hires: { column: null, direction: 'asc' }
+        };
+
+        // Filter state for tables
+        this.filterState = {
+            lessons: {},
+            students: {},
+            events: {},
+            instruments: {},
+            hires: {}
+        };
+
         this.init();
     }
 
@@ -159,6 +177,7 @@ class App {
         document.getElementById('export-all-data')?.addEventListener('click', () => this.exportData());
         document.getElementById('import-data-btn')?.addEventListener('click', () => document.getElementById('import-file').click());
         document.getElementById('import-file')?.addEventListener('change', (e) => this.importData(e));
+        document.getElementById('wipe-all-data')?.addEventListener('click', () => this.showWipeDataModal());
         document.getElementById('save-school-settings')?.addEventListener('click', () => this.saveSchoolSettings());
         document.getElementById('add-category-btn')?.addEventListener('click', () => this.addCategory());
         
@@ -584,19 +603,42 @@ class App {
     // ========================================
 
     renderLessons() {
+        const table = document.getElementById('lessons-table');
         const tbody = document.getElementById('lessons-body');
         if (!tbody) return;
-        
+
+        // Update sortable headers
+        const thead = table?.querySelector('thead tr');
+        if (thead) {
+            thead.innerHTML = `
+                <th class="sortable" onclick="app.sortData('lessons', 'studentName')">Student ${this.getSortIcon('lessons', 'studentName')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'class')">Class ${this.getSortIcon('lessons', 'class')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'instrument')">Instrument ${this.getSortIcon('lessons', 'instrument')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'dayTime')">Day & Time ${this.getSortIcon('lessons', 'dayTime')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'tutorName')">Tutor ${this.getSortIcon('lessons', 'tutorName')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'status')">Status ${this.getSortIcon('lessons', 'status')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'funded')">Funded ${this.getSortIcon('lessons', 'funded')}</th>
+                <th class="th-actions"></th>
+            `;
+        }
+
         if (this.data.lessons.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No lessons found. Add your first lesson!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No lessons found. Add your first lesson!</td></tr>';
             return;
         }
-        
-        tbody.innerHTML = this.data.lessons.map(lesson => {
+
+        // Apply filtering and sorting
+        let lessons = this.getFilteredData('lessons', this.data.lessons);
+        lessons = this.getSortedData('lessons', lessons);
+
+        tbody.innerHTML = lessons.map(lesson => {
             const student = this.getStudentById(lesson.studentId) || { name: lesson.studentName || 'Unknown', class: '—' };
             const tutor = this.getTutorById(lesson.tutorId) || { name: lesson.tutorName || 'Unknown', initials: 'UN', color: '#888' };
             const dayTime = `${lesson.day} ${lesson.time}`;
-            
+            const fundedBadge = lesson.funded
+                ? '<span class="status-badge status-funded">Funded</span>'
+                : '<span class="text-muted">—</span>';
+
             return `
                 <tr data-id="${lesson.id}">
                     <td>
@@ -615,6 +657,7 @@ class App {
                         </div>
                     </td>
                     <td><span class="status-badge status-${lesson.status === 'active' ? 'active' : 'waiting'}">${lesson.status}</span></td>
+                    <td>${fundedBadge}</td>
                     <td>
                         <div class="row-actions">
                             <button class="row-action-btn" title="Edit" data-action="edit-lesson" data-id="${lesson.id}">
@@ -634,7 +677,7 @@ class App {
                 </tr>
             `;
         }).join('');
-        
+
         // Bind edit/delete buttons
         this.bindRowActions('lesson');
     }
@@ -644,17 +687,36 @@ class App {
     // ========================================
 
     renderStudents() {
+        const table = document.getElementById('students-table');
         const tbody = document.getElementById('students-body');
         if (!tbody) return;
-        
+
+        // Update sortable headers
+        const thead = table?.querySelector('thead tr');
+        if (thead) {
+            thead.innerHTML = `
+                <th class="sortable" onclick="app.sortData('students', 'name')">Student ${this.getSortIcon('students', 'name')}</th>
+                <th class="sortable" onclick="app.sortData('students', 'year')">Year ${this.getSortIcon('students', 'year')}</th>
+                <th class="sortable" onclick="app.sortData('students', 'class')">Class ${this.getSortIcon('students', 'class')}</th>
+                <th>Instruments</th>
+                <th class="sortable" onclick="app.sortData('students', 'tutorName')">Tutor ${this.getSortIcon('students', 'tutorName')}</th>
+                <th class="sortable" onclick="app.sortData('students', 'status')">Status ${this.getSortIcon('students', 'status')}</th>
+                <th class="th-actions"></th>
+            `;
+        }
+
         if (this.data.students.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="no-data">No students found. Add your first student!</td></tr>';
             return;
         }
-        
-        tbody.innerHTML = this.data.students.map(student => {
+
+        // Apply filtering and sorting
+        let students = this.getFilteredData('students', this.data.students);
+        students = this.getSortedData('students', students);
+
+        tbody.innerHTML = students.map(student => {
             const tutor = this.getTutorById(student.tutorId) || { name: 'Unassigned', initials: '—', color: '#888' };
-            
+
             return `
                 <tr data-id="${student.id}">
                     <td>
@@ -686,7 +748,7 @@ class App {
                 </tr>
             `;
         }).join('');
-        
+
         this.bindRowActions('student');
     }
 
@@ -771,28 +833,48 @@ class App {
     // ========================================
 
     renderEvents() {
+        const table = document.getElementById('events-table');
         const tbody = document.getElementById('events-body');
         if (!tbody) return;
-        
+
+        // Update sortable headers
+        const thead = table?.querySelector('thead tr');
+        if (thead) {
+            thead.innerHTML = `
+                <th class="sortable" onclick="app.sortData('events', 'name')">Event ${this.getSortIcon('events', 'name')}</th>
+                <th class="sortable" onclick="app.sortData('events', 'date')">Date ${this.getSortIcon('events', 'date')}</th>
+                <th class="sortable" onclick="app.sortData('events', 'location')">Location ${this.getSortIcon('events', 'location')}</th>
+                <th class="sortable" onclick="app.sortData('events', 'term')">Term ${this.getSortIcon('events', 'term')}</th>
+                <th>Groups</th>
+                <th>Progress</th>
+                <th class="sortable" onclick="app.sortData('events', 'category')">Category ${this.getSortIcon('events', 'category')}</th>
+                <th class="th-actions"></th>
+            `;
+        }
+
         const categoryColors = {
             'Music': 'music', 'Drama': 'drama', 'Dance': 'dance',
             'Pasifika': 'music', 'Kapa Haka': 'drama',
             'Performing Arts': 'dance', 'Production': 'drama'
         };
-        
+
         const templateLabels = {
             'school-during': 'School (During)',
             'school-after': 'School (After)',
             'offsite-during': 'Offsite (During)',
             'offsite-after': 'Offsite (After)'
         };
-        
+
         if (this.data.events.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" class="no-data">No events found. Create your first event!</td></tr>';
             return;
         }
-        
-        tbody.innerHTML = this.data.events.map(event => {
+
+        // Apply filtering and sorting
+        let events = this.getFilteredData('events', this.data.events);
+        events = this.getSortedData('events', events);
+
+        tbody.innerHTML = events.map(event => {
             const templateLabel = templateLabels[event.template] || event.template || '—';
 
             // Calculate task progress from template tasks
@@ -1007,6 +1089,7 @@ class App {
                     </div>
                     <div class="group-card-actions">
                         <button class="btn btn-outline btn-sm" onclick="app.showGroupMembersModal('${group.id}')">Members</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.showNotifyStaffModal('group', '${group.id}')" title="Email leaders">Notify</button>
                         <button class="btn btn-outline btn-sm" onclick="app.showEditGroupModal('${group.id}')">Edit</button>
                         <button class="btn btn-outline btn-sm" onclick="app.handleDelete('group', '${group.id}')">Delete</button>
                     </div>
@@ -1038,15 +1121,35 @@ class App {
     }
 
     renderInstruments() {
+        const table = document.getElementById('instruments-table');
         const tbody = document.getElementById('instruments-body');
         if (!tbody) return;
-        
+
+        // Update sortable headers
+        const thead = table?.querySelector('thead tr');
+        if (thead) {
+            thead.innerHTML = `
+                <th class="sortable" onclick="app.sortData('instruments', 'name')">Instrument ${this.getSortIcon('instruments', 'name')}</th>
+                <th class="sortable" onclick="app.sortData('instruments', 'type')">Type ${this.getSortIcon('instruments', 'type')}</th>
+                <th class="sortable" onclick="app.sortData('instruments', 'size')">Size ${this.getSortIcon('instruments', 'size')}</th>
+                <th class="sortable" onclick="app.sortData('instruments', 'serialNumber')">Serial # ${this.getSortIcon('instruments', 'serialNumber')}</th>
+                <th class="sortable" onclick="app.sortData('instruments', 'cost')">Cost ${this.getSortIcon('instruments', 'cost')}</th>
+                <th class="sortable" onclick="app.sortData('instruments', 'condition')">Condition ${this.getSortIcon('instruments', 'condition')}</th>
+                <th class="sortable" onclick="app.sortData('instruments', 'status')">Status ${this.getSortIcon('instruments', 'status')}</th>
+                <th class="th-actions"></th>
+            `;
+        }
+
         if (this.data.instruments.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" class="no-data">No instruments found. Add your first instrument!</td></tr>';
             return;
         }
-        
-        tbody.innerHTML = this.data.instruments.map(inst => {
+
+        // Apply filtering and sorting
+        let instruments = this.getFilteredData('instruments', this.data.instruments);
+        instruments = this.getSortedData('instruments', instruments);
+
+        tbody.innerHTML = instruments.map(inst => {
             const cost = inst.cost || this.getInstrumentCost(inst.type);
             return `
                 <tr data-id="${inst.id}">
@@ -1076,7 +1179,7 @@ class App {
                 </tr>
             `;
         }).join('');
-        
+
         this.bindRowActions('instrument');
     }
 
@@ -1085,20 +1188,51 @@ class App {
     // ========================================
 
     renderHires() {
+        const table = document.getElementById('hires-table');
         const tbody = document.getElementById('hires-body');
         if (!tbody) return;
-        
+
+        // Update sortable headers
+        const thead = table?.querySelector('thead tr');
+        if (thead) {
+            thead.innerHTML = `
+                <th class="sortable" onclick="app.sortData('hires', 'instrumentName')">Instrument ${this.getSortIcon('hires', 'instrumentName')}</th>
+                <th class="sortable" onclick="app.sortData('hires', 'studentName')">Student ${this.getSortIcon('hires', 'studentName')}</th>
+                <th class="sortable" onclick="app.sortData('hires', 'hireDate')">Hire Date ${this.getSortIcon('hires', 'hireDate')}</th>
+                <th class="sortable" onclick="app.sortData('hires', 'expectedReturn')">Return Due ${this.getSortIcon('hires', 'expectedReturn')}</th>
+                <th>Cost</th>
+                <th>Agreement</th>
+                <th>File</th>
+                <th class="sortable" onclick="app.sortData('hires', 'status')">Status ${this.getSortIcon('hires', 'status')}</th>
+                <th class="th-actions"></th>
+            `;
+        }
+
         if (this.data.instrumentHires.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No active hires</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No active hires</td></tr>';
             return;
         }
-        
-        tbody.innerHTML = this.data.instrumentHires.map(hire => {
+
+        // Apply filtering and sorting
+        let hires = this.getFilteredData('hires', this.data.instrumentHires);
+        hires = this.getSortedData('hires', hires);
+
+        tbody.innerHTML = hires.map(hire => {
             const statusClass = hire.status === 'active' ? 'active' : hire.status === 'overdue' ? 'waiting' : 'assigned';
             // Get cost from hire record or calculate from instrument type
             const instrument = this.data.instruments.find(i => i.id === hire.instrumentId);
             const cost = hire.cost || instrument?.cost || this.getInstrumentCost(hire.instrumentName || hire.instrument || '');
-            
+
+            // Agreement file download button
+            const agreementCell = hire.agreementFile
+                ? `<button class="btn btn-outline btn-sm" onclick="app.downloadAgreement('${hire.id}')" title="Download ${hire.agreementFile.fileName}">
+                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                       </svg>
+                       Download
+                   </button>`
+                : '<span class="text-muted">No file</span>';
+
             return `
                 <tr data-id="${hire.id}">
                     <td><strong>${hire.instrumentName || hire.instrument}</strong></td>
@@ -1107,6 +1241,7 @@ class App {
                     <td>${this.formatDate(hire.expectedReturn)}</td>
                     <td>$${cost}/yr</td>
                     <td>${hire.agreement ? '✓ Signed' : '✗ Pending'}</td>
+                    <td>${agreementCell}</td>
                     <td><span class="status-badge status-${statusClass}">${hire.status}</span></td>
                     <td>
                         <div class="row-actions">
@@ -1127,8 +1262,19 @@ class App {
                 </tr>
             `;
         }).join('');
-        
+
         this.bindRowActions('hire');
+    }
+
+    downloadAgreement(hireId) {
+        const hire = this.data.instrumentHires.find(h => h.id === hireId);
+        if (!hire?.agreementFile) {
+            this.showToast('No agreement file found', 'error');
+            return;
+        }
+        // In a real app, this would download from Firebase Storage
+        // For now, show info about the file
+        this.showToast(`File: ${hire.agreementFile.fileName} (Uploaded: ${this.formatDate(hire.agreementFile.uploadedAt)})`, 'info');
     }
 
     // ========================================
@@ -1956,7 +2102,7 @@ class App {
     }
     
     async saveCategoriesAndRefresh(categories) {
-        await DatabaseService.update('settings', 'general', { categories });
+        await DatabaseService.updateSettings({ categories });
         this.data.settings = { ...this.data.settings, categories };
         this.renderCategories();
         this.showToast('Categories updated', 'success');
@@ -2460,9 +2606,16 @@ class App {
                         <option value="cancelled" ${lesson.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="checkbox-label funded-checkbox">
+                        <input type="checkbox" name="funded" ${lesson.funded ? 'checked' : ''}>
+                        <span>Funded Lesson</span>
+                        <small class="form-hint">Check this if the lesson is funded/subsidised</small>
+                    </label>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Edit Lesson', content, () => this.updateLesson());
     }
 
@@ -2470,14 +2623,15 @@ class App {
         const form = document.getElementById('edit-lesson-form');
         const formData = new FormData(form);
         const id = formData.get('id');
-        
+
         const lesson = {
             studentId: formData.get('studentId'),
             tutorId: formData.get('tutorId'),
             instrument: formData.get('instrument'),
             day: formData.get('day'),
             time: formData.get('time'),
-            status: formData.get('status')
+            status: formData.get('status'),
+            funded: formData.get('funded') === 'on'
         };
         
         const result = await DatabaseService.updateLesson(id, lesson);
@@ -3346,6 +3500,13 @@ class App {
                     </svg>
                     Reset All Tasks
                 </button>
+                <button class="action-menu-item" onclick="app.closeModal(); setTimeout(() => app.showNotifyStaffModal('event', '${event.id}'), 100);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    Notify Staff
+                </button>
                 <div class="action-menu-divider"></div>
                 <button class="action-menu-item danger" onclick="app.closeModal(); setTimeout(() => app.handleDelete('event', '${event.id}'), 100);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -3802,16 +3963,24 @@ class App {
             `<option value="${s}" ${s === hire.status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}</option>`
         ).join('');
 
-        // Show existing file info if present
+        // Show existing file info if present with delete button
         const existingFileHtml = hire.agreementFile ? `
-            <div class="existing-file">
+            <div class="existing-file" id="existing-agreement-file">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                     <path d="M14 2v6h6M9 15l2 2 4-4"/>
                 </svg>
                 <span class="existing-file-name">${hire.agreementFile.fileName}</span>
                 <span class="existing-file-date">Uploaded: ${this.formatDate(hire.agreementFile.uploadedAt)}</span>
+                <button type="button" class="btn btn-danger btn-sm" onclick="app.markFileForDeletion('${id}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                    Delete
+                </button>
             </div>
+            <input type="hidden" name="deleteExistingFile" id="delete-existing-file" value="false">
         ` : '';
 
         const content = `
@@ -3877,30 +4046,69 @@ class App {
         }, 100);
     }
 
+    markFileForDeletion(hireId) {
+        const fileEl = document.getElementById('existing-agreement-file');
+        const deleteInput = document.getElementById('delete-existing-file');
+        if (fileEl) {
+            fileEl.style.display = 'none';
+            fileEl.insertAdjacentHTML('afterend', `
+                <div class="file-deleted-notice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                    <span>File will be deleted on save</span>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="app.undoFileDelete()">Undo</button>
+                </div>
+            `);
+        }
+        if (deleteInput) {
+            deleteInput.value = 'true';
+        }
+    }
+
+    undoFileDelete() {
+        const fileEl = document.getElementById('existing-agreement-file');
+        const notice = document.querySelector('.file-deleted-notice');
+        const deleteInput = document.getElementById('delete-existing-file');
+        if (fileEl) fileEl.style.display = 'flex';
+        if (notice) notice.remove();
+        if (deleteInput) deleteInput.value = 'false';
+    }
+
     async updateHire() {
         const form = document.getElementById('edit-hire-form');
         const formData = new FormData(form);
         const id = formData.get('id');
         const agreementFile = formData.get('agreementFile');
+        const deleteExistingFile = formData.get('deleteExistingFile') === 'true';
 
         // Get existing hire data
         const existingHire = this.data.instrumentHires.find(h => h.id === id);
 
-        // Handle file upload if present
-        let agreementData = existingHire?.agreementFile || null;
-        if (agreementFile && agreementFile.size > 0) {
+        // Handle file: delete, replace, or keep
+        let agreementData = null;
+        if (deleteExistingFile) {
+            // User wants to delete the file
+            agreementData = null;
+        } else if (agreementFile && agreementFile.size > 0) {
+            // New file uploaded
             agreementData = {
                 fileName: agreementFile.name,
                 fileSize: agreementFile.size,
                 uploadedAt: new Date().toISOString()
             };
+        } else {
+            // Keep existing file
+            agreementData = existingHire?.agreementFile || null;
         }
 
+        const newStatus = formData.get('status');
         const hire = {
             studentName: formData.get('studentName'),
             hireDate: formData.get('hireDate'),
             expectedReturn: formData.get('expectedReturn'),
-            status: formData.get('status'),
+            status: newStatus,
             agreement: !!agreementData,
             agreementFile: agreementData
         };
@@ -3908,6 +4116,16 @@ class App {
         const result = await DatabaseService.update('instrumentHires', id, hire);
 
         if (result.success) {
+            // Update instrument status based on hire status
+            const instrumentId = existingHire?.instrumentId;
+            if (instrumentId) {
+                if (newStatus === 'returned' && existingHire?.status !== 'returned') {
+                    await DatabaseService.updateInstrument(instrumentId, { status: 'Available' });
+                } else if (newStatus === 'active' && existingHire?.status === 'returned') {
+                    await DatabaseService.updateInstrument(instrumentId, { status: 'On Hire' });
+                }
+            }
+
             this.showToast('Hire record updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -4046,6 +4264,13 @@ class App {
                             <input type="text" name="time" placeholder="e.g., 9:00 AM">
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="checkbox-label funded-checkbox">
+                            <input type="checkbox" name="funded">
+                            <span>Funded Lesson</span>
+                            <small class="form-hint">Check this if the lesson is funded/subsidised</small>
+                        </label>
+                    </div>
                 </form>
             </div>
         `;
@@ -4068,7 +4293,8 @@ class App {
         
         const request = this.data.lessonRequests.find(r => r.id === requestId);
         const tutor = this.data.tutors.find(t => t.id === tutorId);
-        
+        const isFunded = formData.get('funded') === 'on';
+
         // Create a new lesson
         const lesson = {
             studentName: request.studentName.split(' (')[0], // Remove class from name
@@ -4077,7 +4303,8 @@ class App {
             instrument: request.instrument,
             day: formData.get('day') || 'TBC',
             time: formData.get('time') || 'TBC',
-            status: 'active'
+            status: 'active',
+            funded: isFunded
         };
         
         // Add the lesson
@@ -4919,26 +5146,105 @@ class App {
     // ========================================
 
     async loadDemoData() {
-        if (!confirm('This will load demo data into your database. Continue?')) return;
-        
-        this.showLoading(true);
-        
-        try {
-            // Use DummyData from dummyData.js
-            const result = await DatabaseService.importAllData(DummyData);
-            
-            if (result.success) {
-                this.showToast(`Demo data loaded! (${result.count} records)`, 'success');
-                await this.loadAllData();
-                this.renderCurrentPage();
-            } else {
-                this.showToast('Error loading demo data', 'error');
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3>Load Demo Data?</h3>
+                <p>This will add sample students, tutors, lessons, events, and instruments to your database.</p>
+            </div>
+        `;
+
+        this.showModal('Load Demo Data', content, async () => {
+            this.closeModal();
+            this.showLoading(true);
+
+            try {
+                // Use DummyData from dummyData.js
+                const result = await DatabaseService.importAllData(DummyData);
+
+                // Also save settings separately since it's not an array
+                if (DummyData.settings) {
+                    await DatabaseService.updateSettings(DummyData.settings);
+                }
+
+                if (result.success) {
+                    this.showToast(`Demo data loaded! (${result.count} records)`, 'success');
+                    await this.loadAllData();
+                    this.renderCurrentPage();
+                } else {
+                    this.showToast('Error loading demo data: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                this.showToast('Error loading demo data: ' + error.message, 'error');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            this.showToast('Error loading demo data', 'error');
+
+            this.showLoading(false);
+        });
+
+        document.getElementById('modal-save').textContent = 'Load Data';
+    }
+
+    showWipeDataModal() {
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon danger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                </div>
+                <h3>Wipe All Data?</h3>
+                <p>This will permanently delete ALL data from the database. This action cannot be undone!</p>
+                <div class="form-group" style="margin-top: var(--spacing-lg);">
+                    <label>Enter password to confirm:</label>
+                    <input type="password" id="wipe-password" placeholder="Enter admin password">
+                </div>
+            </div>
+        `;
+
+        this.showModal('Wipe All Data', content, () => this.confirmWipeData());
+        document.getElementById('modal-save').textContent = 'Wipe Data';
+        document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    async confirmWipeData() {
+        const password = document.getElementById('wipe-password').value;
+        const adminPassword = 'MGSArts2026!'; // Admin password for wiping data
+
+        if (password !== adminPassword) {
+            this.showToast('Incorrect password', 'error');
+            return;
         }
-        
+
+        this.closeModal();
+        this.showLoading(true);
+
+        try {
+            const collections = ['students', 'tutors', 'lessons', 'events', 'groups', 'instruments', 'instrumentHires', 'lessonRequests', 'forms', 'users', 'templates'];
+            let totalDeleted = 0;
+
+            for (const collectionName of collections) {
+                const result = await DatabaseService.clearCollection(collectionName);
+                if (result.success) {
+                    totalDeleted += result.count;
+                }
+            }
+
+            this.showToast(`All data wiped! (${totalDeleted} records deleted)`, 'success');
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } catch (error) {
+            console.error('Error wiping data:', error);
+            this.showToast('Error wiping data: ' + error.message, 'error');
+        }
+
         this.showLoading(false);
     }
 
@@ -5088,6 +5394,144 @@ class App {
         }
     }
 
+    // ========================================
+    // Sorting and Filtering
+    // ========================================
+
+    sortData(tableType, column) {
+        const state = this.sortState[tableType];
+
+        // Toggle direction if same column, otherwise reset to asc
+        if (state.column === column) {
+            state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            state.column = column;
+            state.direction = 'asc';
+        }
+
+        // Re-render the table
+        switch (tableType) {
+            case 'lessons':
+                this.renderLessons();
+                break;
+            case 'students':
+                this.renderStudents();
+                break;
+            case 'events':
+                this.renderEvents();
+                break;
+            case 'instruments':
+                this.renderInstruments();
+                break;
+            case 'hires':
+                this.renderHires();
+                break;
+        }
+    }
+
+    getSortedData(tableType, data) {
+        const state = this.sortState[tableType];
+        if (!state.column) return data;
+
+        return [...data].sort((a, b) => {
+            let aVal = this.getSortValue(a, state.column, tableType);
+            let bVal = this.getSortValue(b, state.column, tableType);
+
+            // Handle null/undefined
+            if (aVal == null) aVal = '';
+            if (bVal == null) bVal = '';
+
+            // String comparison
+            if (typeof aVal === 'string' && typeof bVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+
+            let result = 0;
+            if (aVal < bVal) result = -1;
+            if (aVal > bVal) result = 1;
+
+            return state.direction === 'asc' ? result : -result;
+        });
+    }
+
+    getSortValue(item, column, tableType) {
+        // Special handling for columns that need data lookup
+        switch (column) {
+            case 'studentName':
+                const student = this.getStudentById(item.studentId);
+                return student?.name || item.studentName || '';
+            case 'tutorName':
+                const tutor = this.getTutorById(item.tutorId);
+                return tutor?.name || item.tutorName || '';
+            case 'class':
+                const studentForClass = this.getStudentById(item.studentId);
+                return studentForClass?.class || item.class || '';
+            case 'dayTime':
+                return `${item.day || ''} ${item.time || ''}`;
+            default:
+                return item[column];
+        }
+    }
+
+    getSortIcon(tableType, column) {
+        const state = this.sortState[tableType];
+        if (state.column !== column) {
+            return `<svg class="sort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M7 15l5 5 5-5M7 9l5-5 5 5"/>
+            </svg>`;
+        }
+        return state.direction === 'asc'
+            ? `<svg class="sort-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M7 15l5 5 5-5"/>
+            </svg>`
+            : `<svg class="sort-icon active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M7 9l5-5 5 5"/>
+            </svg>`;
+    }
+
+    filterData(tableType, column, value) {
+        if (value === '' || value === 'all') {
+            delete this.filterState[tableType][column];
+        } else {
+            this.filterState[tableType][column] = value;
+        }
+
+        // Re-render the table
+        switch (tableType) {
+            case 'lessons':
+                this.renderLessons();
+                break;
+            case 'students':
+                this.renderStudents();
+                break;
+            case 'events':
+                this.renderEvents();
+                break;
+            case 'instruments':
+                this.renderInstruments();
+                break;
+            case 'hires':
+                this.renderHires();
+                break;
+        }
+    }
+
+    getFilteredData(tableType, data) {
+        const filters = this.filterState[tableType];
+        if (!Object.keys(filters).length) return data;
+
+        return data.filter(item => {
+            for (const [column, value] of Object.entries(filters)) {
+                const itemValue = this.getSortValue(item, column, tableType);
+                if (String(itemValue).toLowerCase() !== String(value).toLowerCase()) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
     handleTabClick(e) {
         const tab = e.target.dataset.tab;
         const tabContainer = e.target.closest('.page-tabs');
@@ -5176,6 +5620,160 @@ class App {
         toast.querySelector('.toast-close').addEventListener('click', () => {
             toast.remove();
         });
+    }
+
+    // ========================================
+    // Email Notifications
+    // ========================================
+
+    sendEventNotification(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Get staff emails
+        const staffEmails = (event.staffIds || [])
+            .map(id => this.data.tutors.find(t => t.id === id))
+            .filter(t => t && t.email)
+            .map(t => t.email);
+
+        if (staffEmails.length === 0) {
+            this.showToast('No staff with email addresses assigned to this event', 'warning');
+            return;
+        }
+
+        const subject = encodeURIComponent(`Event Assignment: ${event.name}`);
+        const eventDate = this.formatDate(event.date);
+        const body = encodeURIComponent(
+            `You have been assigned to the following event:\n\n` +
+            `Event: ${event.name}\n` +
+            `Date: ${eventDate}\n` +
+            `Time: ${event.time || 'TBC'}\n` +
+            `Location: ${event.location || 'TBC'}\n\n` +
+            `Description: ${event.description || 'No description'}\n\n` +
+            `Please check the Arts Portal for task assignments and updates.`
+        );
+
+        window.open(`mailto:${staffEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
+        this.showToast('Email draft opened', 'success');
+    }
+
+    sendGroupNotification(groupId) {
+        const group = this.data.groups.find(g => g.id === groupId);
+        if (!group) return;
+
+        // Get leader emails
+        const leaderEmails = (group.leaderIds || [])
+            .map(id => this.data.tutors.find(t => t.id === id))
+            .filter(t => t && t.email)
+            .map(t => t.email);
+
+        if (leaderEmails.length === 0) {
+            this.showToast('No group leaders with email addresses assigned', 'warning');
+            return;
+        }
+
+        const subject = encodeURIComponent(`Group Assignment: ${group.name}`);
+        const body = encodeURIComponent(
+            `You have been assigned as a leader of the following group:\n\n` +
+            `Group: ${group.name}\n` +
+            `Type: ${group.type || 'N/A'}\n` +
+            `Category: ${group.category || 'N/A'}\n` +
+            `Members: ${group.members || 0}\n\n` +
+            `Meeting: ${group.meetingDay || 'TBC'} ${group.meetingTime || ''}\n` +
+            `Location: ${group.location || 'TBC'}\n\n` +
+            `Please check the Arts Portal for more details.`
+        );
+
+        window.open(`mailto:${leaderEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
+        this.showToast('Email draft opened', 'success');
+    }
+
+    sendLessonNotification(lessonId) {
+        const lesson = this.data.lessons.find(l => l.id === lessonId);
+        if (!lesson) return;
+
+        const tutor = this.getTutorById(lesson.tutorId);
+        if (!tutor || !tutor.email) {
+            this.showToast('Tutor has no email address', 'warning');
+            return;
+        }
+
+        const student = this.getStudentById(lesson.studentId);
+        const subject = encodeURIComponent(`New Lesson Assignment: ${student?.name || lesson.studentName || 'Student'}`);
+        const body = encodeURIComponent(
+            `You have been assigned a new lesson:\n\n` +
+            `Student: ${student?.name || lesson.studentName || 'Unknown'}\n` +
+            `Instrument: ${lesson.instrument || 'N/A'}\n` +
+            `Day: ${lesson.day || 'TBC'}\n` +
+            `Time: ${lesson.time || 'TBC'}\n` +
+            `Location: ${lesson.location || 'TBC'}\n\n` +
+            `Please check the Arts Portal for more details.`
+        );
+
+        window.open(`mailto:${tutor.email}?subject=${subject}&body=${body}`, '_blank');
+        this.showToast('Email draft opened', 'success');
+    }
+
+    showNotifyStaffModal(type, id) {
+        let content = '';
+        let notifyFn = null;
+        let entity = null;
+        let staffList = [];
+
+        if (type === 'event') {
+            entity = this.data.events.find(e => e.id === id);
+            if (!entity) return;
+            staffList = (entity.staffIds || [])
+                .map(sid => this.data.tutors.find(t => t.id === sid))
+                .filter(t => t);
+            notifyFn = () => this.sendEventNotification(id);
+        } else if (type === 'group') {
+            entity = this.data.groups.find(g => g.id === id);
+            if (!entity) return;
+            staffList = (entity.leaderIds || [])
+                .map(lid => this.data.tutors.find(t => t.id === lid))
+                .filter(t => t);
+            notifyFn = () => this.sendGroupNotification(id);
+        } else if (type === 'lesson') {
+            entity = this.data.lessons.find(l => l.id === id);
+            if (!entity) return;
+            const tutor = this.getTutorById(entity.tutorId);
+            if (tutor) staffList = [tutor];
+            notifyFn = () => this.sendLessonNotification(id);
+        }
+
+        if (staffList.length === 0) {
+            this.showToast('No staff assigned', 'warning');
+            return;
+        }
+
+        const staffListHtml = staffList.map(s => `
+            <div class="staff-notify-item">
+                <div class="avatar" style="background: ${s.color || '#888'}">${s.initials || this.getInitials(s.name)}</div>
+                <div class="staff-info">
+                    <span class="staff-name">${s.name}</span>
+                    <span class="staff-email">${s.email || 'No email'}</span>
+                </div>
+            </div>
+        `).join('');
+
+        content = `
+            <div class="notify-staff-modal">
+                <p>Send email notification to the following staff:</p>
+                <div class="staff-notify-list">
+                    ${staffListHtml}
+                </div>
+                <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
+                    This will open your email client with a pre-filled message.
+                </p>
+            </div>
+        `;
+
+        this.showModal('Notify Staff', content, () => {
+            this.closeModal();
+            notifyFn();
+        });
+        document.getElementById('modal-save').textContent = 'Send Email';
     }
 }
 
