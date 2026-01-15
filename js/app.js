@@ -3288,22 +3288,32 @@ class App {
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
         
         if (result.success) {
-            // Update UI
-            const taskItem = document.querySelector(`[data-task-name="${taskName}"]`).closest('.task-item');
-            if (completed) {
-                taskItem.classList.add('completed');
-                taskItem.classList.remove('overdue', 'due-today', 'due-soon');
-                taskItem.querySelector('.task-status').innerHTML = '<span class="status-complete">✓</span>';
-            } else {
-                taskItem.classList.remove('completed');
-                // Recalculate status would require more logic, so just refresh
-                this.showEventTasksModal(eventId);
+            // Update UI - safely check for elements before manipulating
+            const taskElement = document.querySelector(`[data-task-name="${taskName}"]`);
+            const taskItem = taskElement?.closest('.task-item');
+
+            if (taskItem) {
+                if (completed) {
+                    taskItem.classList.add('completed');
+                    taskItem.classList.remove('overdue', 'due-today', 'due-soon');
+                    const statusEl = taskItem.querySelector('.task-status');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span class="status-complete">✓</span>';
+                    }
+                } else {
+                    taskItem.classList.remove('completed');
+                    // Recalculate status would require more logic, so just refresh
+                    this.showEventTasksModal(eventId);
+                }
             }
-            
-            // Update summary counts
-            const completedCount = event.tasks.filter(t => t.completed).length;
-            const totalCount = document.querySelectorAll('#event-tasks-list .task-item').length;
-            document.querySelector('.tasks-progress').textContent = `${completedCount}/${totalCount} complete`;
+
+            // Update summary counts - safely check for element
+            const progressEl = document.querySelector('.tasks-progress');
+            if (progressEl) {
+                const completedCount = event.tasks.filter(t => t.completed).length;
+                const totalCount = document.querySelectorAll('#event-tasks-list .task-item').length;
+                progressEl.textContent = `${completedCount}/${totalCount} complete`;
+            }
         }
     }
 
