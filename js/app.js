@@ -396,7 +396,7 @@ class App {
                 this.renderInstruments();
                 break;
             case 'hires':
-                this.renderHires();
+                this.renderHires(this.currentHiresFilter || 'active');
                 break;
             case 'forms':
                 this.renderForms();
@@ -697,13 +697,14 @@ class App {
                 <th class="sortable" onclick="app.sortData('lessons', 'dayTime')">Day & Time ${this.getSortIcon('lessons', 'dayTime')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'tutorName')">Tutor ${this.getSortIcon('lessons', 'tutorName')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'status')">Status ${this.getSortIcon('lessons', 'status')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'acknowledged')">Confirmed ${this.getSortIcon('lessons', 'acknowledged')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'funded')">Funded ${this.getSortIcon('lessons', 'funded')}</th>
                 <th class="th-actions"></th>
             `;
         }
 
         if (this.data.lessons.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No lessons found. Add your first lesson!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No lessons found. Add your first lesson!</td></tr>';
             return;
         }
 
@@ -718,6 +719,20 @@ class App {
             const fundedBadge = lesson.funded
                 ? '<span class="status-badge status-funded">Funded</span>'
                 : '<span class="text-muted">—</span>';
+
+            // Acknowledgment status badge
+            let acknowledgedBadge;
+            if (lesson.acknowledged) {
+                if (lesson.acknowledgmentStatus === 'accepted') {
+                    acknowledgedBadge = '<span class="status-badge status-active" title="Tutor confirmed">Accepted</span>';
+                } else if (lesson.acknowledgmentStatus === 'waitlist') {
+                    acknowledgedBadge = '<span class="status-badge status-waiting" title="Added to waitlist">Waitlist</span>';
+                } else {
+                    acknowledgedBadge = '<span class="status-badge status-assigned" title="Tutor responded">Responded</span>';
+                }
+            } else {
+                acknowledgedBadge = '<span class="status-badge status-pending" title="Awaiting tutor confirmation">Pending</span>';
+            }
 
             return `
                 <tr data-id="${lesson.id}">
@@ -737,6 +752,7 @@ class App {
                         </div>
                     </td>
                     <td><span class="status-badge status-${lesson.status === 'active' ? 'active' : 'waiting'}">${lesson.status}</span></td>
+                    <td>${acknowledgedBadge}</td>
                     <td>${fundedBadge}</td>
                     <td>
                         <div class="row-actions">
@@ -1088,7 +1104,19 @@ class App {
                                     <path d="M12 6v6l4 2"/>
                                 </svg>
                             </button>
-                        ` : ''}
+                        ` : `
+                            <button class="row-action-btn success" title="Approve" data-action="approve-request" data-id="${req.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                            </button>
+                        `}
+                        <button class="row-action-btn" title="Edit" data-action="edit-request" data-id="${req.id}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
                         <button class="row-action-btn" title="Delete" data-action="delete-request" data-id="${req.id}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"/>
@@ -1267,10 +1295,13 @@ class App {
     // Hires Rendering
     // ========================================
 
-    renderHires() {
+    renderHires(filter = 'active') {
         const table = document.getElementById('hires-table');
         const tbody = document.getElementById('hires-body');
         if (!tbody) return;
+
+        // Store current filter for later reference
+        this.currentHiresFilter = filter;
 
         // Update sortable headers
         const thead = table?.querySelector('thead tr');
@@ -1288,17 +1319,39 @@ class App {
             `;
         }
 
-        if (this.data.instrumentHires.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No active hires</td></tr>';
+        // Filter by tab selection
+        let hires = this.data.instrumentHires;
+        if (filter === 'active') {
+            hires = hires.filter(h => h.status === 'active');
+        } else if (filter === 'overdue') {
+            hires = hires.filter(h => h.status === 'overdue');
+        } else if (filter === 'due-soon') {
+            hires = hires.filter(h => h.status === 'due-soon');
+        } else if (filter === 'archive') {
+            hires = hires.filter(h => h.status === 'returned');
+        }
+
+        if (hires.length === 0) {
+            const emptyMessage = filter === 'archive' ? 'No returned instruments in archive' :
+                                 filter === 'overdue' ? 'No overdue hires' :
+                                 filter === 'due-soon' ? 'No hires due soon' :
+                                 'No active hires';
+            tbody.innerHTML = `<tr><td colspan="9" class="no-data">${emptyMessage}</td></tr>`;
             return;
         }
 
         // Apply filtering and sorting
-        let hires = this.getFilteredData('hires', this.data.instrumentHires);
+        hires = this.getFilteredData('hires', hires);
         hires = this.getSortedData('hires', hires);
 
         tbody.innerHTML = hires.map(hire => {
-            const statusClass = hire.status === 'active' ? 'active' : hire.status === 'overdue' ? 'waiting' : 'assigned';
+            const statusClasses = {
+                'active': 'active',
+                'overdue': 'waiting',
+                'due-soon': 'assigned',
+                'returned': 'pending'
+            };
+            const statusClass = statusClasses[hire.status] || 'pending';
             // Get cost from hire record or calculate from instrument type
             const instrument = this.data.instruments.find(i => i.id === hire.instrumentId);
             const cost = hire.cost || instrument?.cost || this.getInstrumentCost(hire.instrumentName || hire.instrument || '');
@@ -1313,6 +1366,15 @@ class App {
                    </button>`
                 : '<span class="text-muted">No file</span>';
 
+            // Mark as returned button (only for non-returned hires)
+            const returnedBtn = hire.status !== 'returned' ? `
+                <button class="row-action-btn success" title="Mark as Returned" data-action="return-hire" data-id="${hire.id}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                </button>
+            ` : '';
+
             return `
                 <tr data-id="${hire.id}">
                     <td><strong>${hire.instrumentName || hire.instrument}</strong></td>
@@ -1322,9 +1384,10 @@ class App {
                     <td>$${cost}/yr</td>
                     <td>${hire.agreement ? '✓ Signed' : '✗ Pending'}</td>
                     <td>${agreementCell}</td>
-                    <td><span class="status-badge status-${statusClass}">${hire.status}</span></td>
+                    <td><span class="status-badge status-${statusClass}">${hire.status === 'due-soon' ? 'due soon' : hire.status}</span></td>
                     <td>
                         <div class="row-actions">
+                            ${returnedBtn}
                             <button class="row-action-btn" title="Edit" data-action="edit-hire" data-id="${hire.id}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -2644,6 +2707,13 @@ class App {
                 btn.addEventListener('click', () => this.showGroupMembersModal(btn.dataset.id));
             });
         }
+
+        // Hire-specific actions
+        if (type === 'hire') {
+            document.querySelectorAll('[data-action="return-hire"]').forEach(btn => {
+                btn.addEventListener('click', () => this.handleReturnHire(btn.dataset.id));
+            });
+        }
     }
 
     async handleEdit(type, id) {
@@ -2668,6 +2738,9 @@ class App {
                 break;
             case 'hire':
                 this.showEditHireModal(id);
+                break;
+            case 'request':
+                this.showEditRequestModal(id);
                 break;
             default:
                 this.showToast(`Edit ${type} not implemented`, 'info');
@@ -4289,6 +4362,29 @@ class App {
         }
     }
 
+    async handleReturnHire(id) {
+        const hire = this.data.instrumentHires.find(h => h.id === id);
+        if (!hire) return;
+
+        const result = await DatabaseService.update('instrumentHires', id, {
+            status: 'returned',
+            returnedDate: new Date().toISOString().split('T')[0]
+        });
+
+        if (result.success) {
+            // Update instrument status to Available
+            if (hire.instrumentId) {
+                await DatabaseService.updateInstrument(hire.instrumentId, { status: 'Available' });
+            }
+
+            this.showToast('Instrument marked as returned', 'success');
+            await this.loadAllData();
+            this.renderHires(this.currentHiresFilter || 'active');
+        } else {
+            this.showToast('Error updating hire record', 'error');
+        }
+    }
+
     async handleDelete(type, id) {
         // Show confirmation modal instead of browser confirm
         const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
@@ -4489,6 +4585,89 @@ class App {
             await this.loadAllData();
             this.renderRequests();
             this.renderRecentRequests();
+        }
+    }
+
+    showEditRequestModal(id) {
+        const request = this.data.lessonRequests.find(r => r.id === id);
+        if (!request) return;
+
+        const statusOptions = ['awaiting', 'waitlist'].map(s =>
+            `<option value="${s}" ${s === request.status ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+        ).join('');
+
+        const content = `
+            <form id="edit-request-form" class="modal-form">
+                <input type="hidden" name="requestId" value="${request.id}">
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" name="studentName" value="${request.studentName || ''}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Year Level</label>
+                        <input type="number" name="year" value="${request.year || ''}" min="0" max="13">
+                    </div>
+                    <div class="form-group">
+                        <label>Instrument</label>
+                        <input type="text" name="instrument" value="${request.instrument || ''}" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Parent Email</label>
+                    <input type="email" name="parentEmail" value="${request.parentEmail || ''}">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status">
+                            ${statusOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Discipline</label>
+                        <select name="discipline">
+                            <option value="Music" ${request.discipline === 'Music' ? 'selected' : ''}>Music</option>
+                            <option value="Drama" ${request.discipline === 'Drama' ? 'selected' : ''}>Drama</option>
+                            <option value="Dance" ${request.discipline === 'Dance' ? 'selected' : ''}>Dance</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3">${request.notes || ''}</textarea>
+                </div>
+            </form>
+        `;
+
+        this.showModal('Edit Lesson Request', content, () => this.saveEditRequest());
+    }
+
+    async saveEditRequest() {
+        const form = document.getElementById('edit-request-form');
+        const formData = new FormData(form);
+
+        const requestId = formData.get('requestId');
+        const updates = {
+            studentName: formData.get('studentName'),
+            year: parseInt(formData.get('year')) || null,
+            instrument: formData.get('instrument'),
+            parentEmail: formData.get('parentEmail'),
+            status: formData.get('status'),
+            discipline: formData.get('discipline'),
+            notes: formData.get('notes')
+        };
+
+        const result = await DatabaseService.updateLessonRequest(requestId, updates);
+
+        if (result.success) {
+            this.closeModal();
+            this.showToast('Request updated successfully!', 'success');
+            await this.loadAllData();
+            this.renderRequests();
+            this.renderRecentRequests();
+        } else {
+            this.showToast('Error updating request', 'error');
         }
     }
 
@@ -5996,7 +6175,7 @@ class App {
                 this.renderInstruments();
                 break;
             case 'hires':
-                this.renderHires();
+                this.renderHires(this.currentHiresFilter || 'active');
                 break;
         }
     }
@@ -6084,7 +6263,7 @@ class App {
                 this.renderInstruments();
                 break;
             case 'hires':
-                this.renderHires();
+                this.renderHires(this.currentHiresFilter || 'active');
                 break;
         }
     }
@@ -6106,14 +6285,20 @@ class App {
 
     handleTabClick(e) {
         const tab = e.target.dataset.tab;
+        const hiresTab = e.target.dataset.hiresTab;
         const tabContainer = e.target.closest('.page-tabs');
-        
+
         tabContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         e.target.classList.add('active');
-        
+
         // Handle requests page tabs
-        if (this.currentPage === 'requests') {
+        if (this.currentPage === 'requests' && tab) {
             this.renderRequests(tab);
+        }
+
+        // Handle hires page tabs
+        if (this.currentPage === 'hires' && hiresTab) {
+            this.renderHires(hiresTab);
         }
     }
 
@@ -6212,10 +6397,21 @@ class App {
             return;
         }
 
+        // Build task list with assigned staff names
+        let tasksList = '';
+        if (event.tasks && event.tasks.length > 0) {
+            tasksList = '\n\nTASKS:\n' + event.tasks.map(task => {
+                const assignedStaff = task.assignedTo
+                    ? (this.data.tutors.find(t => t.id === task.assignedTo)?.name || 'Unassigned')
+                    : 'Unassigned';
+                return `- ${task.name} [${assignedStaff}]`;
+            }).join('\n');
+        }
+
         // Try EmailJS first, fall back to mailto:
         if (EmailService.isConfigured()) {
             this.showToast('Sending emails...', 'info');
-            const result = await EmailService.sendEventNotification(event, staff);
+            const result = await EmailService.sendEventNotification(event, staff, this.data.tutors);
             if (result.success || (Array.isArray(result) && result.some(r => r.success))) {
                 const successCount = Array.isArray(result) ? result.filter(r => r.success).length : 1;
                 this.showToast(`Email sent to ${successCount} staff member(s)`, 'success');
@@ -6233,8 +6429,9 @@ class App {
                 `Date: ${eventDate}\n` +
                 `Time: ${event.time || 'TBC'}\n` +
                 `Location: ${event.location || 'TBC'}\n\n` +
-                `Description: ${event.description || 'No description'}\n\n` +
-                `Please check the Arts Portal for task assignments and updates.`
+                `Description: ${event.description || 'No description'}` +
+                tasksList +
+                `\n\nPlease check the Arts Portal for task assignments and updates.`
             );
             window.open(`mailto:${staffEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
             this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');
@@ -6296,10 +6493,31 @@ class App {
 
         const student = this.getStudentById(lesson.studentId);
 
+        // Generate a token for this lesson
+        this.showToast('Generating lesson link...', 'info');
+        const tokenResult = await DatabaseService.createLessonToken(lessonId, tutor.id);
+        let responseUrl = '';
+
+        if (tokenResult.success) {
+            // Build the response URL (using the current origin)
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            responseUrl = `${baseUrl}/lesson-response.html?token=${tokenResult.token}`;
+        }
+
+        // Build email with response buttons info
+        const responseSection = responseUrl ? `
+
+CONFIRM YOUR LESSON:
+Click the link below to view lesson details and confirm:
+${responseUrl}
+
+You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
+` : '';
+
         // Try EmailJS first, fall back to mailto:
         if (EmailService.isConfigured()) {
             this.showToast('Sending email...', 'info');
-            const result = await EmailService.sendLessonNotification(lesson, tutor, student);
+            const result = await EmailService.sendLessonNotification(lesson, tutor, student, responseUrl);
             if (result.success) {
                 this.showToast(`Email sent to ${tutor.name}`, 'success');
             } else {
@@ -6314,8 +6532,9 @@ class App {
                 `Instrument: ${lesson.instrument || 'N/A'}\n` +
                 `Day: ${lesson.day || 'TBC'}\n` +
                 `Time: ${lesson.time || 'TBC'}\n` +
-                `Location: ${lesson.location || 'TBC'}\n\n` +
-                `Please check the Arts Portal for more details.`
+                `Location: ${lesson.location || 'TBC'}` +
+                responseSection +
+                `\n\nPlease check the Arts Portal for more details.`
             );
             window.open(`mailto:${tutor.email}?subject=${subject}&body=${body}`, '_blank');
             this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');

@@ -10,21 +10,22 @@ import {
     onAuthStateChanged,
     sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { 
-    getFirestore, 
-    collection, 
-    doc, 
-    getDocs, 
-    getDoc, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc, 
-    query, 
-    where, 
-    orderBy, 
+import {
+    getFirestore,
+    collection,
+    doc,
+    getDocs,
+    getDoc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    setDoc,
+    query,
+    where,
+    orderBy,
     onSnapshot,
     writeBatch,
-    serverTimestamp 
+    serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 // Firebase configuration
@@ -425,6 +426,47 @@ const DatabaseService = {
 
     async deleteTemplate(id) {
         return this.delete('templates', id);
+    },
+
+    // ---- Lesson Tokens ----
+
+    // Create a lesson token for tutor acknowledgment
+    async createLessonToken(lessonId, tutorId, expiryDays = 30) {
+        // Generate a random token
+        const token = this.generateToken();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+        try {
+            // Use setDoc with the token as document ID for easy lookup
+            await setDoc(doc(db, 'lessonTokens', token), {
+                lessonId,
+                tutorId,
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt.toISOString(),
+                used: false
+            });
+
+            return { success: true, token };
+        } catch (error) {
+            console.error('Error creating lesson token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Generate a random token string
+    generateToken() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let token = '';
+        for (let i = 0; i < 32; i++) {
+            token += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return token;
+    },
+
+    // Get lesson token by token string
+    async getLessonToken(token) {
+        return this.getById('lessonTokens', token);
     },
 
     // ---- Batch Operations ----

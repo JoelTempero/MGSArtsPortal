@@ -5,7 +5,7 @@
 // EmailJS Configuration - UPDATE THESE VALUES
 const EMAILJS_CONFIG = {
     publicKey: 'YOUR_PUBLIC_KEY',      // Get from EmailJS Dashboard > Account > API Keys
-    serviceId: 'YOUR_SERVICE_ID',       // Get from EmailJS Dashboard > Email Services
+    serviceId: 'service_i41yqx1',       // MGS Arts Portal Email Service
     templateId: 'YOUR_TEMPLATE_ID'      // Get from EmailJS Dashboard > Email Templates
 };
 
@@ -107,13 +107,25 @@ class EmailService {
      * Send event notification to assigned staff
      * @param {Object} event - Event object
      * @param {Array} staff - Array of staff objects with email property
+     * @param {Array} allStaff - All staff to resolve task assignee names (optional)
      * @returns {Promise}
      */
-    static async sendEventNotification(event, staff) {
+    static async sendEventNotification(event, staff, allStaff = []) {
         const recipients = staff.filter(s => s.email).map(s => ({ email: s.email, name: s.name }));
 
         if (recipients.length === 0) {
             return { success: false, error: 'No staff with email addresses' };
+        }
+
+        // Build task list with assigned staff names
+        let tasksList = '';
+        if (event.tasks && event.tasks.length > 0) {
+            tasksList = '\n\nTASKS:\n' + event.tasks.map(task => {
+                const assignedStaff = task.assignedTo
+                    ? (allStaff.find(s => s.id === task.assignedTo)?.name || 'Unassigned')
+                    : 'Unassigned';
+                return `- ${task.name} [${assignedStaff}]`;
+            }).join('\n');
         }
 
         const subject = `Event Assignment: ${event.name}`;
@@ -124,7 +136,7 @@ Date: ${event.date}
 Time: ${event.time || 'TBC'}
 Location: ${event.location || 'TBC'}
 
-${event.description || ''}
+${event.description || ''}${tasksList}
 
 Please check the MGS Arts Portal for task assignments and updates.`;
 
@@ -165,12 +177,23 @@ Please check the MGS Arts Portal for more details.`;
      * @param {Object} lesson - Lesson object
      * @param {Object} tutor - Tutor object with email property
      * @param {Object} student - Student object
+     * @param {string} responseUrl - URL for tutor to respond to lesson (optional)
      * @returns {Promise}
      */
-    static async sendLessonNotification(lesson, tutor, student) {
+    static async sendLessonNotification(lesson, tutor, student, responseUrl = '') {
         if (!tutor.email) {
             return { success: false, error: 'Tutor has no email address' };
         }
+
+        // Build response section if URL is provided
+        const responseSection = responseUrl ? `
+
+CONFIRM YOUR LESSON:
+Click the link below to view lesson details and confirm:
+${responseUrl}
+
+You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
+` : '';
 
         const subject = `New Lesson Assignment: ${student?.name || lesson.studentName || 'Student'}`;
         const message = `You have been assigned a new lesson:
@@ -180,7 +203,7 @@ Instrument: ${lesson.instrument || 'N/A'}
 Day: ${lesson.day || 'TBC'}
 Time: ${lesson.time || 'TBC'}
 Location: ${lesson.location || 'TBC'}
-
+${responseSection}
 Please check the MGS Arts Portal for more details.`;
 
         return this.send({
