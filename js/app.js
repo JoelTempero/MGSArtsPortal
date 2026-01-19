@@ -6547,13 +6547,20 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
         let entity = null;
         let staffList = [];
 
-        // If called without type (from quick actions), show custom notification form
+        // If called without type (from quick actions), show custom notification form with checkboxes
         if (!type) {
             const allStaff = this.data.tutors || [];
             const staffWithEmail = allStaff.filter(s => s.email);
 
-            const staffOptions = allStaff.map(s => `
-                <option value="${s.id}" ${!s.email ? 'disabled' : ''}>${s.name}${!s.email ? ' (no email)' : ''}</option>
+            const staffCheckboxes = allStaff.map(s => `
+                <label class="staff-checkbox-item ${!s.email ? 'disabled' : ''}">
+                    <input type="checkbox" name="staff" value="${s.id}" ${!s.email ? 'disabled' : ''}>
+                    <div class="avatar" style="background: ${s.color || '#888'}">${s.initials || this.getInitials(s.name)}</div>
+                    <div class="staff-info">
+                        <span class="staff-name">${s.name}</span>
+                        <span class="staff-email ${!s.email ? 'no-email' : ''}">${s.email || 'No email'}</span>
+                    </div>
+                </label>
             `).join('');
 
             const emailConfigured = EmailService.isConfigured();
@@ -6564,11 +6571,10 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
             content = `
                 <div class="notify-staff-modal">
                     <div class="form-group">
-                        <label>Select Staff Member</label>
-                        <select id="notify-staff-select" class="form-control">
-                            <option value="">-- Select staff member --</option>
-                            ${staffOptions}
-                        </select>
+                        <label>Select Staff Members</label>
+                        <div class="staff-checkbox-list">
+                            ${staffCheckboxes}
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Subject</label>
@@ -6585,12 +6591,13 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
             `;
 
             this.showModal('Notify Staff', content, async () => {
-                const staffId = document.getElementById('notify-staff-select').value;
+                const selectedStaffIds = Array.from(document.querySelectorAll('.staff-checkbox-list input[name="staff"]:checked'))
+                    .map(cb => cb.value);
                 const subject = document.getElementById('notify-staff-subject').value;
                 const message = document.getElementById('notify-staff-message').value;
 
-                if (!staffId) {
-                    this.showToast('Please select a staff member', 'warning');
+                if (selectedStaffIds.length === 0) {
+                    this.showToast('Please select at least one staff member', 'warning');
                     return;
                 }
                 if (!subject.trim()) {
@@ -6602,31 +6609,32 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
                     return;
                 }
 
-                const staff = this.data.tutors.find(t => t.id === staffId);
-                if (!staff || !staff.email) {
-                    this.showToast('Selected staff has no email', 'error');
+                const selectedStaff = selectedStaffIds
+                    .map(id => this.data.tutors.find(t => t.id === id))
+                    .filter(s => s && s.email);
+
+                if (selectedStaff.length === 0) {
+                    this.showToast('No selected staff have email addresses', 'error');
                     return;
                 }
 
                 this.closeModal();
 
                 if (emailConfigured) {
-                    const result = await EmailService.send({
-                        to_email: staff.email,
-                        to_name: staff.name,
-                        subject: subject,
-                        message: message,
-                        type: 'general'
-                    });
-                    if (result.success) {
-                        this.showToast('Email sent successfully!', 'success');
+                    this.showToast('Sending emails...', 'info');
+                    const recipients = selectedStaff.map(s => ({ email: s.email, name: s.name }));
+                    const results = await EmailService.sendToMultiple(recipients, subject, message, 'general');
+                    const successCount = results.filter(r => r.success).length;
+                    if (successCount > 0) {
+                        this.showToast(`Email sent to ${successCount} staff member(s)!`, 'success');
                     } else {
-                        this.showToast('Failed to send email', 'error');
+                        this.showToast('Failed to send emails', 'error');
                     }
                 } else {
+                    const emails = selectedStaff.map(s => s.email).join(',');
                     const mailtoSubject = encodeURIComponent(subject);
                     const mailtoBody = encodeURIComponent(message);
-                    window.open(`mailto:${staff.email}?subject=${mailtoSubject}&body=${mailtoBody}`, '_blank');
+                    window.open(`mailto:${emails}?subject=${mailtoSubject}&body=${mailtoBody}`, '_blank');
                     this.showToast('Email draft opened', 'info');
                 }
             });
@@ -6634,80 +6642,183 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
             return;
         }
 
+        // Event, Group, or Lesson specific notifications
+        let preSelectedIds = [];
+        let entityName = '';
+
         if (type === 'event') {
             entity = this.data.events.find(e => e.id === id);
             if (!entity) return;
-            staffList = (entity.staffIds || [])
+            preSelectedIds = entity.staffIds || [];
+            entityName = entity.name;
+            staffList = preSelectedIds
                 .map(sid => this.data.tutors.find(t => t.id === sid))
                 .filter(t => t);
-            notifyFn = async () => await this.sendEventNotification(id);
         } else if (type === 'group') {
             entity = this.data.groups.find(g => g.id === id);
             if (!entity) return;
-            staffList = (entity.leaderIds || [])
+            preSelectedIds = entity.leaderIds || [];
+            entityName = entity.name;
+            staffList = preSelectedIds
                 .map(lid => this.data.tutors.find(t => t.id === lid))
                 .filter(t => t);
-            notifyFn = async () => await this.sendGroupNotification(id);
         } else if (type === 'lesson') {
             entity = this.data.lessons.find(l => l.id === id);
             if (!entity) return;
             const tutor = this.getTutorById(entity.tutorId);
-            if (tutor) staffList = [tutor];
-            notifyFn = async () => await this.sendLessonNotification(id);
-        }
-
-        if (staffList.length === 0) {
-            this.showToast('No staff assigned', 'warning');
-            return;
+            if (tutor) {
+                preSelectedIds = [tutor.id];
+                staffList = [tutor];
+            }
+            entityName = `${entity.studentName || 'Student'} - ${entity.instrument || 'Lesson'}`;
         }
 
         const emailConfigured = EmailService.isConfigured();
-        const staffWithEmail = staffList.filter(s => s.email);
+        const allStaff = this.data.tutors || [];
 
-        const staffListHtml = staffList.map(s => `
-            <div class="staff-notify-item">
-                <div class="avatar" style="background: ${s.color || '#888'}">${s.initials || this.getInitials(s.name)}</div>
-                <div class="staff-info">
-                    <span class="staff-name">${s.name}</span>
-                    <span class="staff-email ${!s.email ? 'no-email' : ''}">${s.email || 'No email address'}</span>
-                </div>
-            </div>
-        `).join('');
+        // Build staff checkboxes with pre-selected items
+        const staffCheckboxes = allStaff.map(s => {
+            const isPreSelected = preSelectedIds.includes(s.id);
+            return `
+                <label class="staff-checkbox-item ${!s.email ? 'disabled' : ''} ${isPreSelected ? 'pre-selected' : ''}">
+                    <input type="checkbox" name="staff" value="${s.id}" ${!s.email ? 'disabled' : ''} ${isPreSelected ? 'checked' : ''}>
+                    <div class="avatar" style="background: ${s.color || '#888'}">${s.initials || this.getInitials(s.name)}</div>
+                    <div class="staff-info">
+                        <span class="staff-name">${s.name}</span>
+                        <span class="staff-email ${!s.email ? 'no-email' : ''}">${s.email || 'No email'}</span>
+                    </div>
+                    ${isPreSelected ? '<span class="assigned-badge">Assigned</span>' : ''}
+                </label>
+            `;
+        }).join('');
+
+        // Default subject and message based on type
+        let defaultSubject = '';
+        let defaultMessage = '';
+
+        if (type === 'event') {
+            defaultSubject = `Event Assignment: ${entity.name}`;
+            let tasksList = '';
+            if (entity.tasks && entity.tasks.length > 0) {
+                tasksList = '\n\nTASKS:\n' + entity.tasks.map(task => {
+                    const assignedStaff = task.assignedTo
+                        ? (this.data.tutors.find(t => t.id === task.assignedTo)?.name || 'Unassigned')
+                        : 'Unassigned';
+                    return `- ${task.name} [${assignedStaff}]`;
+                }).join('\n');
+            }
+            defaultMessage = `You have been assigned to the following event:
+
+Event: ${entity.name}
+Date: ${this.formatDate(entity.date)}
+Time: ${entity.time || 'TBC'}
+Location: ${entity.location || 'TBC'}
+
+${entity.description || ''}${tasksList}
+
+Please check the MGS Arts Portal for task assignments and updates.`;
+        } else if (type === 'group') {
+            defaultSubject = `Group Assignment: ${entity.name}`;
+            defaultMessage = `You have been assigned as a leader of the following group:
+
+Group: ${entity.name}
+Type: ${entity.type || 'N/A'}
+Category: ${entity.category || 'N/A'}
+Members: ${entity.members || 0}
+
+Meeting: ${entity.meetingDay || 'TBC'} ${entity.meetingTime || ''}
+Location: ${entity.location || 'TBC'}
+
+Please check the MGS Arts Portal for more details.`;
+        } else if (type === 'lesson') {
+            const student = this.getStudentById(entity.studentId);
+            defaultSubject = `New Lesson Assignment: ${student?.name || entity.studentName || 'Student'}`;
+            defaultMessage = `You have been assigned a new lesson:
+
+Student: ${student?.name || entity.studentName || 'Unknown'}
+Instrument: ${entity.instrument || 'N/A'}
+Day: ${entity.day || 'TBC'}
+Time: ${entity.time || 'TBC'}
+Location: ${entity.location || 'TBC'}
+
+Please check the MGS Arts Portal for more details.`;
+        }
 
         const emailMethodMessage = emailConfigured
-            ? `<span class="email-method native">Emails will be sent directly from the app.</span>`
+            ? `<span class="email-method native">Email will be sent directly from the app.</span>`
             : `<span class="email-method mailto">This will open your email client with a pre-filled message.</span>`;
 
         content = `
             <div class="notify-staff-modal">
-                <p>Send email notification to the following staff:</p>
-                <div class="staff-notify-list">
-                    ${staffListHtml}
+                <div class="form-group">
+                    <label>Recipients <small>(assigned staff are pre-selected)</small></label>
+                    <div class="staff-checkbox-list">
+                        ${staffCheckboxes}
+                    </div>
                 </div>
-                ${staffWithEmail.length === 0 ? `
-                    <p class="text-warning" style="margin-top: var(--spacing-md);">
-                        No staff members have email addresses configured.
-                    </p>
-                ` : `
-                    <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
-                        ${emailMethodMessage}
-                    </p>
-                `}
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="notify-staff-subject" class="form-control" value="${defaultSubject.replace(/"/g, '&quot;')}">
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="notify-staff-message" class="form-control" rows="8">${defaultMessage}</textarea>
+                </div>
+                <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
+                    ${emailMethodMessage}
+                </p>
             </div>
         `;
 
-        this.showModal('Notify Staff', content, async () => {
+        this.showModal(`Notify Staff - ${entityName}`, content, async () => {
+            const selectedStaffIds = Array.from(document.querySelectorAll('.staff-checkbox-list input[name="staff"]:checked'))
+                .map(cb => cb.value);
+            const subject = document.getElementById('notify-staff-subject').value;
+            const message = document.getElementById('notify-staff-message').value;
+
+            if (selectedStaffIds.length === 0) {
+                this.showToast('Please select at least one staff member', 'warning');
+                return;
+            }
+            if (!subject.trim()) {
+                this.showToast('Please enter a subject', 'warning');
+                return;
+            }
+            if (!message.trim()) {
+                this.showToast('Please enter a message', 'warning');
+                return;
+            }
+
+            const selectedStaff = selectedStaffIds
+                .map(id => this.data.tutors.find(t => t.id === id))
+                .filter(s => s && s.email);
+
+            if (selectedStaff.length === 0) {
+                this.showToast('No selected staff have email addresses', 'error');
+                return;
+            }
+
             this.closeModal();
-            await notifyFn();
+
+            if (emailConfigured) {
+                this.showToast('Sending emails...', 'info');
+                const recipients = selectedStaff.map(s => ({ email: s.email, name: s.name }));
+                const results = await EmailService.sendToMultiple(recipients, subject, message, type);
+                const successCount = results.filter(r => r.success).length;
+                if (successCount > 0) {
+                    this.showToast(`Email sent to ${successCount} staff member(s)!`, 'success');
+                } else {
+                    this.showToast('Failed to send emails', 'error');
+                }
+            } else {
+                const emails = selectedStaff.map(s => s.email).join(',');
+                const mailtoSubject = encodeURIComponent(subject);
+                const mailtoBody = encodeURIComponent(message);
+                window.open(`mailto:${emails}?subject=${mailtoSubject}&body=${mailtoBody}`, '_blank');
+                this.showToast('Email draft opened', 'info');
+            }
         });
         document.getElementById('modal-save').textContent = 'Send Email';
-
-        // Disable send button if no emails
-        if (staffWithEmail.length === 0) {
-            const saveBtn = document.getElementById('modal-save');
-            saveBtn.disabled = true;
-            saveBtn.style.opacity = '0.5';
-        }
     }
 }
 
