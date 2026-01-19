@@ -2,11 +2,11 @@
 // EmailJS Service for MGS Arts Portal
 // ========================================
 
-// EmailJS Configuration - UPDATE THESE VALUES
+// EmailJS Configuration
 const EMAILJS_CONFIG = {
-    publicKey: 'YOUR_PUBLIC_KEY',      // Get from EmailJS Dashboard > Account > API Keys
-    serviceId: 'service_i41yqx1',       // MGS Arts Portal Email Service
-    templateId: 'YOUR_TEMPLATE_ID'      // Get from EmailJS Dashboard > Email Templates
+    publicKey: 'gWx8cTGUhvHVfmb3Z',
+    serviceId: 'service_i41yqx1',
+    templateId: 'template_3tn1dig'
 };
 
 class EmailService {
