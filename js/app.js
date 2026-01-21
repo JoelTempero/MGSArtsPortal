@@ -499,24 +499,44 @@ class App {
         // Collect all overdue tasks from all events
         const overdueTasks = [];
         this.data.events.forEach(event => {
-            const eventTasks = event.tasks || [];
-            eventTasks.forEach(phase => {
-                (phase.items || []).forEach((task, taskIndex) => {
-                    if (task.completed) return;
+            const eventDate = new Date(event.date);
 
-                    // Check if task has a due date that's passed
-                    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
-                    if (dueDate && dueDate < today) {
-                        overdueTasks.push({
-                            eventId: event.id,
-                            eventName: event.name,
-                            taskName: task.name || task,
-                            dueDate: dueDate,
-                            phase: phase.phase,
-                            taskIndex: taskIndex
-                        });
-                    }
-                });
+            // Get template tasks and calculate due dates
+            const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+            const savedTasks = event.tasks || [];
+
+            templateTasks.forEach(templateTask => {
+                // Find if this task has been saved/completed
+                const savedTask = savedTasks.find(t => t.name === templateTask.name);
+                if (savedTask?.completed) return;
+
+                // Calculate due date based on daysBefore
+                const dueDate = new Date(eventDate);
+                dueDate.setDate(dueDate.getDate() - templateTask.daysBefore);
+
+                if (dueDate < today && eventDate >= today) {
+                    overdueTasks.push({
+                        eventId: event.id,
+                        eventName: event.name,
+                        taskName: templateTask.name,
+                        dueDate: dueDate,
+                        phase: templateTask.phase
+                    });
+                }
+            });
+
+            // Also check custom tasks stored in event.tasks
+            savedTasks.filter(t => t.isCustom && !t.completed).forEach(task => {
+                const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+                if (dueDate && dueDate < today && eventDate >= today) {
+                    overdueTasks.push({
+                        eventId: event.id,
+                        eventName: event.name,
+                        taskName: task.name,
+                        dueDate: dueDate,
+                        phase: task.phase || 'Custom'
+                    });
+                }
             });
         });
 
@@ -608,14 +628,54 @@ class App {
         const container = document.getElementById('recent-activity-list');
         if (!container) return;
 
-        const activities = this.data.activities || [];
+        let activities = this.data.activities || [];
+
+        // Apply filters
+        const userFilter = document.getElementById('activity-filter-user')?.value;
+        const typeFilter = document.getElementById('activity-filter-type')?.value;
+        const dateFilter = document.getElementById('activity-filter-date')?.value;
+
+        if (userFilter) {
+            activities = activities.filter(a => a.actor === userFilter);
+        }
+        if (typeFilter) {
+            activities = activities.filter(a => a.type === typeFilter);
+        }
+        if (dateFilter) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            activities = activities.filter(a => {
+                const activityDate = new Date(a.createdAt);
+                if (dateFilter === 'today') return activityDate >= today;
+                if (dateFilter === 'week') return activityDate >= weekAgo;
+                if (dateFilter === 'month') return activityDate >= monthAgo;
+                return true;
+            });
+        }
+
+        // Populate user filter dropdown with unique actors
+        const userSelect = document.getElementById('activity-filter-user');
+        if (userSelect && userSelect.options.length <= 1) {
+            const allActivities = this.data.activities || [];
+            const uniqueActors = [...new Set(allActivities.map(a => a.actor).filter(a => a))];
+            uniqueActors.forEach(actor => {
+                const option = document.createElement('option');
+                option.value = actor;
+                option.textContent = actor;
+                userSelect.appendChild(option);
+            });
+        }
 
         if (activities.length === 0) {
-            container.innerHTML = '<div class="no-activity">No recent activity</div>';
+            container.innerHTML = '<div class="no-activity">No recent activity matching filters</div>';
             return;
         }
 
-        container.innerHTML = activities.slice(0, 15).map(activity => {
+        // Show all activities (no limit) for full page view
+        container.innerHTML = activities.map(activity => {
             const icon = this.getActivityIcon(activity.type);
             const timeAgo = this.formatTimeAgo(activity.createdAt);
 
@@ -634,6 +694,20 @@ class App {
                 </div>
             `;
         }).join('');
+    }
+
+    filterActivity() {
+        this.renderRecentActivity();
+    }
+
+    clearActivityFilters() {
+        const userSelect = document.getElementById('activity-filter-user');
+        const typeSelect = document.getElementById('activity-filter-type');
+        const dateSelect = document.getElementById('activity-filter-date');
+        if (userSelect) userSelect.value = '';
+        if (typeSelect) typeSelect.value = '';
+        if (dateSelect) dateSelect.value = '';
+        this.renderRecentActivity();
     }
 
     getActivityIcon(type) {
@@ -802,10 +876,12 @@ class App {
             const instrument = this.data.instruments.find(i => i.id === hire.instrumentId);
             const student = this.data.students.find(s => s.id === hire.studentId);
             const isOverdue = hire.status === 'overdue';
+            // Get instrument name from lookup, or from hire record, or fallback
+            const instrumentName = instrument?.name || hire.instrumentName || hire.instrument || 'Unknown Instrument';
             return `
                 <div class="overdue-hire-item clickable ${isOverdue ? 'is-overdue' : 'is-due-soon'}" onclick="app.showEditHireModal('${hire.id}')">
                     <div class="overdue-hire-info">
-                        <span class="overdue-hire-instrument">${instrument?.name || 'Unknown Instrument'}</span>
+                        <span class="overdue-hire-instrument">${instrumentName}</span>
                         <span class="overdue-hire-student">${student?.name || hire.studentName || 'Unknown'}</span>
                     </div>
                     <span class="hire-status-badge ${hire.status}">${isOverdue ? 'Overdue' : 'Due Soon'}</span>
@@ -964,7 +1040,25 @@ class App {
         students = this.getSortedData('students', students);
 
         tbody.innerHTML = students.map(student => {
-            const tutor = this.getTutorById(student.tutorId) || { name: 'Unassigned', initials: '—', color: '#888' };
+            // Derive tutor from student's active lessons (lessons assigned to this student)
+            const studentLessons = this.data.lessons.filter(l =>
+                l.studentId === student.id ||
+                l.studentName?.toLowerCase() === student.name?.toLowerCase()
+            );
+            const activeLessons = studentLessons.filter(l => l.status === 'active');
+
+            let tutor = { name: 'Unassigned', initials: '—', color: '#888' };
+            if (activeLessons.length > 0) {
+                // Get the tutor from the first active lesson
+                const lesson = activeLessons[0];
+                tutor = this.getTutorById(lesson.tutorId) || this.data.tutors.find(t => t.name === lesson.tutorName) || tutor;
+            } else if (student.tutorId) {
+                // Fallback to student.tutorId if no lessons found
+                tutor = this.getTutorById(student.tutorId) || tutor;
+            }
+
+            // Also include parent info from form submissions if available
+            const parentInfo = student.parentName || student.parentEmail || student.parentPhone;
 
             return `
                 <tr data-id="${student.id}">
@@ -974,13 +1068,13 @@ class App {
                             <span class="student-name">${student.name}</span>
                         </div>
                     </td>
-                    <td>${student.year}</td>
-                    <td>${student.class}</td>
+                    <td>${student.year || '—'}</td>
+                    <td>${student.class || '—'}</td>
                     <td>${student.instruments?.join(', ') || '—'}</td>
                     <td>
                         <div class="cell-tutor">
-                            <div class="tutor-avatar" style="background: ${tutor.color}; color: white;">${tutor.initials}</div>
-                            <span>${tutor.name}</span>
+                            <div class="tutor-avatar" style="background: ${tutor.color || '#888'}; color: white;">${tutor.initials || this.getInitials(tutor.name)}</div>
+                            <span>${tutor.name}${activeLessons.length > 1 ? ` (+${activeLessons.length - 1})` : ''}</span>
                         </div>
                     </td>
                     <td><span class="status-badge status-${student.status === 'active' ? 'active' : student.status === 'waiting' ? 'waiting' : 'assigned'}">${student.status}</span></td>
@@ -1227,46 +1321,50 @@ class App {
     renderRequests(filter = 'all') {
         const tbody = document.getElementById('requests-body');
         if (!tbody) return;
-        
+
         let requests = this.data.lessonRequests;
         if (filter !== 'all') {
-            requests = requests.filter(r => r.status === filter);
+            requests = requests.filter(r => r.status === filter || (filter === 'pending' && r.status === 'awaiting'));
         }
-        
+
         if (requests.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="no-data">No ${filter === 'all' ? '' : filter} requests</td></tr>`;
             return;
         }
-        
-        tbody.innerHTML = requests.map(req => `
+
+        tbody.innerHTML = requests.map(req => {
+            const statusClass = req.status === 'awaiting' || req.status === 'pending' ? 'pending' : req.status;
+            return `
             <tr data-id="${req.id}">
                 <td><strong>${req.studentName}</strong></td>
-                <td>${req.year}</td>
+                <td>${req.year || req.yearLevel || '—'}</td>
                 <td>${req.instrument}</td>
-                <td>${req.received || '—'}</td>
-                <td>${req.form || '—'}</td>
-                <td><span class="status-badge status-${req.status === 'awaiting' ? 'pending' : 'waiting'}">${req.status}</span></td>
+                <td>${req.received ? this.formatDate(req.received) : (req.submittedAt ? this.formatDate(req.submittedAt) : '—')}</td>
+                <td>${req.source || req.form || '—'}</td>
+                <td><span class="status-badge status-${statusClass}">${req.status}</span></td>
                 <td>
                     <div class="row-actions">
-                        ${req.status === 'awaiting' ? `
+                        <button class="row-action-btn info" title="View Details" data-action="view-request" data-id="${req.id}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                        </button>
+                        ${req.status === 'awaiting' || req.status === 'pending' || req.status === 'waitlist' ? `
                             <button class="row-action-btn success" title="Approve" data-action="approve-request" data-id="${req.id}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M20 6L9 17l-5-5"/>
                                 </svg>
                             </button>
+                        ` : ''}
+                        ${req.status === 'awaiting' || req.status === 'pending' ? `
                             <button class="row-action-btn warning" title="Waitlist" data-action="waitlist-request" data-id="${req.id}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"/>
                                     <path d="M12 6v6l4 2"/>
                                 </svg>
                             </button>
-                        ` : `
-                            <button class="row-action-btn success" title="Approve" data-action="approve-request" data-id="${req.id}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 6L9 17l-5-5"/>
-                                </svg>
-                            </button>
-                        `}
+                        ` : ''}
                         <button class="row-action-btn" title="Edit" data-action="edit-request" data-id="${req.id}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -1282,8 +1380,9 @@ class App {
                     </div>
                 </td>
             </tr>
-        `).join('');
-        
+        `;
+        }).join('');
+
         this.bindRowActions('request');
     }
 
@@ -1323,9 +1422,16 @@ class App {
 
         // Render stats cards
         if (statsContainer) {
+            // Build tutor slots breakdown
+            const tutorSlotsHtml = tutorSlots.length > 0 ? `
+                <div class="tutor-slots-breakdown" style="margin-top: var(--spacing-sm); font-size: 0.75rem; color: var(--color-text-secondary);">
+                    ${tutorSlots.map(t => `<span style="white-space: nowrap;">${t.name.split(' ')[0]}: ${t.remaining}/${t.total}</span>`).join(' | ')}
+                </div>
+            ` : '';
+
             statsContainer.innerHTML = `
                 <div class="funded-stat-card">
-                    <div class="stat-value">${fundedRequests.length}</div>
+                    <div class="stat-value">${fundedRequests.filter(r => r.status !== 'approved').length}</div>
                     <div class="stat-label">Pending Requests</div>
                     <div class="stat-sublabel">Awaiting decision</div>
                 </div>
@@ -1338,6 +1444,7 @@ class App {
                     <div class="stat-value">${remainingSlots}/${totalSlots}</div>
                     <div class="stat-label">Slots Remaining</div>
                     <div class="stat-sublabel">${tutorSlots.length} tutors with funded slots</div>
+                    ${tutorSlotsHtml}
                 </div>
                 <div class="funded-stat-card">
                     <div class="stat-value">${movedToPrivate.length}</div>
@@ -1538,12 +1645,13 @@ class App {
                 ? groupStaff.map(s => s.name).join(', ')
                 : (group.leader || 'No leader assigned');
 
-            // Count responses/signups for this group
-            const responseCount = (group.responses || []).length;
+            // Custom header color
+            const headerColor = group.headerColor || '#c9a962';
+            const headerStyle = `background: ${headerColor}; color: ${this.getContrastColor(headerColor)};`;
 
             return `
                 <div class="group-card" data-id="${group.id}">
-                    <div class="group-card-header">
+                    <div class="group-card-header" style="${headerStyle}">
                         <div class="group-name">${group.name}</div>
                         <div class="group-type">${group.type}</div>
                     </div>
@@ -1552,12 +1660,6 @@ class App {
                             <div class="group-meta-item">
                                 <span class="group-meta-value discipline-tag discipline-${categoryColors[group.category] || 'music'}">${group.category}</span>
                             </div>
-                            ${responseCount > 0 ? `
-                                <div class="group-meta-item">
-                                    <span class="group-meta-value">${responseCount}</span>
-                                    <span class="group-meta-label">Signups</span>
-                                </div>
-                            ` : ''}
                         </div>
                         <div class="group-leader">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
@@ -1575,10 +1677,8 @@ class App {
                         </div>
                     </div>
                     <div class="group-card-actions">
-                        <button class="btn btn-outline btn-sm" onclick="app.showGroupResponsesModal('${group.id}')">Responses</button>
                         <button class="btn btn-outline btn-sm" onclick="app.showNotifyStaffModal('group', '${group.id}')" title="Email leaders">Notify</button>
                         <button class="btn btn-outline btn-sm" onclick="app.showEditGroupModal('${group.id}')">Edit</button>
-                        <button class="btn btn-outline btn-sm" onclick="app.handleDelete('group', '${group.id}')">Delete</button>
                     </div>
                 </div>
             `;
@@ -1809,10 +1909,9 @@ class App {
         
         // Map form IDs to actual HTML files
         const formUrls = {
-            'music-tuition-2026': 'music-tuition-2026.html',
-            'pa-groups-2026': 'pa-groups-2026.html'
+            'music-tuition-2026': 'music-tuition-2026.html'
         };
-        
+
         // Default built-in forms (these always exist as static HTML)
         const defaultForms = [
             {
@@ -1821,15 +1920,6 @@ class App {
                 description: 'Registration for itinerant music lessons',
                 status: 'active',
                 responses: this.data.lessonRequests?.filter(r => r.source === 'music-tuition-2026').length || 0,
-                createdAt: '2026-01-01',
-                isBuiltIn: true
-            },
-            {
-                id: 'pa-groups-2026',
-                name: 'Performing Arts Groups 2026',
-                description: 'Expression of interest for all PA groups',
-                status: 'active',
-                responses: 0,
                 createdAt: '2026-01-01',
                 isBuiltIn: true
             }
@@ -1847,7 +1937,7 @@ class App {
         container.innerHTML = allForms.map(form => {
             const formUrl = formUrls[form.id] || `${form.id}.html`;
             const hasPublicPage = formUrls[form.id] !== undefined;
-            
+
             return `
                 <div class="form-card" data-id="${form.id}">
                     <div class="form-status ${form.status}">${form.status === 'active' ? 'Active' : form.status === 'draft' ? 'Draft' : 'Closed'}</div>
@@ -1859,9 +1949,10 @@ class App {
                     </div>
                     <div class="form-actions">
                         ${hasPublicPage ? `<a href="${formUrl}" target="_blank" class="btn btn-primary btn-sm">Open Form</a>` : ''}
-                        ${!form.isBuiltIn ? `<button class="btn btn-outline btn-sm" onclick="app.showEditFormModal('${form.id}')">Edit</button>` : ''}
+                        <button class="btn btn-outline btn-sm" onclick="app.showEditFormModal('${form.id}')">Edit</button>
                         <button class="btn btn-outline btn-sm" onclick="app.viewFormResponses('${form.id}')">Responses</button>
                         ${hasPublicPage ? `<button class="btn btn-outline btn-sm" onclick="app.copyFormLink('${form.id}')">Copy Link</button>` : ''}
+                        ${!form.isBuiltIn ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="app.confirmDeleteForm('${form.id}')">Delete</button>` : ''}
                     </div>
                 </div>
             `;
@@ -1869,7 +1960,35 @@ class App {
     }
 
     showEditFormModal(formId) {
-        const form = this.data.forms?.find(f => f.id === formId);
+        // Check database forms first, then built-in forms
+        let form = this.data.forms?.find(f => f.id === formId);
+
+        // Handle built-in form (music-tuition-2026)
+        if (!form && formId === 'music-tuition-2026') {
+            // Load built-in form config from localStorage or create default
+            const savedConfig = localStorage.getItem('mgs_music_tuition_config');
+            form = savedConfig ? JSON.parse(savedConfig) : {
+                id: 'music-tuition-2026',
+                name: 'Music Tuition Signups 2026',
+                description: 'Registration for itinerant music lessons',
+                status: 'active',
+                isBuiltIn: true,
+                instruments: [],
+                questions: [
+                    { label: 'Student First Name', name: 'studentFirstName', type: 'text', required: true },
+                    { label: 'Student Last Name', name: 'studentLastName', type: 'text', required: true },
+                    { label: 'Year Level', name: 'yearLevel', type: 'year', required: true },
+                    { label: 'Class', name: 'class', type: 'text', required: false },
+                    { label: 'Parent/Guardian Name', name: 'parentName', type: 'text', required: true },
+                    { label: 'Parent Email', name: 'parentEmail', type: 'email', required: true },
+                    { label: 'Parent Phone', name: 'parentPhone', type: 'tel', required: true },
+                    { label: 'Instrument', name: 'instrument', type: 'select', required: true },
+                    { label: 'Funded Lesson Request', name: 'fundedRequest', type: 'checkbox', required: false },
+                    { label: 'Additional Notes', name: 'notes', type: 'textarea', required: false }
+                ]
+            };
+        }
+
         if (!form) {
             this.showToast('Form not found', 'error');
             return;
@@ -1877,6 +1996,7 @@ class App {
 
         // Store current questions for editing
         this.editingFormQuestions = JSON.parse(JSON.stringify(form.questions || []));
+        this.editingFormIsBuiltIn = form.isBuiltIn || false;
 
         const content = `
             <form id="edit-form-form" class="modal-form">
@@ -2036,16 +2156,71 @@ class App {
             questions: validQuestions
         };
 
+        // Handle built-in form differently - save to localStorage
+        if (this.editingFormIsBuiltIn && id === 'music-tuition-2026') {
+            const config = {
+                id: id,
+                ...updates,
+                isBuiltIn: true
+            };
+            localStorage.setItem('mgs_music_tuition_config', JSON.stringify(config));
+            this.showToast('Form configuration saved! Note: Changes to built-in form require manual HTML updates for the public form.', 'info');
+            this.editingFormQuestions = null;
+            this.editingFormIsBuiltIn = false;
+            this.closeModal();
+            this.renderCurrentPage();
+            return;
+        }
+
         const result = await DatabaseService.updateForm(id, updates);
 
         if (result.success) {
             this.showToast('Form updated successfully!', 'success');
             this.editingFormQuestions = null;
+            this.editingFormIsBuiltIn = false;
             this.closeModal();
             await this.loadAllData();
             this.renderCurrentPage();
         } else {
             this.showToast('Error updating form', 'error');
+        }
+    }
+
+    confirmDeleteForm(formId) {
+        const form = this.data.forms?.find(f => f.id === formId);
+        if (!form) {
+            this.showToast('Form not found', 'error');
+            return;
+        }
+
+        const content = `
+            <div class="confirm-delete">
+                <div class="confirm-icon danger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </div>
+                <h3>Delete "${form.name}"?</h3>
+                <p>This will permanently delete this form. Any responses will still be available in Lesson Requests.</p>
+            </div>
+        `;
+
+        this.showModal('Delete Form', content, () => this.deleteForm(formId));
+        document.getElementById('modal-save').textContent = 'Delete';
+        document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    async deleteForm(formId) {
+        const result = await DatabaseService.deleteForm(formId);
+
+        if (result.success) {
+            this.showToast('Form deleted successfully', 'success');
+            this.closeModal();
+            await this.loadAllData();
+            this.renderCurrentPage();
+        } else {
+            this.showToast('Error deleting form', 'error');
         }
     }
 
@@ -2058,10 +2233,9 @@ class App {
     copyFormLink(formId) {
         // Map form IDs to actual HTML files
         const formUrls = {
-            'music-tuition-2026': 'music-tuition-2026.html',
-            'pa-groups-2026': 'pa-groups-2026.html'
+            'music-tuition-2026': 'music-tuition-2026.html'
         };
-        
+
         const filename = formUrls[formId] || `${formId}.html`;
         const link = `${window.location.origin}/${filename}`;
         
@@ -3351,6 +3525,9 @@ class App {
             document.querySelectorAll('[data-action="waitlist-request"]').forEach(btn => {
                 btn.addEventListener('click', () => this.handleWaitlistRequest(btn.dataset.id));
             });
+            document.querySelectorAll('[data-action="view-request"]').forEach(btn => {
+                btn.addEventListener('click', () => this.showViewRequestModal(btn.dataset.id));
+            });
         }
         
         // Event-specific actions
@@ -3535,19 +3712,26 @@ class App {
         const student = this.data.students.find(s => s.id === id);
         if (!student) return;
 
-        const tutorOptions = this.data.tutors.map(t => 
-            `<option value="${t.id}" ${t.id === student.tutorId ? 'selected' : ''}>${t.name}</option>`
-        ).join('');
-        
+        // Get assigned tutor from lessons
+        const studentLessons = this.data.lessons.filter(l =>
+            l.studentId === student.id ||
+            l.studentName?.toLowerCase() === student.name?.toLowerCase()
+        );
+        const activeLessons = studentLessons.filter(l => l.status === 'active');
+        const assignedTutors = [...new Set(activeLessons.map(l => {
+            const tutor = this.getTutorById(l.tutorId) || this.data.tutors.find(t => t.name === l.tutorName);
+            return tutor?.name;
+        }).filter(Boolean))];
+
         // Group checkboxes
         const studentGroupIds = student.groupIds || [];
-        const groupCheckboxes = this.data.groups.map(g => 
+        const groupCheckboxes = this.data.groups.map(g =>
             `<label class="checkbox-label">
                 <input type="checkbox" name="groups" value="${g.id}" ${studentGroupIds.includes(g.id) ? 'checked' : ''}>
                 <span>${g.name}</span>
             </label>`
         ).join('');
-        
+
         const content = `
             <form id="edit-student-form" class="modal-form">
                 <input type="hidden" name="id" value="${id}">
@@ -3558,11 +3742,11 @@ class App {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Year</label>
-                        <input type="number" name="year" min="1" max="13" value="${student.year || ''}" required>
+                        <input type="number" name="year" min="1" max="13" value="${student.year || ''}">
                     </div>
                     <div class="form-group">
                         <label>Class</label>
-                        <input type="text" name="class" value="${student.class || ''}" required>
+                        <input type="text" name="class" value="${student.class || ''}">
                     </div>
                 </div>
                 <div class="form-group">
@@ -3570,11 +3754,11 @@ class App {
                     <input type="text" name="instruments" value="${(student.instruments || []).join(', ')}">
                 </div>
                 <div class="form-group">
-                    <label>Tutor</label>
-                    <select name="tutorId">
-                        <option value="">Select tutor (optional)...</option>
-                        ${tutorOptions}
-                    </select>
+                    <label>Assigned Tutor(s)</label>
+                    <div style="padding: 0.75rem; background: var(--color-bg-tertiary); border-radius: var(--radius-sm); color: var(--color-text-secondary);">
+                        ${assignedTutors.length > 0 ? assignedTutors.join(', ') : 'No tutor assigned (create a lesson to assign)'}
+                    </div>
+                    <small class="form-hint">Tutors are assigned through lessons. Edit lessons to change tutor assignments.</small>
                 </div>
                 <div class="form-group">
                     <label>Performing Arts Groups</label>
@@ -3583,9 +3767,20 @@ class App {
                     </div>
                     <small class="form-hint">Select the groups this student is a member of</small>
                 </div>
+                <h4 style="margin: var(--spacing-lg) 0 var(--spacing-md); border-top: 1px solid var(--color-border); padding-top: var(--spacing-lg);">Parent/Guardian Info</h4>
                 <div class="form-group">
-                    <label>Parent Email</label>
-                    <input type="email" name="parentEmail" value="${student.parentEmail || ''}">
+                    <label>Parent/Guardian Name</label>
+                    <input type="text" name="parentName" value="${student.parentName || ''}">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Parent Email</label>
+                        <input type="email" name="parentEmail" value="${student.parentEmail || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Parent Phone</label>
+                        <input type="tel" name="parentPhone" value="${student.parentPhone || ''}">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Status</label>
@@ -3598,7 +3793,7 @@ class App {
                 </div>
             </form>
         `;
-        
+
         this.showModal('Edit Student', content, () => this.updateStudent());
     }
 
@@ -3613,12 +3808,13 @@ class App {
         
         const student = {
             name: formData.get('name'),
-            year: parseInt(formData.get('year')),
+            year: parseInt(formData.get('year')) || null,
             class: formData.get('class'),
             instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
-            tutorId: formData.get('tutorId') || null,
             groupIds: groupIds,
-            parentEmail: formData.get('parentEmail'),
+            parentName: formData.get('parentName') || '',
+            parentEmail: formData.get('parentEmail') || '',
+            parentPhone: formData.get('parentPhone') || '',
             status: formData.get('status')
         };
         
@@ -5116,9 +5312,15 @@ class App {
         const content = `
             <form id="edit-group-form" class="modal-form">
                 <input type="hidden" name="id" value="${id}">
-                <div class="form-group">
-                    <label>Group Name</label>
-                    <input type="text" name="name" value="${group.name || ''}" required>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 3;">
+                        <label>Group Name</label>
+                        <input type="text" name="name" value="${group.name || ''}" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Header Color</label>
+                        <input type="color" name="headerColor" value="${group.headerColor || '#c9a962'}" style="width: 100%; height: 38px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); cursor: pointer;">
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -5149,10 +5351,29 @@ class App {
                     <label>Member Count</label>
                     <input type="number" name="memberCount" value="${group.memberCount || 0}" min="0">
                 </div>
+                <div class="modal-danger-zone" style="margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--color-border);">
+                    <button type="button" class="btn btn-outline btn-danger-outline" onclick="app.confirmDeleteGroup('${id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        </svg>
+                        Delete Group
+                    </button>
+                </div>
             </form>
         `;
 
         this.showModal('Edit Group', content, () => this.updateGroup());
+    }
+
+    confirmDeleteGroup(id) {
+        const group = this.data.groups.find(g => g.id === id);
+        if (!group) return;
+
+        if (confirm(`Are you sure you want to delete "${group.name}"? This action cannot be undone.`)) {
+            this.handleDelete('group', id);
+            this.closeModal();
+        }
     }
 
     async updateGroup() {
@@ -5174,7 +5395,8 @@ class App {
             meetingTime: formData.get('meetingTime'),
             leaderIds: leaderIds,
             leader: leaderNames.join(', '),
-            memberCount: parseInt(formData.get('memberCount')) || 0
+            memberCount: parseInt(formData.get('memberCount')) || 0,
+            headerColor: formData.get('headerColor') || '#c9a962'
         };
 
         const result = await DatabaseService.updateGroup(id, group);
@@ -5857,20 +6079,20 @@ class App {
     async confirmApproveRequest() {
         const form = document.getElementById('approve-request-form');
         const formData = new FormData(form);
-        
+
         const requestId = formData.get('requestId');
         const tutorId = formData.get('tutorId');
-        
+
         if (!tutorId) {
             this.showToast('Please select a tutor', 'error');
             return;
         }
-        
+
         const request = this.data.lessonRequests.find(r => r.id === requestId);
         const tutor = this.data.tutors.find(t => t.id === tutorId);
         const isFunded = formData.get('funded') === 'on';
 
-        // Create a new lesson
+        // Create a new lesson with all relevant data from the request
         const lesson = {
             studentName: request.studentName.split(' (')[0], // Remove class from name
             tutorId: tutorId,
@@ -5879,23 +6101,38 @@ class App {
             day: formData.get('day') || 'TBC',
             time: formData.get('time') || 'TBC',
             status: 'active',
-            funded: isFunded
+            funded: isFunded,
+            // Store parent contact from request
+            parentEmail: request.parentEmail || '',
+            parentPhone: request.parentPhone || '',
+            parentName: request.parentName || ''
         };
-        
+
         // Add the lesson
         const lessonResult = await DatabaseService.addLesson(lesson);
-        
+
         if (lessonResult.success) {
-            // Update the request status
-            await DatabaseService.updateLessonRequest(requestId, { 
-                status: 'approved',
-                assignedTutor: tutor.name,
-                approvedDate: new Date().toISOString().split('T')[0]
-            });
-            
+            // Delete the request (remove from list) instead of just changing status
+            await DatabaseService.deleteLessonRequest(requestId);
+
+            // Send notification email to tutor if they have notifications enabled
+            if (tutor.lessonNotifications && tutor.email) {
+                try {
+                    await EmailService.sendLessonNotification(lesson, tutor, { name: request.studentName });
+                    this.showToast('Request approved, lesson created, and tutor notified!', 'success');
+                } catch (emailError) {
+                    console.error('Error sending notification:', emailError);
+                    this.showToast('Request approved and lesson created! (Email notification failed)', 'success');
+                }
+            } else {
+                this.showToast('Request approved and lesson created!', 'success');
+            }
+
+            // Log activity
+            await this.logActivity('lesson', `Approved lesson request: ${request.studentName} - ${request.instrument}`);
+
             document.getElementById('modal-save').textContent = 'Save';
             this.closeModal();
-            this.showToast('Request approved and lesson created!', 'success');
             await this.loadAllData();
             this.renderCurrentPage();
         } else {
@@ -5911,6 +6148,78 @@ class App {
             this.renderRequests();
             this.renderRecentRequests();
         }
+    }
+
+    showViewRequestModal(id) {
+        const request = this.data.lessonRequests.find(r => r.id === id);
+        if (!request) return;
+
+        // Build detail rows for all available data
+        const detailRows = [];
+
+        // Student Details
+        if (request.studentName) detailRows.push({ label: 'Student Name', value: request.studentName });
+        if (request.studentEmail) detailRows.push({ label: 'Student Email', value: request.studentEmail });
+        if (request.year || request.yearLevel) detailRows.push({ label: 'Year Level', value: request.year || request.yearLevel });
+
+        // Parent Details
+        if (request.parentName) detailRows.push({ label: 'Parent/Guardian Name', value: request.parentName });
+        if (request.parentEmail) detailRows.push({ label: 'Parent Email', value: request.parentEmail });
+        if (request.parentPhone) detailRows.push({ label: 'Parent Phone', value: request.parentPhone });
+
+        // Lesson Details
+        if (request.instrument) detailRows.push({ label: 'Instrument', value: request.instrument });
+        if (request.lessonType) detailRows.push({ label: 'Lesson Type', value: request.lessonType === 'funded' ? 'Funded (subsidised)' : 'Private' });
+        if (request.fundedRequested !== undefined) detailRows.push({ label: 'Funded Requested', value: request.fundedRequested ? 'Yes' : 'No' });
+        if (request.tutorPreference) detailRows.push({ label: 'Tutor Preference', value: request.tutorPreference });
+        if (request.styles && request.styles.length > 0) detailRows.push({ label: 'Style Preference', value: request.styles.join(', ') });
+
+        // Experience
+        if (request.experience) detailRows.push({ label: 'Experience', value: request.experience });
+        if (request.otherInstruments) detailRows.push({ label: 'Other Instruments', value: request.otherInstruments });
+
+        // Meta
+        if (request.notes) detailRows.push({ label: 'Notes', value: request.notes });
+        if (request.source) detailRows.push({ label: 'Form Source', value: request.source });
+        if (request.received || request.submittedAt) detailRows.push({ label: 'Date Received', value: this.formatDate(request.received || request.submittedAt) });
+        detailRows.push({ label: 'Status', value: `<span class="status-badge status-${request.status === 'awaiting' || request.status === 'pending' ? 'pending' : request.status}">${request.status}</span>` });
+
+        const detailsHtml = detailRows.map(row => `
+            <div class="detail-row">
+                <span class="detail-label">${row.label}</span>
+                <span class="detail-value">${row.value}</span>
+            </div>
+        `).join('');
+
+        const content = `
+            <div class="request-details-view">
+                <style>
+                    .request-details-view .detail-row {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 0.75rem 0;
+                        border-bottom: 1px solid var(--color-border);
+                    }
+                    .request-details-view .detail-row:last-child {
+                        border-bottom: none;
+                    }
+                    .request-details-view .detail-label {
+                        color: var(--color-text-secondary);
+                        font-size: 0.9rem;
+                    }
+                    .request-details-view .detail-value {
+                        color: var(--color-text-primary);
+                        font-weight: 500;
+                        text-align: right;
+                        max-width: 60%;
+                    }
+                </style>
+                ${detailsHtml}
+            </div>
+        `;
+
+        this.showModal('Lesson Request Details', content, null);
+        document.getElementById('modal-save').style.display = 'none';
     }
 
     showEditRequestModal(id) {
@@ -6900,6 +7209,30 @@ class App {
     }
 
     showWipeDataModal() {
+        const dataOptions = [
+            { value: 'all', label: 'All Data', description: 'Delete everything' },
+            { value: 'students', label: 'Students', description: 'Student records' },
+            { value: 'tutors', label: 'Staff/Tutors', description: 'Staff and tutor records' },
+            { value: 'lessons', label: 'Lessons', description: 'All lesson schedules' },
+            { value: 'lessonRequests', label: 'Lesson Requests', description: 'Pending requests' },
+            { value: 'events', label: 'Events', description: 'All events' },
+            { value: 'groups', label: 'Groups', description: 'Performing arts groups' },
+            { value: 'instruments', label: 'Instruments', description: 'Instrument inventory' },
+            { value: 'instrumentHires', label: 'Instrument Hires', description: 'Hire agreements' },
+            { value: 'forms', label: 'Forms', description: 'Custom signup forms' },
+            { value: 'activities', label: 'Activity Log', description: 'Recent activity history' }
+        ];
+
+        const optionsHtml = dataOptions.map(opt => `
+            <label class="checkbox-label" style="display: flex; align-items: center; padding: var(--spacing-sm) 0; border-bottom: 1px solid var(--color-border);">
+                <input type="checkbox" name="wipe-section" value="${opt.value}" ${opt.value === 'all' ? 'onchange="app.toggleWipeAll(this)"' : ''}>
+                <span style="flex: 1; margin-left: var(--spacing-sm);">
+                    <strong>${opt.label}</strong>
+                    <small style="display: block; color: var(--color-text-muted);">${opt.description}</small>
+                </span>
+            </label>
+        `).join('');
+
         const content = `
             <div class="confirm-delete">
                 <div class="confirm-icon danger">
@@ -6910,8 +7243,11 @@ class App {
                         <line x1="14" y1="11" x2="14" y2="17"/>
                     </svg>
                 </div>
-                <h3>Wipe All Data?</h3>
-                <p>This will permanently delete ALL data from the database. This action cannot be undone!</p>
+                <h3>Wipe Data</h3>
+                <p>Select which data to permanently delete. This action cannot be undone!</p>
+                <div class="wipe-options" style="margin: var(--spacing-md) 0; max-height: 300px; overflow-y: auto;">
+                    ${optionsHtml}
+                </div>
                 <div class="form-group" style="margin-top: var(--spacing-lg);">
                     <label>Enter password to confirm:</label>
                     <input type="password" id="wipe-password" placeholder="Enter admin password">
@@ -6919,9 +7255,19 @@ class App {
             </div>
         `;
 
-        this.showModal('Wipe All Data', content, () => this.confirmWipeData());
-        document.getElementById('modal-save').textContent = 'Wipe Data';
+        this.showModal('Wipe Data', content, () => this.confirmWipeData());
+        document.getElementById('modal-save').textContent = 'Wipe Selected';
         document.getElementById('modal-save').classList.add('btn-danger');
+    }
+
+    toggleWipeAll(checkbox) {
+        const allCheckboxes = document.querySelectorAll('input[name="wipe-section"]');
+        allCheckboxes.forEach(cb => {
+            if (cb.value !== 'all') {
+                cb.checked = checkbox.checked;
+                cb.disabled = checkbox.checked;
+            }
+        });
     }
 
     async confirmWipeData() {
@@ -6933,21 +7279,34 @@ class App {
             return;
         }
 
+        const selectedCheckboxes = document.querySelectorAll('input[name="wipe-section"]:checked');
+        const selectedValues = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+        if (selectedValues.length === 0) {
+            this.showToast('Please select data to wipe', 'error');
+            return;
+        }
+
         this.closeModal();
         this.showLoading(true);
 
         try {
-            const collections = ['students', 'tutors', 'lessons', 'events', 'groups', 'instruments', 'instrumentHires', 'lessonRequests', 'forms', 'users', 'templates'];
-            let totalDeleted = 0;
+            let collections = [];
+            if (selectedValues.includes('all')) {
+                collections = ['students', 'tutors', 'lessons', 'events', 'groups', 'instruments', 'instrumentHires', 'lessonRequests', 'forms', 'users', 'templates', 'activities'];
+            } else {
+                collections = selectedValues;
+            }
 
+            let totalDeleted = 0;
             for (const collectionName of collections) {
                 const result = await DatabaseService.clearCollection(collectionName);
                 if (result.success) {
-                    totalDeleted += result.count;
+                    totalDeleted += result.count || 0;
                 }
             }
 
-            this.showToast(`All data wiped! (${totalDeleted} records deleted)`, 'success');
+            this.showToast(`Data wiped! (${totalDeleted} records deleted)`, 'success');
             await this.loadAllData();
             this.renderCurrentPage();
         } catch (error) {
@@ -7696,6 +8055,18 @@ class App {
             .join('')
             .toUpperCase()
             .slice(0, 2);
+    }
+
+    getContrastColor(hexColor) {
+        // Convert hex to RGB
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        // Calculate relative luminance
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        // Return black or white based on luminance
+        return luminance > 0.5 ? '#1a1f2e' : '#f4f4f5';
     }
 
     handleSearch(type, query) {
