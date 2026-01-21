@@ -356,24 +356,15 @@ const DatabaseService = {
     async updateSettings(settings) {
         try {
             const docRef = doc(db, 'settings', 'main');
-            await updateDoc(docRef, {
+            // Use setDoc with merge to create if doesn't exist, update if it does
+            await setDoc(docRef, {
                 ...settings,
                 updatedAt: serverTimestamp()
-            });
+            }, { merge: true });
             return { success: true };
         } catch (error) {
-            // If doc doesn't exist, create it
-            try {
-                await addDoc(collection(db, 'settings'), {
-                    ...settings,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-                return { success: true };
-            } catch (e) {
-                console.error('Error updating settings:', e);
-                return { success: false, error: e.message };
-            }
+            console.error('Error updating settings:', error);
+            return { success: false, error: error.message };
         }
     },
 

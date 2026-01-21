@@ -944,6 +944,7 @@ class App {
                 <th>Groups</th>
                 <th>Progress</th>
                 <th class="sortable" onclick="app.sortData('events', 'category')">Category ${this.getSortIcon('events', 'category')}</th>
+                <th class="sortable" onclick="app.sortData('events', 'template')">Type ${this.getSortIcon('events', 'template')}</th>
                 <th class="th-actions"></th>
             `;
         }
@@ -962,7 +963,7 @@ class App {
         };
 
         if (this.data.events.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No events found. Create your first event!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No events found. Create your first event!</td></tr>';
             return;
         }
 
@@ -1035,6 +1036,7 @@ class App {
                     <td><div class="mini-tags">${groupsDisplay}</div></td>
                     <td>${taskProgressDisplay}</td>
                     <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
+                    <td><span class="text-muted">${templateLabel}</span></td>
                     <td>
                         <div class="row-actions">
                             <button class="row-action-btn primary" title="View Tasks" data-action="view-event-details" data-id="${event.id}">
@@ -2022,45 +2024,28 @@ class App {
     renderUsers() {
         const container = document.getElementById('users-list');
         if (!container) return;
-        
-        // Get users from database, fallback to current logged in user
-        const users = this.data.users || [];
-        
-        // If no users in database, show current logged in user
-        if (users.length === 0) {
-            const currentUser = this.currentUser;
-            if (currentUser) {
-                container.innerHTML = `
-                    <div class="user-row">
-                        <div class="user-avatar admin">${this.getInitials(currentUser.displayName || currentUser.email)}</div>
-                        <div class="user-info">
-                            <span class="user-name">${currentUser.displayName || 'Current User'}</span>
-                            <span class="user-email">${currentUser.email}</span>
-                        </div>
-                        <span class="user-role role-admin">Admin</span>
-                        <span class="user-badge">Current User</span>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = '<p style="padding: var(--spacing-md); color: var(--color-text-secondary);">No users configured.</p>';
-            }
-            return;
-        }
-        
-        container.innerHTML = users.map(user => `
-            <div class="user-row" data-id="${user.id}">
-                <div class="user-avatar ${user.role || 'staff'}">${this.getInitials(user.name)}</div>
+
+        // Show admin profile - either from database or current logged in user
+        const adminUser = this.data.users?.find(u => u.role === 'admin') || null;
+        const currentUser = this.currentUser;
+
+        const displayName = adminUser?.name || currentUser?.displayName || 'Admin';
+        const displayEmail = adminUser?.email || currentUser?.email || '';
+        const userId = adminUser?.id || 'current';
+
+        container.innerHTML = `
+            <div class="user-row">
+                <div class="user-avatar admin">${this.getInitials(displayName)}</div>
                 <div class="user-info">
-                    <span class="user-name">${user.name}</span>
-                    <span class="user-email">${user.email}</span>
+                    <span class="user-name">${displayName}</span>
+                    <span class="user-email">${displayEmail}</span>
                 </div>
-                <span class="user-role role-${user.role || 'staff'}">${this.formatRole(user.role || 'staff')}</span>
+                <span class="user-role role-admin">Admin</span>
                 <div class="user-actions">
-                    <button class="btn btn-outline btn-sm" onclick="app.showEditUserModal('${user.id}')">Edit</button>
-                    <button class="btn btn-outline btn-sm" onclick="app.deleteUser('${user.id}')">Delete</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.showEditAdminModal('${userId}')">Edit</button>
                 </div>
             </div>
-        `).join('');
+        `;
     }
     
     formatRole(role) {
@@ -2072,7 +2057,69 @@ class App {
         };
         return roleMap[role] || role;
     }
-    
+
+    showEditAdminModal(userId) {
+        // Get admin user from database or use current logged in user
+        const adminUser = this.data.users?.find(u => u.id === userId || u.role === 'admin');
+        const currentUser = this.currentUser;
+
+        const displayName = adminUser?.name || currentUser?.displayName || '';
+        const displayEmail = adminUser?.email || currentUser?.email || '';
+
+        const content = `
+            <form id="edit-admin-form">
+                <input type="hidden" id="admin-user-id" value="${adminUser?.id || 'new'}">
+                <div class="form-group">
+                    <label>Name <span class="required">*</span></label>
+                    <input type="text" id="admin-name" required value="${displayName}" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" id="admin-email" required value="${displayEmail}" placeholder="Enter your email">
+                </div>
+                <p class="help-text" style="margin-top: var(--spacing-md); padding: var(--spacing-sm); background: var(--color-bg-tertiary); border-radius: var(--radius-sm);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    This updates your display name and email in the portal.
+                </p>
+            </form>
+        `;
+        this.showModal('Edit Admin Profile', content, () => this.saveAdminProfile());
+    }
+
+    async saveAdminProfile() {
+        const id = document.getElementById('admin-user-id').value;
+        const name = document.getElementById('admin-name').value.trim();
+        const email = document.getElementById('admin-email').value.trim();
+
+        if (!name || !email) {
+            this.showToast('Please fill in all required fields', 'error');
+            return;
+        }
+
+        try {
+            if (id === 'new') {
+                // Create new admin user
+                await DatabaseService.addUser({
+                    name,
+                    email,
+                    role: 'admin',
+                    active: true
+                });
+            } else {
+                // Update existing admin user
+                await DatabaseService.updateUser(id, { name, email });
+            }
+
+            await this.loadAllData();
+            this.renderUsers();
+            this.closeModal();
+            this.showToast('Admin profile updated', 'success');
+        } catch (error) {
+            console.error('Error saving admin profile:', error);
+            this.showToast('Error saving profile', 'error');
+        }
+    }
+
     renderCategories() {
         const container = document.getElementById('categories-list');
         if (!container) return;
@@ -2274,20 +2321,8 @@ class App {
             }
         }
 
-        // If date doesn't fall in any term, find the closest upcoming term
-        const year = date.getFullYear();
-        for (let i = 1; i <= 4; i++) {
-            const term = termDates[`term${i}`];
-            if (term) {
-                const start = new Date(term.start);
-                start.setFullYear(year);
-                if (date < start) {
-                    return `Term ${i}`;
-                }
-            }
-        }
-
-        return 'Term 4'; // Default to Term 4 if after all terms
+        // Date doesn't fall within any term - it's during holidays
+        return 'Holidays';
     }
 
     // ========================================
@@ -2565,15 +2600,18 @@ class App {
         }
         
         try {
-            const termDates = this.data.settings?.termDates || {};
+            const termDates = { ...(this.data.settings?.termDates || {}) };
             termDates[termKey] = { start, end };
-            
-            await DatabaseService.update('settings', 'general', { termDates });
-            this.data.settings = { ...this.data.settings, termDates };
-            
-            this.renderSettings();
-            this.closeModal();
-            this.showToast('Term dates updated', 'success');
+
+            const result = await DatabaseService.updateSettings({ termDates });
+            if (result.success) {
+                this.data.settings = { ...this.data.settings, termDates };
+                this.renderSettings();
+                this.closeModal();
+                this.showToast('Term dates updated', 'success');
+            } else {
+                this.showToast('Error saving term dates', 'error');
+            }
         } catch (error) {
             console.error('Error saving term dates:', error);
             this.showToast('Error saving term dates', 'error');
@@ -2610,12 +2648,15 @@ class App {
         }
         
         try {
-            await DatabaseService.update('settings', 'general', { termDates });
-            this.data.settings = { ...this.data.settings, termDates };
-            
-            this.renderSettings();
-            this.closeModal();
-            this.showToast('All term dates updated', 'success');
+            const result = await DatabaseService.updateSettings({ termDates });
+            if (result.success) {
+                this.data.settings = { ...this.data.settings, termDates };
+                this.renderSettings();
+                this.closeModal();
+                this.showToast('All term dates updated', 'success');
+            } else {
+                this.showToast('Error saving term dates', 'error');
+            }
         } catch (error) {
             console.error('Error saving term dates:', error);
             this.showToast('Error saving term dates', 'error');
@@ -3142,12 +3183,13 @@ class App {
                         <input type="text" name="location" value="${event.location || ''}" placeholder="e.g. Main Hall">
                     </div>
                     <div class="form-group">
-                        <label>Term</label>
+                        <label>Term <small>(auto-calculated from date)</small></label>
                         <select name="term" id="edit-event-term">
                             <option value="Term 1" ${event.term === 'Term 1' ? 'selected' : ''}>Term 1</option>
                             <option value="Term 2" ${event.term === 'Term 2' ? 'selected' : ''}>Term 2</option>
                             <option value="Term 3" ${event.term === 'Term 3' ? 'selected' : ''}>Term 3</option>
                             <option value="Term 4" ${event.term === 'Term 4' ? 'selected' : ''}>Term 4</option>
+                            <option value="Holidays" ${event.term === 'Holidays' ? 'selected' : ''}>Holidays</option>
                         </select>
                     </div>
                 </div>
@@ -4149,9 +4191,13 @@ class App {
                     <label>Serial Number</label>
                     <input type="text" name="serialNumber" value="${instrument.serialNumber || ''}">
                 </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this instrument...">${instrument.notes || ''}</textarea>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Edit Instrument', content, () => this.updateInstrument());
     }
 
@@ -4166,7 +4212,8 @@ class App {
             size: formData.get('size'),
             condition: formData.get('condition'),
             status: formData.get('status'),
-            serialNumber: formData.get('serialNumber')
+            serialNumber: formData.get('serialNumber'),
+            notes: formData.get('notes')
         };
         
         const result = await DatabaseService.updateInstrument(id, instrument);
@@ -4259,6 +4306,10 @@ class App {
                         </div>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this hire...">${hire.notes || ''}</textarea>
+                </div>
             </form>
         `;
 
@@ -4337,7 +4388,8 @@ class App {
             expectedReturn: formData.get('expectedReturn'),
             status: newStatus,
             agreement: !!agreementData,
-            agreementFile: agreementData
+            agreementFile: agreementData,
+            notes: formData.get('notes')
         };
 
         const result = await DatabaseService.update('instrumentHires', id, hire);
@@ -4933,12 +4985,13 @@ class App {
                         <input type="text" name="location" placeholder="e.g. Main Hall">
                     </div>
                     <div class="form-group">
-                        <label>Term</label>
+                        <label>Term <small>(auto-calculated from date)</small></label>
                         <select name="term" id="add-event-term">
                             <option value="Term 1">Term 1</option>
                             <option value="Term 2">Term 2</option>
                             <option value="Term 3">Term 3</option>
                             <option value="Term 4">Term 4</option>
+                            <option value="Holidays">Holidays</option>
                         </select>
                     </div>
                 </div>
@@ -5231,22 +5284,27 @@ class App {
                     <label>Serial Number</label>
                     <input type="text" name="serialNumber" placeholder="Optional">
                 </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this instrument..."></textarea>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Add New Instrument', content, () => this.saveInstrument());
     }
 
     async saveInstrument() {
         const form = document.getElementById('add-instrument-form');
         const formData = new FormData(form);
-        
+
         const instrument = {
             name: formData.get('name'),
             type: formData.get('type'),
             size: formData.get('size'),
             condition: formData.get('condition'),
             serialNumber: formData.get('serialNumber'),
+            notes: formData.get('notes'),
             status: 'Available'
         };
         
@@ -5311,6 +5369,10 @@ class App {
                         </div>
                     </div>
                     <small class="form-hint">Upload signed hire agreement document</small>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this hire..."></textarea>
                 </div>
             </form>
         `;
@@ -5392,6 +5454,7 @@ class App {
             expectedReturn: formData.get('expectedReturn'),
             agreement: !!agreementData,
             agreementFile: agreementData,
+            notes: formData.get('notes'),
             status: 'active'
         };
 
@@ -6697,39 +6760,11 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
         let defaultMessage = '';
 
         if (type === 'event') {
-            defaultSubject = `Event Assignment: ${entity.name}`;
-            let tasksList = '';
-            if (entity.tasks && entity.tasks.length > 0) {
-                tasksList = '\n\nTASKS:\n' + entity.tasks.map(task => {
-                    const assignedStaff = task.assignedTo
-                        ? (this.data.tutors.find(t => t.id === task.assignedTo)?.name || 'Unassigned')
-                        : 'Unassigned';
-                    return `- ${task.name} [${assignedStaff}]`;
-                }).join('\n');
-            }
-            defaultMessage = `You have been assigned to the following event:
-
-Event: ${entity.name}
-Date: ${this.formatDate(entity.date)}
-Time: ${entity.time || 'TBC'}
-Location: ${entity.location || 'TBC'}
-
-${entity.description || ''}${tasksList}
-
-Please check the MGS Arts Portal for task assignments and updates.`;
+            defaultSubject = `Event: ${entity.name}`;
+            defaultMessage = '';
         } else if (type === 'group') {
-            defaultSubject = `Group Assignment: ${entity.name}`;
-            defaultMessage = `You have been assigned as a leader of the following group:
-
-Group: ${entity.name}
-Type: ${entity.type || 'N/A'}
-Category: ${entity.category || 'N/A'}
-Members: ${entity.members || 0}
-
-Meeting: ${entity.meetingDay || 'TBC'} ${entity.meetingTime || ''}
-Location: ${entity.location || 'TBC'}
-
-Please check the MGS Arts Portal for more details.`;
+            defaultSubject = `Group: ${entity.name}`;
+            defaultMessage = '';
         } else if (type === 'lesson') {
             const student = this.getStudentById(entity.studentId);
             defaultSubject = `New Lesson Assignment: ${student?.name || entity.studentName || 'Student'}`;
@@ -6762,7 +6797,7 @@ Please check the MGS Arts Portal for more details.`;
                 </div>
                 <div class="form-group">
                     <label>Message</label>
-                    <textarea id="notify-staff-message" class="form-control" rows="8">${defaultMessage}</textarea>
+                    <textarea id="notify-staff-message" class="form-control" rows="6" placeholder="Type your message here...">${defaultMessage}</textarea>
                 </div>
                 <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
                     ${emailMethodMessage}
