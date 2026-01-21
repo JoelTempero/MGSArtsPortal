@@ -356,24 +356,15 @@ const DatabaseService = {
     async updateSettings(settings) {
         try {
             const docRef = doc(db, 'settings', 'main');
-            await updateDoc(docRef, {
+            // Use setDoc with merge to create if doesn't exist, update if it does
+            await setDoc(docRef, {
                 ...settings,
                 updatedAt: serverTimestamp()
-            });
+            }, { merge: true });
             return { success: true };
         } catch (error) {
-            // If doc doesn't exist, create it
-            try {
-                await addDoc(collection(db, 'settings'), {
-                    ...settings,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-                return { success: true };
-            } catch (e) {
-                console.error('Error updating settings:', e);
-                return { success: false, error: e.message };
-            }
+            console.error('Error updating settings:', error);
+            return { success: false, error: error.message };
         }
     },
 
@@ -467,6 +458,151 @@ const DatabaseService = {
     // Get lesson token by token string
     async getLessonToken(token) {
         return this.getById('lessonTokens', token);
+    },
+
+    // ---- Tutor Tokens ----
+
+    // Create a tutor portal token
+    async createTutorToken(tutorId, expiryDays = 90) {
+        // Generate a random token
+        const token = this.generateToken();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+        try {
+            // Use setDoc with the token as document ID for easy lookup
+            await setDoc(doc(db, 'tutorTokens', token), {
+                tutorId,
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt.toISOString()
+            });
+
+            return { success: true, token };
+        } catch (error) {
+            console.error('Error creating tutor token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Get tutor token by token string
+    async getTutorToken(token) {
+        return this.getById('tutorTokens', token);
+    },
+
+    // Get or create tutor token (returns existing if valid, or creates new)
+    async getOrCreateTutorToken(tutorId) {
+        try {
+            // Query for existing valid token
+            const tokensQuery = query(
+                collection(db, 'tutorTokens'),
+                where('tutorId', '==', tutorId)
+            );
+            const snapshot = await getDocs(tokensQuery);
+
+            // Check for a valid (non-expired) token
+            const now = new Date();
+            for (const tokenDoc of snapshot.docs) {
+                const data = tokenDoc.data();
+                if (data.expiresAt && new Date(data.expiresAt) > now) {
+                    return { success: true, token: tokenDoc.id, existing: true };
+                }
+            }
+
+            // No valid token found, create a new one
+            return this.createTutorToken(tutorId);
+        } catch (error) {
+            console.error('Error getting/creating tutor token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // ---- Staff Tokens (for Event Portal) ----
+
+    // Create a staff portal token
+    async createStaffToken(staffId, expiryDays = 90) {
+        const token = this.generateToken();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+        try {
+            await setDoc(doc(db, 'staffTokens', token), {
+                staffId,
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt.toISOString()
+            });
+
+            return { success: true, token };
+        } catch (error) {
+            console.error('Error creating staff token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Get or create staff token
+    async getOrCreateStaffToken(staffId) {
+        try {
+            const tokensQuery = query(
+                collection(db, 'staffTokens'),
+                where('staffId', '==', staffId)
+            );
+            const snapshot = await getDocs(tokensQuery);
+
+            const now = new Date();
+            for (const tokenDoc of snapshot.docs) {
+                const data = tokenDoc.data();
+                if (data.expiresAt && new Date(data.expiresAt) > now) {
+                    return { success: true, token: tokenDoc.id, existing: true };
+                }
+            }
+
+            return this.createStaffToken(staffId);
+        } catch (error) {
+            console.error('Error getting/creating staff token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // ---- Activity Logging ----
+
+    // Log an activity
+    async logActivity(activity) {
+        try {
+            const activityData = {
+                ...activity,
+                timestamp: serverTimestamp(),
+                createdAt: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, 'activities'), activityData);
+            return { success: true };
+        } catch (error) {
+            console.error('Error logging activity:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Get recent activities
+    async getRecentActivities(limit = 50) {
+        try {
+            const activitiesQuery = query(
+                collection(db, 'activities'),
+                orderBy('createdAt', 'desc')
+            );
+            const snapshot = await getDocs(activitiesQuery);
+
+            const activities = [];
+            snapshot.forEach(doc => {
+                activities.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort by createdAt (ISO string) and limit
+            return activities
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, limit);
+        } catch (error) {
+            console.error('Error getting activities:', error);
+            return [];
+        }
     },
 
     // ---- Batch Operations ----

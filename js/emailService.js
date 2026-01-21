@@ -121,10 +121,16 @@ class EmailService {
         let tasksList = '';
         if (event.tasks && event.tasks.length > 0) {
             tasksList = '\n\nTASKS:\n' + event.tasks.map(task => {
-                const assignedStaff = task.assignedTo
-                    ? (allStaff.find(s => s.id === task.assignedTo)?.name || 'Unassigned')
-                    : 'Unassigned';
-                return `- ${task.name} [${assignedStaff}]`;
+                // Handle both legacy assignedTo and new assignedToIds
+                let assignedIds = task.assignedToIds || [];
+                if (!assignedIds.length && task.assignedTo) {
+                    assignedIds = [task.assignedTo];
+                }
+                const assignedNames = assignedIds
+                    .map(id => allStaff.find(s => s.id === id)?.name)
+                    .filter(n => n);
+                const assignedText = assignedNames.length > 0 ? assignedNames.join(', ') : 'Unassigned';
+                return `- ${task.name} [${assignedText}]`;
             }).join('\n');
         }
 
@@ -212,6 +218,96 @@ Please check the MGS Arts Portal for more details.`;
             subject,
             message,
             type: 'lesson'
+        });
+    }
+
+    /**
+     * Send tutor portal link
+     * @param {Object} tutor - Tutor object with email property
+     * @param {string} portalUrl - The tutor portal URL with token
+     * @param {number} lessonCount - Number of lessons assigned
+     * @returns {Promise}
+     */
+    static async sendTutorPortalLink(tutor, portalUrl, lessonCount = 0) {
+        if (!tutor.email) {
+            return { success: false, error: 'Tutor has no email address' };
+        }
+
+        const subject = `Your MGS Arts Portal Access Link`;
+        const message = `Hi ${tutor.name},
+
+You have been set up in the MGS Performing Arts system${lessonCount > 0 ? ` with ${lessonCount} lesson${lessonCount > 1 ? 's' : ''} assigned to you` : ''}.
+
+ACCESS YOUR TUTOR PORTAL:
+${portalUrl}
+
+Use this link to:
+- View all your assigned lessons
+- Accept lessons or add students to your waitlist
+- Track your teaching schedule
+
+VERIFICATION:
+When you first access the portal, you'll need to enter your last name to verify your identity.
+
+This link is personal to you and will expire in 90 days. Please do not share it with others.
+
+If you have any questions, please contact the Performing Arts Department.
+
+Best regards,
+MGS Performing Arts`;
+
+        return this.send({
+            to_email: tutor.email,
+            to_name: tutor.name,
+            subject,
+            message,
+            type: 'tutor-portal'
+        });
+    }
+
+    /**
+     * Send staff event portal link
+     * @param {Object} staff - Staff object with email property
+     * @param {string} portalUrl - The staff portal URL with token
+     * @param {number} eventCount - Number of events assigned
+     * @param {number} taskCount - Number of tasks assigned
+     * @returns {Promise}
+     */
+    static async sendStaffPortalLink(staff, portalUrl, eventCount = 0, taskCount = 0) {
+        if (!staff.email) {
+            return { success: false, error: 'Staff has no email address' };
+        }
+
+        const subject = `Your MGS Event Portal Access Link`;
+        const message = `Hi ${staff.name},
+
+You have been assigned to events in the MGS Performing Arts system${eventCount > 0 ? ` (${eventCount} event${eventCount > 1 ? 's' : ''}, ${taskCount} task${taskCount > 1 ? 's' : ''})` : ''}.
+
+ACCESS YOUR STAFF PORTAL:
+${portalUrl}
+
+Use this link to:
+- View all your assigned events
+- See tasks assigned to you for each event
+- Mark tasks as complete
+- Track your event schedule
+
+VERIFICATION:
+When you first access the portal, you'll need to enter your last name to verify your identity.
+
+This link is personal to you and will expire in 90 days. Please do not share it with others.
+
+If you have any questions, please contact the Performing Arts Department.
+
+Best regards,
+MGS Performing Arts`;
+
+        return this.send({
+            to_email: staff.email,
+            to_name: staff.name,
+            subject,
+            message,
+            type: 'staff-portal'
         });
     }
 }

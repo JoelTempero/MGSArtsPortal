@@ -42,6 +42,9 @@ class App {
             hires: {}
         };
 
+        // Tab state for pages with tabs
+        this.lessonsTab = 'all';
+
         this.init();
     }
 
@@ -148,9 +151,9 @@ class App {
 
     async loadAllData() {
         this.showLoading(true);
-        
+
         try {
-            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates] = await Promise.all([
+            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates, activities] = await Promise.all([
                 DatabaseService.getStudents(),
                 DatabaseService.getTutors(),
                 DatabaseService.getLessons(),
@@ -162,11 +165,15 @@ class App {
                 DatabaseService.getSettings(),
                 DatabaseService.getForms(),
                 DatabaseService.getUsers(),
-                DatabaseService.getTemplates()
+                DatabaseService.getTemplates(),
+                DatabaseService.getRecentActivities(30)
             ]);
-            
-            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates };
-            
+
+            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates, activities };
+
+            // Update activity notification badge
+            this.updateActivityBadge();
+
             // If no data, show welcome message
             if (students.length === 0 && tutors.length === 0) {
                 this.showToast('Welcome! Load demo data from Settings to get started.', 'info');
@@ -245,7 +252,11 @@ class App {
         document.getElementById('wipe-all-data')?.addEventListener('click', () => this.showWipeDataModal());
         document.getElementById('save-school-settings')?.addEventListener('click', () => this.saveSchoolSettings());
         document.getElementById('add-category-btn')?.addEventListener('click', () => this.addCategory());
-        
+
+        // CSV Import
+        document.getElementById('csv-import-btn')?.addEventListener('click', () => document.getElementById('csv-import-file').click());
+        document.getElementById('csv-import-file')?.addEventListener('change', (e) => this.handleCSVImport(e));
+
         // Search inputs
         document.getElementById('lessons-search')?.addEventListener('input', (e) => this.handleSearch('lessons', e.target.value));
         document.getElementById('students-search')?.addEventListener('input', (e) => this.handleSearch('students', e.target.value));
@@ -462,6 +473,9 @@ class App {
         this.renderRecentRequests();
         this.renderOverdueHires();
         this.renderTodaysLessons();
+        this.renderRecentActivity();
+        // Mark activities as viewed when Dashboard is visible
+        this.markActivitiesViewed();
     }
 
     renderOverdueEventTasks() {
@@ -578,6 +592,118 @@ class App {
         if (period === 'PM' && hours !== 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
         return hours * 60 + minutes;
+    }
+
+    renderRecentActivity() {
+        const container = document.getElementById('recent-activity-list');
+        if (!container) return;
+
+        const activities = this.data.activities || [];
+
+        if (activities.length === 0) {
+            container.innerHTML = '<div class="no-activity">No recent activity</div>';
+            return;
+        }
+
+        container.innerHTML = activities.slice(0, 15).map(activity => {
+            const icon = this.getActivityIcon(activity.type);
+            const timeAgo = this.formatTimeAgo(activity.createdAt);
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon ${activity.type}">
+                        ${icon}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">${activity.message}</div>
+                        <div class="activity-meta">
+                            <span class="activity-time">${timeAgo}</span>
+                            ${activity.actor ? `<span>by ${activity.actor}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getActivityIcon(type) {
+        const icons = {
+            lesson: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+            event: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+            task: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+            student: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
+            staff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+            group: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+            email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>'
+        };
+        return icons[type] || icons.task;
+    }
+
+    formatTimeAgo(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' });
+    }
+
+    // Log an activity to the database
+    async logActivity(type, message, details = {}) {
+        try {
+            await DatabaseService.logActivity({
+                type,
+                message,
+                details,
+                actor: this.currentUser?.displayName || this.currentUser?.email || 'System'
+            });
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    }
+
+    // Update the activity notification badge
+    updateActivityBadge() {
+        const badge = document.getElementById('activity-badge');
+        if (!badge) return;
+
+        const activities = this.data.activities || [];
+        if (activities.length === 0) {
+            badge.style.display = 'none';
+            return;
+        }
+
+        // Get last viewed timestamp from localStorage
+        const lastViewed = localStorage.getItem('mgs_last_activity_view');
+        const lastViewedDate = lastViewed ? new Date(lastViewed) : new Date(0);
+
+        // Count activities newer than last viewed
+        const newCount = activities.filter(a => {
+            const activityDate = new Date(a.createdAt);
+            return activityDate > lastViewedDate;
+        }).length;
+
+        if (newCount > 0 && this.currentPage !== 'dashboard') {
+            badge.textContent = newCount > 99 ? '99+' : newCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Mark activities as viewed (called when viewing Dashboard)
+    markActivitiesViewed() {
+        localStorage.setItem('mgs_last_activity_view', new Date().toISOString());
+        const badge = document.getElementById('activity-badge');
+        if (badge) badge.style.display = 'none';
     }
 
     renderUpcomingEvents() {
@@ -708,8 +834,25 @@ class App {
             return;
         }
 
-        // Apply filtering and sorting
-        let lessons = this.getFilteredData('lessons', this.data.lessons);
+        // Apply tab filtering first
+        let lessons = [...this.data.lessons];
+        const activeTab = this.lessonsTab || 'all';
+
+        switch (activeTab) {
+            case 'funded':
+                lessons = lessons.filter(l => l.funded === true);
+                break;
+            case 'active':
+                lessons = lessons.filter(l => l.status === 'active');
+                break;
+            case 'paused':
+                lessons = lessons.filter(l => l.status === 'paused' || l.status === 'cancelled');
+                break;
+            // 'all' shows everything
+        }
+
+        // Apply column filtering and sorting
+        lessons = this.getFilteredData('lessons', lessons);
         lessons = this.getSortedData('lessons', lessons);
 
         tbody.innerHTML = lessons.map(lesson => {
@@ -914,6 +1057,7 @@ class App {
                     </div>
                     <div class="tutor-card-actions">
                         <button class="btn btn-outline btn-sm" data-action="edit-tutor" data-id="${tutor.id}">Edit</button>
+                        ${tutor.email ? `<button class="btn btn-outline btn-sm" data-action="send-portal-link" data-id="${tutor.id}" title="Send portal access link">Portal Link</button>` : ''}
                         <button class="btn btn-outline btn-sm" data-action="delete-tutor" data-id="${tutor.id}">Delete</button>
                     </div>
                 </div>
@@ -944,6 +1088,7 @@ class App {
                 <th>Groups</th>
                 <th>Progress</th>
                 <th class="sortable" onclick="app.sortData('events', 'category')">Category ${this.getSortIcon('events', 'category')}</th>
+                <th class="sortable" onclick="app.sortData('events', 'template')">Type ${this.getSortIcon('events', 'template')}</th>
                 <th class="th-actions"></th>
             `;
         }
@@ -962,7 +1107,7 @@ class App {
         };
 
         if (this.data.events.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No events found. Create your first event!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No events found. Create your first event!</td></tr>';
             return;
         }
 
@@ -1035,6 +1180,7 @@ class App {
                     <td><div class="mini-tags">${groupsDisplay}</div></td>
                     <td>${taskProgressDisplay}</td>
                     <td><span class="discipline-tag discipline-${categoryColors[event.category] || 'music'}">${event.category || 'Event'}</span></td>
+                    <td><span class="text-muted">${templateLabel}</span></td>
                     <td>
                         <div class="row-actions">
                             <button class="row-action-btn primary" title="View Tasks" data-action="view-event-details" data-id="${event.id}">
@@ -2022,45 +2168,28 @@ class App {
     renderUsers() {
         const container = document.getElementById('users-list');
         if (!container) return;
-        
-        // Get users from database, fallback to current logged in user
-        const users = this.data.users || [];
-        
-        // If no users in database, show current logged in user
-        if (users.length === 0) {
-            const currentUser = this.currentUser;
-            if (currentUser) {
-                container.innerHTML = `
-                    <div class="user-row">
-                        <div class="user-avatar admin">${this.getInitials(currentUser.displayName || currentUser.email)}</div>
-                        <div class="user-info">
-                            <span class="user-name">${currentUser.displayName || 'Current User'}</span>
-                            <span class="user-email">${currentUser.email}</span>
-                        </div>
-                        <span class="user-role role-admin">Admin</span>
-                        <span class="user-badge">Current User</span>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = '<p style="padding: var(--spacing-md); color: var(--color-text-secondary);">No users configured.</p>';
-            }
-            return;
-        }
-        
-        container.innerHTML = users.map(user => `
-            <div class="user-row" data-id="${user.id}">
-                <div class="user-avatar ${user.role || 'staff'}">${this.getInitials(user.name)}</div>
+
+        // Show admin profile - either from database or current logged in user
+        const adminUser = this.data.users?.find(u => u.role === 'admin') || null;
+        const currentUser = this.currentUser;
+
+        const displayName = adminUser?.name || currentUser?.displayName || 'Admin';
+        const displayEmail = adminUser?.email || currentUser?.email || '';
+        const userId = adminUser?.id || 'current';
+
+        container.innerHTML = `
+            <div class="user-row">
+                <div class="user-avatar admin">${this.getInitials(displayName)}</div>
                 <div class="user-info">
-                    <span class="user-name">${user.name}</span>
-                    <span class="user-email">${user.email}</span>
+                    <span class="user-name">${displayName}</span>
+                    <span class="user-email">${displayEmail}</span>
                 </div>
-                <span class="user-role role-${user.role || 'staff'}">${this.formatRole(user.role || 'staff')}</span>
+                <span class="user-role role-admin">Admin</span>
                 <div class="user-actions">
-                    <button class="btn btn-outline btn-sm" onclick="app.showEditUserModal('${user.id}')">Edit</button>
-                    <button class="btn btn-outline btn-sm" onclick="app.deleteUser('${user.id}')">Delete</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.showEditAdminModal('${userId}')">Edit</button>
                 </div>
             </div>
-        `).join('');
+        `;
     }
     
     formatRole(role) {
@@ -2072,7 +2201,69 @@ class App {
         };
         return roleMap[role] || role;
     }
-    
+
+    showEditAdminModal(userId) {
+        // Get admin user from database or use current logged in user
+        const adminUser = this.data.users?.find(u => u.id === userId || u.role === 'admin');
+        const currentUser = this.currentUser;
+
+        const displayName = adminUser?.name || currentUser?.displayName || '';
+        const displayEmail = adminUser?.email || currentUser?.email || '';
+
+        const content = `
+            <form id="edit-admin-form">
+                <input type="hidden" id="admin-user-id" value="${adminUser?.id || 'new'}">
+                <div class="form-group">
+                    <label>Name <span class="required">*</span></label>
+                    <input type="text" id="admin-name" required value="${displayName}" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input type="email" id="admin-email" required value="${displayEmail}" placeholder="Enter your email">
+                </div>
+                <p class="help-text" style="margin-top: var(--spacing-md); padding: var(--spacing-sm); background: var(--color-bg-tertiary); border-radius: var(--radius-sm);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    This updates your display name and email in the portal.
+                </p>
+            </form>
+        `;
+        this.showModal('Edit Admin Profile', content, () => this.saveAdminProfile());
+    }
+
+    async saveAdminProfile() {
+        const id = document.getElementById('admin-user-id').value;
+        const name = document.getElementById('admin-name').value.trim();
+        const email = document.getElementById('admin-email').value.trim();
+
+        if (!name || !email) {
+            this.showToast('Please fill in all required fields', 'error');
+            return;
+        }
+
+        try {
+            if (id === 'new') {
+                // Create new admin user
+                await DatabaseService.addUser({
+                    name,
+                    email,
+                    role: 'admin',
+                    active: true
+                });
+            } else {
+                // Update existing admin user
+                await DatabaseService.updateUser(id, { name, email });
+            }
+
+            await this.loadAllData();
+            this.renderUsers();
+            this.closeModal();
+            this.showToast('Admin profile updated', 'success');
+        } catch (error) {
+            console.error('Error saving admin profile:', error);
+            this.showToast('Error saving profile', 'error');
+        }
+    }
+
     renderCategories() {
         const container = document.getElementById('categories-list');
         if (!container) return;
@@ -2274,20 +2465,8 @@ class App {
             }
         }
 
-        // If date doesn't fall in any term, find the closest upcoming term
-        const year = date.getFullYear();
-        for (let i = 1; i <= 4; i++) {
-            const term = termDates[`term${i}`];
-            if (term) {
-                const start = new Date(term.start);
-                start.setFullYear(year);
-                if (date < start) {
-                    return `Term ${i}`;
-                }
-            }
-        }
-
-        return 'Term 4'; // Default to Term 4 if after all terms
+        // Date doesn't fall within any term - it's during holidays
+        return 'Holidays';
     }
 
     // ========================================
@@ -2565,15 +2744,18 @@ class App {
         }
         
         try {
-            const termDates = this.data.settings?.termDates || {};
+            const termDates = { ...(this.data.settings?.termDates || {}) };
             termDates[termKey] = { start, end };
-            
-            await DatabaseService.update('settings', 'general', { termDates });
-            this.data.settings = { ...this.data.settings, termDates };
-            
-            this.renderSettings();
-            this.closeModal();
-            this.showToast('Term dates updated', 'success');
+
+            const result = await DatabaseService.updateSettings({ termDates });
+            if (result.success) {
+                this.data.settings = { ...this.data.settings, termDates };
+                this.renderSettings();
+                this.closeModal();
+                this.showToast('Term dates updated', 'success');
+            } else {
+                this.showToast('Error saving term dates', 'error');
+            }
         } catch (error) {
             console.error('Error saving term dates:', error);
             this.showToast('Error saving term dates', 'error');
@@ -2610,12 +2792,15 @@ class App {
         }
         
         try {
-            await DatabaseService.update('settings', 'general', { termDates });
-            this.data.settings = { ...this.data.settings, termDates };
-            
-            this.renderSettings();
-            this.closeModal();
-            this.showToast('All term dates updated', 'success');
+            const result = await DatabaseService.updateSettings({ termDates });
+            if (result.success) {
+                this.data.settings = { ...this.data.settings, termDates };
+                this.renderSettings();
+                this.closeModal();
+                this.showToast('All term dates updated', 'success');
+            } else {
+                this.showToast('Error saving term dates', 'error');
+            }
         } catch (error) {
             console.error('Error saving term dates:', error);
             this.showToast('Error saving term dates', 'error');
@@ -2712,6 +2897,13 @@ class App {
         if (type === 'hire') {
             document.querySelectorAll('[data-action="return-hire"]').forEach(btn => {
                 btn.addEventListener('click', () => this.handleReturnHire(btn.dataset.id));
+            });
+        }
+
+        // Tutor-specific actions
+        if (type === 'tutor') {
+            document.querySelectorAll('[data-action="send-portal-link"]').forEach(btn => {
+                btn.addEventListener('click', () => this.sendTutorPortalLink(btn.dataset.id));
             });
         }
     }
@@ -2849,8 +3041,10 @@ class App {
         };
         
         const result = await DatabaseService.updateLesson(id, lesson);
-        
+
         if (result.success) {
+            const student = this.data.students.find(s => s.id === lesson.studentId);
+            this.logActivity('lesson', `Lesson updated for ${student?.name || 'Unknown'}`, { lessonId: id });
             this.showToast('Lesson updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -2952,8 +3146,9 @@ class App {
         };
         
         const result = await DatabaseService.updateStudent(id, student);
-        
+
         if (result.success) {
+            this.logActivity('student', `Student updated: ${student.name}`, { studentId: id });
             this.showToast('Student updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -3142,12 +3337,13 @@ class App {
                         <input type="text" name="location" value="${event.location || ''}" placeholder="e.g. Main Hall">
                     </div>
                     <div class="form-group">
-                        <label>Term</label>
+                        <label>Term <small>(auto-calculated from date)</small></label>
                         <select name="term" id="edit-event-term">
                             <option value="Term 1" ${event.term === 'Term 1' ? 'selected' : ''}>Term 1</option>
                             <option value="Term 2" ${event.term === 'Term 2' ? 'selected' : ''}>Term 2</option>
                             <option value="Term 3" ${event.term === 'Term 3' ? 'selected' : ''}>Term 3</option>
                             <option value="Term 4" ${event.term === 'Term 4' ? 'selected' : ''}>Term 4</option>
+                            <option value="Holidays" ${event.term === 'Holidays' ? 'selected' : ''}>Holidays</option>
                         </select>
                     </div>
                 </div>
@@ -3230,8 +3426,9 @@ class App {
         };
         
         const result = await DatabaseService.updateEvent(id, event);
-        
+
         if (result.success) {
+            this.logActivity('event', `Event updated: ${event.name}`, { eventId: id });
             this.showToast('Event updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -3348,6 +3545,12 @@ class App {
             const isDueToday = dueDate.toDateString() === today.toDateString();
             const isDueSoon = !isOverdue && !isDueToday && dueDate <= new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
             
+            // Handle both legacy single assignedTo and new assignedToIds array
+            let assignedToIds = savedTask.assignedToIds || [];
+            if (!assignedToIds.length && savedTask.assignedTo) {
+                assignedToIds = [savedTask.assignedTo];
+            }
+
             return {
                 ...task,
                 id: index,
@@ -3355,7 +3558,7 @@ class App {
                 completed: savedTask.completed || false,
                 completedBy: savedTask.completedBy || null,
                 completedDate: savedTask.completedDate || null,
-                assignedTo: savedTask.assignedTo || null,
+                assignedToIds: assignedToIds,
                 isOverdue,
                 isDueToday,
                 isDueSoon
@@ -3412,8 +3615,10 @@ class App {
                                 </div>
                                 <div class="phase-tasks">
                                     ${phase.tasks.map(task => {
-                                        const assignedStaff = task.assignedTo ? eventStaff.find(s => s.id === task.assignedTo) : null;
-                                        
+                                        const assignedStaffList = task.assignedToIds
+                                            .map(id => eventStaff.find(s => s.id === id))
+                                            .filter(s => s);
+
                                         return `
                                             <div class="task-item ${task.completed ? 'completed' : ''} ${task.isOverdue ? 'overdue' : ''} ${task.isDueToday ? 'due-today' : ''} ${task.isDueSoon ? 'due-soon' : ''}" data-task-id="${task.id}">
                                                 <label class="task-checkbox">
@@ -3424,16 +3629,19 @@ class App {
                                                     <span class="task-name">${task.name}</span>
                                                     <div class="task-meta">
                                                         <span class="task-due">
-                                                            ${task.daysBefore === 0 ? 'Event day' : 
+                                                            ${task.daysBefore === 0 ? 'Event day' :
                                                               task.daysBefore === 1 ? '1 day before' :
                                                               `${task.daysBefore} days before`}
                                                             <span class="task-date">(${this.formatDate(task.dueDate)})</span>
                                                         </span>
                                                         ${eventStaff.length > 0 ? `
-                                                            <select class="task-assign" data-event-id="${eventId}" data-task-name="${task.name}">
-                                                                <option value="">Assign to...</option>
-                                                                ${staffOptions}
-                                                            </select>
+                                                            <div class="task-assignees-group modal-assignees" onclick="app.showTaskAssignmentModal('${eventId}', '${task.name.replace(/'/g, "\\'")}')">
+                                                                ${assignedStaffList.length > 0 ? assignedStaffList.map(s => `
+                                                                    <div class="staff-avatar-sm" style="background: ${s.color || '#8b5cf6'};" title="${s.name}">
+                                                                        ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                                    </div>
+                                                                `).join('') : '<span class="assign-link">Assign...</span>'}
+                                                            </div>
                                                         ` : ''}
                                                     </div>
                                                 </div>
@@ -3520,7 +3728,7 @@ class App {
         const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
         const savedTasks = event.tasks || [];
 
-        // Process tasks with due dates and status
+        // Process template tasks with due dates and status
         const tasks = templateTasks.map((task, index) => {
             const savedTask = savedTasks.find(t => t.name === task.name) || {};
             const dueDate = new Date(eventDate);
@@ -3529,22 +3737,56 @@ class App {
             const isOverdue = !savedTask.completed && dueDate < today;
             const isDueToday = dueDate.toDateString() === today.toDateString();
 
+            // Handle both legacy single assignedTo and new assignedToIds array
+            let assignedToIds = savedTask.assignedToIds || [];
+            if (!assignedToIds.length && savedTask.assignedTo) {
+                assignedToIds = [savedTask.assignedTo];
+            }
+
             return {
                 ...task,
                 id: index,
                 dueDate: dueDate,
                 completed: savedTask.completed || false,
-                assignedTo: savedTask.assignedTo || null,
+                assignedToIds: assignedToIds,
+                notes: savedTask.notes || '',
                 isOverdue,
                 isDueToday
             };
         });
 
+        // Add custom tasks (tasks not from template)
+        const customTasks = savedTasks.filter(t => t.isCustom).map((task, idx) => {
+            const dueDate = task.dueDate ? new Date(task.dueDate) : eventDate;
+            const isOverdue = !task.completed && dueDate < today;
+            const isDueToday = dueDate.toDateString() === today.toDateString();
+
+            let assignedToIds = task.assignedToIds || [];
+            if (!assignedToIds.length && task.assignedTo) {
+                assignedToIds = [task.assignedTo];
+            }
+
+            return {
+                name: task.name,
+                phase: task.phase || 'Custom Tasks',
+                id: `custom-${idx}`,
+                dueDate: dueDate,
+                completed: task.completed || false,
+                assignedToIds: assignedToIds,
+                notes: task.notes || '',
+                isOverdue,
+                isDueToday,
+                isCustom: true
+            };
+        });
+
+        const allTasks = [...tasks, ...customTasks];
+
         // Group tasks by phase
-        const phases = [...new Set(tasks.map(t => t.phase))];
+        const phases = [...new Set(allTasks.map(t => t.phase))];
         const tasksByPhase = phases.map(phase => ({
             name: phase,
-            tasks: tasks.filter(t => t.phase === phase)
+            tasks: allTasks.filter(t => t.phase === phase)
         }));
 
         // Staff avatars HTML
@@ -3610,6 +3852,7 @@ class App {
             <div class="event-task-header-row">
                 <div>Description</div>
                 <div style="text-align: center;">Assigned:</div>
+                <div>Notes</div>
                 <div style="text-align: center;">Due Date:</div>
                 <div style="text-align: center;">Status:</div>
             </div>
@@ -3619,7 +3862,9 @@ class App {
                     <div class="event-tasks-phase">
                         <div class="event-tasks-phase-header">${phase.name}</div>
                         ${phase.tasks.map(task => {
-                            const assignedStaff = task.assignedTo ? eventStaff.find(s => s.id === task.assignedTo) : null;
+                            const assignedStaffList = task.assignedToIds
+                                .map(id => eventStaff.find(s => s.id === id))
+                                .filter(s => s);
                             const statusClass = task.completed ? 'completed' : (task.isOverdue ? 'overdue' : 'pending');
 
                             return `
@@ -3630,17 +3875,31 @@ class App {
                                     </div>
                                     <div class="event-task-assigned">
                                         ${eventStaff.length > 0 ? `
-                                            ${assignedStaff ? `
-                                                <div class="event-staff-avatar" style="background: ${assignedStaff.color || '#8b5cf6'}; width: 28px; height: 28px; font-size: 0.7rem;" title="${assignedStaff.name}">
-                                                    ${assignedStaff.initials || assignedStaff.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                                </div>
-                                            ` : `
-                                                <select class="task-assign-select" data-event-id="${event.id}" data-task-name="${task.name}" style="font-size: 0.75rem; padding: 2px 4px;">
-                                                    <option value="">Assign...</option>
-                                                    ${staffOptions}
-                                                </select>
-                                            `}
+                                            <div class="task-assignees-group" onclick="app.showTaskAssignmentModal('${event.id}', '${task.name.replace(/'/g, "\\'")}')">
+                                                ${assignedStaffList.length > 0 ? assignedStaffList.map(s => `
+                                                    <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'}; width: 28px; height: 28px; font-size: 0.7rem;" title="${s.name}">
+                                                        ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                    </div>
+                                                `).join('') : `
+                                                    <div class="assign-placeholder" title="Click to assign">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                                            <circle cx="12" cy="7" r="4"/>
+                                                            <path d="M5.5 21a8.5 8.5 0 0117 0"/>
+                                                            <line x1="12" y1="14" x2="12" y2="20"/>
+                                                            <line x1="9" y1="17" x2="15" y2="17"/>
+                                                        </svg>
+                                                    </div>
+                                                `}
+                                            </div>
                                         ` : '—'}
+                                    </div>
+                                    <div class="event-task-notes">
+                                        <input type="text" class="task-notes-input"
+                                            value="${(task.notes || '').replace(/"/g, '&quot;')}"
+                                            placeholder="Add note..."
+                                            data-event-id="${event.id}"
+                                            data-task-name="${task.name.replace(/"/g, '&quot;')}"
+                                            onblur="app.saveTaskNote(this)">
                                     </div>
                                     <div class="event-task-date ${task.isOverdue && !task.completed ? 'overdue' : ''}">
                                         ${this.formatDate(task.dueDate)}
@@ -3665,16 +3924,126 @@ class App {
                     </div>
                 `).join('')}
             </div>
+
+            <div class="event-tasks-actions">
+                <button class="btn btn-outline" onclick="app.showAddTaskModal('${event.id}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Custom Task
+                </button>
+            </div>
         `;
 
-        // Bind assignment dropdowns
-        setTimeout(() => {
-            document.querySelectorAll('.task-assign-select').forEach(select => {
-                select.addEventListener('change', (e) => {
-                    this.assignEventTaskFromDetails(e.target.dataset.eventId, e.target.dataset.taskName, e.target.value);
-                });
-            });
-        }, 100);
+    }
+
+    showAddTaskModal(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
+
+        const staffCheckboxes = eventStaff.length > 0 ? eventStaff.map(s => `
+            <label class="staff-checkbox-item">
+                <input type="checkbox" name="new-task-assignee" value="${s.id}">
+                <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'}; width: 24px; height: 24px; font-size: 0.65rem;">
+                    ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <span>${s.name}</span>
+            </label>
+        `).join('') : '<p class="text-muted">No staff linked to this event</p>';
+
+        const content = `
+            <form id="add-task-form">
+                <input type="hidden" id="new-task-event-id" value="${eventId}">
+                <div class="form-group">
+                    <label>Task Name <span class="required">*</span></label>
+                    <input type="text" id="new-task-name" required placeholder="e.g., Book catering">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="new-task-due-date" value="${event.date}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phase</label>
+                        <select id="new-task-phase">
+                            <option value="Pre-Event">Pre-Event</option>
+                            <option value="Event Day">Event Day</option>
+                            <option value="Post-Event">Post-Event</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assign To</label>
+                    <div class="staff-checkbox-list">
+                        ${staffCheckboxes}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" id="new-task-notes" placeholder="Optional notes...">
+                </div>
+            </form>
+        `;
+
+        this.showModal('Add Custom Task', content, () => this.saveNewTask());
+    }
+
+    async saveNewTask() {
+        const eventId = document.getElementById('new-task-event-id').value;
+        const taskName = document.getElementById('new-task-name').value.trim();
+        const dueDate = document.getElementById('new-task-due-date').value;
+        const phase = document.getElementById('new-task-phase').value;
+        const notes = document.getElementById('new-task-notes').value.trim();
+        const checkboxes = document.querySelectorAll('input[name="new-task-assignee"]:checked');
+        const assignedToIds = Array.from(checkboxes).map(cb => cb.value);
+
+        if (!taskName) {
+            this.showToast('Please enter a task name', 'error');
+            return;
+        }
+
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+
+        // Check if task with same name exists
+        if (event.tasks.find(t => t.name === taskName)) {
+            this.showToast('A task with this name already exists', 'error');
+            return;
+        }
+
+        // Add the new custom task
+        event.tasks.push({
+            name: taskName,
+            completed: false,
+            assignedToIds: assignedToIds,
+            notes: notes,
+            dueDate: dueDate,
+            phase: phase,
+            isCustom: true
+        });
+
+        // Update in database
+        const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
+
+        if (result.success) {
+            this.logActivity('task', `New task "${taskName}" added to ${event.name}`, { eventId, taskName });
+            this.closeModal();
+            this.showToast('Task added successfully', 'success');
+            this.renderEventDetails();
+        } else {
+            this.showToast('Error adding task', 'error');
+        }
     }
 
     async toggleEventTaskFromDetails(eventId, taskName, completed) {
@@ -3683,10 +4052,97 @@ class App {
         this.renderEventDetails();
     }
 
-    async assignEventTaskFromDetails(eventId, taskName, staffId) {
-        await this.assignEventTask(eventId, taskName, staffId);
+    async assignEventTaskFromDetails(eventId, taskName, staffIds) {
+        await this.assignEventTask(eventId, taskName, staffIds);
         // Re-render the details page to reflect changes
         this.renderEventDetails();
+    }
+
+    showTaskAssignmentModal(eventId, taskName) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
+
+        if (eventStaff.length === 0) {
+            this.showToast('No staff linked to this event', 'warning');
+            return;
+        }
+
+        // Get currently assigned staff for this task
+        const savedTask = (event.tasks || []).find(t => t.name === taskName);
+        let currentAssignees = savedTask?.assignedToIds || [];
+        if (!currentAssignees.length && savedTask?.assignedTo) {
+            currentAssignees = [savedTask.assignedTo];
+        }
+
+        const staffCheckboxes = eventStaff.map(s => `
+            <label class="staff-checkbox-item">
+                <input type="checkbox" name="task-assignee" value="${s.id}" ${currentAssignees.includes(s.id) ? 'checked' : ''}>
+                <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'};">
+                    ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <span>${s.name}</span>
+            </label>
+        `).join('');
+
+        const content = `
+            <form id="task-assignment-form">
+                <input type="hidden" id="task-event-id" value="${eventId}">
+                <input type="hidden" id="task-name" value="${taskName}">
+                <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+                    Select staff members to assign to this task:
+                </p>
+                <div class="staff-checkbox-list">
+                    ${staffCheckboxes}
+                </div>
+            </form>
+        `;
+
+        this.showModal(`Assign: ${taskName}`, content, () => this.saveTaskAssignment());
+    }
+
+    async saveTaskAssignment() {
+        const eventId = document.getElementById('task-event-id').value;
+        const taskName = document.getElementById('task-name').value;
+        const checkboxes = document.querySelectorAll('input[name="task-assignee"]:checked');
+        const staffIds = Array.from(checkboxes).map(cb => cb.value);
+
+        await this.assignEventTaskFromDetails(eventId, taskName, staffIds);
+        this.closeModal();
+    }
+
+    async saveTaskNote(inputEl) {
+        const eventId = inputEl.dataset.eventId;
+        const taskName = inputEl.dataset.taskName;
+        const notes = inputEl.value.trim();
+
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+
+        // Find or create task entry
+        let task = event.tasks.find(t => t.name === taskName);
+        if (task) {
+            task.notes = notes;
+        } else {
+            event.tasks.push({
+                name: taskName,
+                completed: false,
+                assignedToIds: [],
+                notes: notes
+            });
+        }
+
+        // Update in database (silent - no toast for notes)
+        await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
     }
 
     showEventActionsMenu() {
@@ -3733,6 +4189,13 @@ class App {
                         <polyline points="22,6 12,13 2,6"/>
                     </svg>
                     Notify Staff
+                </button>
+                <button class="action-menu-item" onclick="app.closeModal(); app.sendEventPortalLinks('${event.id}');">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    Send Staff Portal Links
                 </button>
                 <div class="action-menu-divider"></div>
                 <button class="action-menu-item danger" onclick="app.closeModal(); setTimeout(() => app.handleDelete('event', '${event.id}'), 100);">
@@ -3852,8 +4315,12 @@ class App {
         
         // Update in database
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
-        
+
         if (result.success) {
+            // Log task completion/uncompletion
+            const statusText = completed ? 'completed' : 'marked incomplete';
+            this.logActivity('task', `Task "${taskName}" ${statusText} on ${event.name}`, { eventId, taskName });
+
             // Update UI - safely check for elements before manipulating
             const taskElement = document.querySelector(`[data-task-name="${taskName}"]`);
             const taskItem = taskElement?.closest('.task-item');
@@ -3883,33 +4350,37 @@ class App {
         }
     }
 
-    async assignEventTask(eventId, taskName, staffId) {
+    async assignEventTask(eventId, taskName, staffIds) {
         const event = this.data.events.find(e => e.id === eventId);
         if (!event) return;
-        
+
+        // Normalize staffIds to array
+        const assignedIds = Array.isArray(staffIds) ? staffIds : (staffIds ? [staffIds] : []);
+
         // Initialize tasks array if needed
         if (!event.tasks) {
             event.tasks = [];
         }
-        
+
         // Find or create task entry
         let task = event.tasks.find(t => t.name === taskName);
         if (task) {
-            task.assignedTo = staffId || null;
+            task.assignedToIds = assignedIds;
+            delete task.assignedTo; // Remove legacy field
         } else {
             event.tasks.push({
                 name: taskName,
                 completed: false,
-                assignedTo: staffId || null
+                assignedToIds: assignedIds
             });
         }
-        
+
         // Update in database
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
-        
+
         if (result.success) {
-            const staff = staffId ? this.data.tutors.find(t => t.id === staffId) : null;
-            this.showToast(staff ? `Task assigned to ${staff.name}` : 'Task unassigned', 'success');
+            const count = assignedIds.length;
+            this.showToast(count > 0 ? `Task assigned to ${count} staff member${count > 1 ? 's' : ''}` : 'Task unassigned', 'success');
         }
     }
 
@@ -4149,9 +4620,13 @@ class App {
                     <label>Serial Number</label>
                     <input type="text" name="serialNumber" value="${instrument.serialNumber || ''}">
                 </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this instrument...">${instrument.notes || ''}</textarea>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Edit Instrument', content, () => this.updateInstrument());
     }
 
@@ -4166,7 +4641,8 @@ class App {
             size: formData.get('size'),
             condition: formData.get('condition'),
             status: formData.get('status'),
-            serialNumber: formData.get('serialNumber')
+            serialNumber: formData.get('serialNumber'),
+            notes: formData.get('notes')
         };
         
         const result = await DatabaseService.updateInstrument(id, instrument);
@@ -4259,6 +4735,10 @@ class App {
                         </div>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this hire...">${hire.notes || ''}</textarea>
+                </div>
             </form>
         `;
 
@@ -4337,7 +4817,8 @@ class App {
             expectedReturn: formData.get('expectedReturn'),
             status: newStatus,
             agreement: !!agreementData,
-            agreementFile: agreementData
+            agreementFile: agreementData,
+            notes: formData.get('notes')
         };
 
         const result = await DatabaseService.update('instrumentHires', id, hire);
@@ -4751,28 +5232,39 @@ class App {
                         <input type="text" name="time" placeholder="e.g., 9:00 AM" required>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="checkbox-label funded-checkbox">
+                        <input type="checkbox" name="funded">
+                        <span>Funded Lesson</span>
+                        <small class="form-hint">Check this if the lesson is funded/subsidised</small>
+                    </label>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Add New Lesson', content, () => this.saveLesson());
     }
 
     async saveLesson() {
         const form = document.getElementById('add-lesson-form');
         const formData = new FormData(form);
-        
+
         const lesson = {
             studentId: formData.get('studentId'),
             tutorId: formData.get('tutorId'),
             instrument: formData.get('instrument'),
             day: formData.get('day'),
             time: formData.get('time'),
-            status: 'active'
+            status: 'active',
+            funded: formData.get('funded') === 'on'
         };
         
         const result = await DatabaseService.addLesson(lesson);
-        
+
         if (result.success) {
+            const student = this.data.students.find(s => s.id === lesson.studentId);
+            const tutor = this.data.tutors.find(t => t.id === lesson.tutorId);
+            this.logActivity('lesson', `New lesson created for ${student?.name || 'Unknown'} with ${tutor?.name || 'No tutor'}`, { lessonId: result.id });
             this.showToast('Lesson added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -4857,8 +5349,9 @@ class App {
         };
         
         const result = await DatabaseService.addStudent(student);
-        
+
         if (result.success) {
+            this.logActivity('student', `New student added: ${student.name}`, { studentId: result.id });
             this.showToast('Student added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -4933,12 +5426,13 @@ class App {
                         <input type="text" name="location" placeholder="e.g. Main Hall">
                     </div>
                     <div class="form-group">
-                        <label>Term</label>
+                        <label>Term <small>(auto-calculated from date)</small></label>
                         <select name="term" id="add-event-term">
                             <option value="Term 1">Term 1</option>
                             <option value="Term 2">Term 2</option>
                             <option value="Term 3">Term 3</option>
                             <option value="Term 4">Term 4</option>
+                            <option value="Holidays">Holidays</option>
                         </select>
                     </div>
                 </div>
@@ -5016,8 +5510,9 @@ class App {
         };
         
         const result = await DatabaseService.addEvent(event);
-        
+
         if (result.success) {
+            this.logActivity('event', `New event created: ${event.name}`, { eventId: result.id, date: event.date });
             this.showToast('Event created successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5099,7 +5594,8 @@ class App {
             for (const groupId of groupIds) {
                 await DatabaseService.updateGroup(groupId, { leader: name });
             }
-            
+
+            this.logActivity('staff', `New staff member added: ${name}`, { staffId: result.id });
             this.showToast('Staff member added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5192,6 +5688,7 @@ class App {
             // Update staff profiles to reflect group leadership
             await this.updateStaffGroupAssignments(result.id, leaderIds);
 
+            this.logActivity('group', `New group created: ${group.name}`, { groupId: result.id });
             this.showToast('Group created successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5231,22 +5728,27 @@ class App {
                     <label>Serial Number</label>
                     <input type="text" name="serialNumber" placeholder="Optional">
                 </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this instrument..."></textarea>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Add New Instrument', content, () => this.saveInstrument());
     }
 
     async saveInstrument() {
         const form = document.getElementById('add-instrument-form');
         const formData = new FormData(form);
-        
+
         const instrument = {
             name: formData.get('name'),
             type: formData.get('type'),
             size: formData.get('size'),
             condition: formData.get('condition'),
             serialNumber: formData.get('serialNumber'),
+            notes: formData.get('notes'),
             status: 'Available'
         };
         
@@ -5311,6 +5813,10 @@ class App {
                         </div>
                     </div>
                     <small class="form-hint">Upload signed hire agreement document</small>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Add any notes about this hire..."></textarea>
                 </div>
             </form>
         `;
@@ -5392,6 +5898,7 @@ class App {
             expectedReturn: formData.get('expectedReturn'),
             agreement: !!agreementData,
             agreementFile: agreementData,
+            notes: formData.get('notes'),
             status: 'active'
         };
 
@@ -6068,6 +6575,233 @@ class App {
         this.showLoading(false);
     }
 
+    // Direct CSV import from Settings page (simplified flow)
+    async handleCSVImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const importType = document.getElementById('csv-import-type').value;
+
+        try {
+            const text = await file.text();
+            const rows = this.parseCSV(text);
+
+            if (rows.length < 2) {
+                this.showToast('CSV file must have headers and at least one data row', 'error');
+                e.target.value = '';
+                return;
+            }
+
+            const headers = rows[0];
+            const dataRows = rows.slice(1);
+
+            // Show preview modal
+            this.showCSVPreviewModal(importType, headers, dataRows);
+
+        } catch (error) {
+            console.error('CSV parse error:', error);
+            this.showToast('Error reading CSV file', 'error');
+        }
+
+        e.target.value = '';
+    }
+
+    showCSVPreviewModal(importType, headers, dataRows) {
+        // Define expected fields for each type
+        const fieldMappings = {
+            students: ['name', 'class', 'year', 'instruments', 'parentEmail'],
+            lessons: ['studentName', 'tutorName', 'instrument', 'day', 'time'],
+            tutors: ['name', 'email', 'phone', 'instruments']
+        };
+
+        const expectedFields = fieldMappings[importType] || [];
+
+        // Auto-map columns based on header names
+        const mapping = {};
+        headers.forEach((header, index) => {
+            const normalizedHeader = header.toLowerCase().replace(/[^a-z]/g, '');
+            for (const field of expectedFields) {
+                const normalizedField = field.toLowerCase();
+                if (normalizedHeader.includes(normalizedField) ||
+                    normalizedField.includes(normalizedHeader)) {
+                    mapping[field] = index;
+                    break;
+                }
+            }
+        });
+
+        // Generate mapping form
+        const mappingHtml = expectedFields.map(field => {
+            const options = headers.map((h, i) =>
+                `<option value="${i}" ${mapping[field] === i ? 'selected' : ''}>${h}</option>`
+            ).join('');
+
+            return `
+                <div class="form-row" style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: var(--spacing-md);">
+                    <label style="flex: 1; font-weight: 500;">${this.formatFieldName(field)}</label>
+                    <select id="csv-map-${field}" class="form-control" style="flex: 2;">
+                        <option value="">-- Skip --</option>
+                        ${options}
+                    </select>
+                </div>
+            `;
+        }).join('');
+
+        // Generate preview table
+        const previewRows = dataRows.slice(0, 5);
+        const previewHtml = `
+            <table class="csv-preview-table">
+                <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${previewRows.map(row =>
+                        `<tr>${row.map(cell => `<td>${cell || '-'}</td>`).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+
+        const content = `
+            <div class="csv-import-preview">
+                <h4 style="margin-bottom: var(--spacing-md);">Column Mapping</h4>
+                <p class="help-text" style="margin-bottom: var(--spacing-md);">Match your CSV columns to the correct fields:</p>
+                ${mappingHtml}
+
+                <h4 style="margin: var(--spacing-lg) 0 var(--spacing-md);">Preview (${dataRows.length} rows)</h4>
+                <div style="overflow-x: auto;">
+                    ${previewHtml}
+                </div>
+            </div>
+        `;
+
+        // Store data for import
+        this.pendingCSVImport = { importType, headers, dataRows, expectedFields };
+
+        this.showModal(`Import ${importType.charAt(0).toUpperCase() + importType.slice(1)} from CSV`, content, () => this.confirmCSVImport());
+        document.getElementById('modal-save').textContent = 'Import';
+    }
+
+    async confirmCSVImport() {
+        const { importType, dataRows, expectedFields } = this.pendingCSVImport;
+
+        // Build mapping from form
+        const mapping = {};
+        for (const field of expectedFields) {
+            const select = document.getElementById(`csv-map-${field}`);
+            if (select && select.value !== '') {
+                mapping[field] = parseInt(select.value);
+            }
+        }
+
+        this.closeModal();
+        this.showLoading(true);
+
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const row of dataRows) {
+                const record = {};
+                for (const [field, colIndex] of Object.entries(mapping)) {
+                    let value = row[colIndex] || '';
+                    // Handle arrays (instruments, etc.)
+                    if (field === 'instruments') {
+                        value = value.split(/[,;]/).map(v => v.trim()).filter(v => v);
+                    }
+                    record[field] = value;
+                }
+
+                // Skip empty records
+                if (!Object.values(record).some(v => v && (Array.isArray(v) ? v.length : true))) {
+                    continue;
+                }
+
+                // Add type-specific defaults
+                if (importType === 'students') {
+                    record.status = record.status || 'active';
+                } else if (importType === 'lessons') {
+                    record.status = record.status || 'active';
+                } else if (importType === 'tutors') {
+                    record.active = true;
+                    record.initials = this.getInitials(record.name);
+                    const colors = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#22c55e', '#3b82f6'];
+                    record.color = colors[Math.floor(Math.random() * colors.length)];
+                }
+
+                try {
+                    let result;
+                    switch (importType) {
+                        case 'students':
+                            result = await DatabaseService.addStudent(record);
+                            break;
+                        case 'lessons':
+                            result = await DatabaseService.addLesson(record);
+                            break;
+                        case 'tutors':
+                            result = await DatabaseService.addTutor(record);
+                            break;
+                    }
+                    if (result?.success) successCount++;
+                    else errorCount++;
+                } catch (err) {
+                    errorCount++;
+                }
+            }
+
+            this.logActivity('import', `Imported ${successCount} ${importType} from CSV`, { count: successCount });
+
+            if (errorCount === 0) {
+                this.showToast(`Successfully imported ${successCount} ${importType}!`, 'success');
+            } else {
+                this.showToast(`Imported ${successCount} of ${successCount + errorCount} records`, 'warning');
+            }
+
+            await this.loadAllData();
+            this.renderCurrentPage();
+
+        } catch (error) {
+            console.error('CSV import error:', error);
+            this.showToast('Error importing CSV data', 'error');
+        }
+
+        this.showLoading(false);
+    }
+
+    downloadCSVTemplate(type) {
+        const templates = {
+            students: {
+                headers: ['Name', 'Class', 'Year', 'Instruments', 'Parent Email'],
+                example: ['John Smith', '10A', '10', 'Piano, Guitar', 'parent@email.com']
+            },
+            lessons: {
+                headers: ['Student Name', 'Tutor Name', 'Instrument', 'Day', 'Time'],
+                example: ['John Smith', 'Mrs Jones', 'Piano', 'Monday', '9:00 AM']
+            },
+            tutors: {
+                headers: ['Name', 'Email', 'Phone', 'Instruments'],
+                example: ['Mrs Jones', 'jones@school.nz', '021 123 4567', 'Piano, Keyboard']
+            }
+        };
+
+        const template = templates[type];
+        if (!template) {
+            this.showToast('Unknown template type', 'error');
+            return;
+        }
+
+        const csv = [template.headers.join(','), template.example.join(',')].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mgs-${type}-template.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        this.showToast('Template downloaded!', 'success');
+    }
+
     // ========================================
     // Utility Functions
     // ========================================
@@ -6286,6 +7020,7 @@ class App {
     handleTabClick(e) {
         const tab = e.target.dataset.tab;
         const hiresTab = e.target.dataset.hiresTab;
+        const lessonsTab = e.target.dataset.lessonsTab;
         const tabContainer = e.target.closest('.page-tabs');
 
         tabContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -6299,6 +7034,12 @@ class App {
         // Handle hires page tabs
         if (this.currentPage === 'hires' && hiresTab) {
             this.renderHires(hiresTab);
+        }
+
+        // Handle lessons page tabs
+        if (this.currentPage === 'lessons' && lessonsTab) {
+            this.lessonsTab = lessonsTab;
+            this.renderLessons();
         }
     }
 
@@ -6401,10 +7142,16 @@ class App {
         let tasksList = '';
         if (event.tasks && event.tasks.length > 0) {
             tasksList = '\n\nTASKS:\n' + event.tasks.map(task => {
-                const assignedStaff = task.assignedTo
-                    ? (this.data.tutors.find(t => t.id === task.assignedTo)?.name || 'Unassigned')
-                    : 'Unassigned';
-                return `- ${task.name} [${assignedStaff}]`;
+                // Handle both legacy assignedTo and new assignedToIds
+                let assignedIds = task.assignedToIds || [];
+                if (!assignedIds.length && task.assignedTo) {
+                    assignedIds = [task.assignedTo];
+                }
+                const assignedNames = assignedIds
+                    .map(id => this.data.tutors.find(t => t.id === id)?.name)
+                    .filter(n => n);
+                const assignedText = assignedNames.length > 0 ? assignedNames.join(', ') : 'Unassigned';
+                return `- ${task.name} [${assignedText}]`;
             }).join('\n');
         }
 
@@ -6478,6 +7225,148 @@ class App {
             );
             window.open(`mailto:${leaderEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
             this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');
+        }
+    }
+
+    async sendTutorPortalLink(tutorId) {
+        const tutor = this.data.tutors.find(t => t.id === tutorId);
+        if (!tutor) {
+            this.showToast('Tutor not found', 'error');
+            return;
+        }
+
+        if (!tutor.email) {
+            this.showToast('Tutor has no email address. Please add an email first.', 'warning');
+            return;
+        }
+
+        this.showToast('Generating portal link...', 'info');
+
+        try {
+            // Get or create tutor token
+            const tokenResult = await DatabaseService.getOrCreateTutorToken(tutorId);
+
+            if (!tokenResult.success) {
+                this.showToast('Failed to generate portal link: ' + tokenResult.error, 'error');
+                return;
+            }
+
+            // Build the portal URL
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            const portalUrl = `${baseUrl}/tutor-portal.html?token=${tokenResult.token}`;
+
+            // Count lessons for this tutor
+            const lessonCount = this.data.lessons.filter(l => l.tutorId === tutorId).length;
+
+            // Send the email
+            if (EmailService.isConfigured()) {
+                const result = await EmailService.sendTutorPortalLink(tutor, portalUrl, lessonCount);
+
+                if (result.success) {
+                    this.logActivity('email', `Tutor portal link sent to ${tutor.name}`, { tutorId });
+                    this.showToast(`Portal link sent to ${tutor.name}`, 'success');
+                } else {
+                    this.showToast('Failed to send email: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } else {
+                // Fallback - show the link in a modal
+                const content = `
+                    <p style="margin-bottom: 1rem;">EmailJS not configured. Here is the portal link for <strong>${tutor.name}</strong>:</p>
+                    <div style="background: var(--color-bg-secondary); padding: 1rem; border-radius: var(--radius-md); word-break: break-all; font-family: monospace; font-size: 0.85rem;">
+                        ${portalUrl}
+                    </div>
+                    <p style="margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.9rem;">
+                        Copy this link and send it to the tutor manually, or configure EmailJS for automatic sending.
+                    </p>
+                `;
+                this.showModal('Tutor Portal Link', content, null);
+                document.getElementById('modal-save').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error sending portal link:', error);
+            this.showToast('Error generating portal link', 'error');
+        }
+    }
+
+    async sendEventPortalLinks(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) {
+            this.showToast('Event not found', 'error');
+            return;
+        }
+
+        // Get staff assigned to this event with emails
+        const eventStaff = (event.staffIds || [])
+            .map(id => this.data.tutors.find(t => t.id === id))
+            .filter(s => s && s.email);
+
+        if (eventStaff.length === 0) {
+            this.showToast('No staff with email addresses assigned to this event', 'warning');
+            return;
+        }
+
+        this.showToast(`Sending portal links to ${eventStaff.length} staff...`, 'info');
+
+        try {
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const staff of eventStaff) {
+                // Get or create staff token
+                const tokenResult = await DatabaseService.getOrCreateStaffToken(staff.id);
+
+                if (!tokenResult.success) {
+                    failCount++;
+                    continue;
+                }
+
+                const portalUrl = `${baseUrl}/staff-portal.html?token=${tokenResult.token}`;
+
+                // Count events and tasks for this staff member
+                const staffEvents = this.data.events.filter(e => e.staffIds?.includes(staff.id));
+                const taskCount = staffEvents.reduce((sum, e) => {
+                    const myTasks = (e.tasks || []).filter(t => {
+                        const assignedIds = t.assignedToIds || (t.assignedTo ? [t.assignedTo] : []);
+                        return assignedIds.includes(staff.id);
+                    });
+                    return sum + myTasks.length;
+                }, 0);
+
+                if (EmailService.isConfigured()) {
+                    const result = await EmailService.sendStaffPortalLink(staff, portalUrl, staffEvents.length, taskCount);
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } else {
+                    // Just count as success for now, we'll show the links
+                    successCount++;
+                }
+
+                // Small delay between emails
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+
+            if (EmailService.isConfigured()) {
+                if (successCount > 0) {
+                    this.logActivity('email', `Staff portal links sent for ${event.name} (${successCount} staff)`, { eventId: event.id });
+                }
+                if (successCount > 0 && failCount === 0) {
+                    this.showToast(`Portal links sent to ${successCount} staff member(s)`, 'success');
+                } else if (successCount > 0) {
+                    this.showToast(`Sent to ${successCount}, failed for ${failCount}`, 'warning');
+                } else {
+                    this.showToast('Failed to send portal links', 'error');
+                }
+            } else {
+                // Show info about EmailJS not being configured
+                this.showToast('EmailJS not configured - configure it to send portal links automatically', 'info');
+            }
+        } catch (error) {
+            console.error('Error sending portal links:', error);
+            this.showToast('Error sending portal links', 'error');
         }
     }
 
@@ -6697,39 +7586,11 @@ You can click "Accept Lesson" or "Add to Waitlist" directly from the link above.
         let defaultMessage = '';
 
         if (type === 'event') {
-            defaultSubject = `Event Assignment: ${entity.name}`;
-            let tasksList = '';
-            if (entity.tasks && entity.tasks.length > 0) {
-                tasksList = '\n\nTASKS:\n' + entity.tasks.map(task => {
-                    const assignedStaff = task.assignedTo
-                        ? (this.data.tutors.find(t => t.id === task.assignedTo)?.name || 'Unassigned')
-                        : 'Unassigned';
-                    return `- ${task.name} [${assignedStaff}]`;
-                }).join('\n');
-            }
-            defaultMessage = `You have been assigned to the following event:
-
-Event: ${entity.name}
-Date: ${this.formatDate(entity.date)}
-Time: ${entity.time || 'TBC'}
-Location: ${entity.location || 'TBC'}
-
-${entity.description || ''}${tasksList}
-
-Please check the MGS Arts Portal for task assignments and updates.`;
+            defaultSubject = `Event: ${entity.name}`;
+            defaultMessage = '';
         } else if (type === 'group') {
-            defaultSubject = `Group Assignment: ${entity.name}`;
-            defaultMessage = `You have been assigned as a leader of the following group:
-
-Group: ${entity.name}
-Type: ${entity.type || 'N/A'}
-Category: ${entity.category || 'N/A'}
-Members: ${entity.members || 0}
-
-Meeting: ${entity.meetingDay || 'TBC'} ${entity.meetingTime || ''}
-Location: ${entity.location || 'TBC'}
-
-Please check the MGS Arts Portal for more details.`;
+            defaultSubject = `Group: ${entity.name}`;
+            defaultMessage = '';
         } else if (type === 'lesson') {
             const student = this.getStudentById(entity.studentId);
             defaultSubject = `New Lesson Assignment: ${student?.name || entity.studentName || 'Student'}`;
@@ -6762,7 +7623,7 @@ Please check the MGS Arts Portal for more details.`;
                 </div>
                 <div class="form-group">
                     <label>Message</label>
-                    <textarea id="notify-staff-message" class="form-control" rows="8">${defaultMessage}</textarea>
+                    <textarea id="notify-staff-message" class="form-control" rows="6" placeholder="Type your message here...">${defaultMessage}</textarea>
                 </div>
                 <p class="text-muted" style="margin-top: var(--spacing-md); font-size: 0.85rem;">
                     ${emailMethodMessage}
