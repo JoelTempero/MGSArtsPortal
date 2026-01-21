@@ -562,6 +562,49 @@ const DatabaseService = {
         }
     },
 
+    // ---- Activity Logging ----
+
+    // Log an activity
+    async logActivity(activity) {
+        try {
+            const activityData = {
+                ...activity,
+                timestamp: serverTimestamp(),
+                createdAt: new Date().toISOString()
+            };
+
+            await addDoc(collection(db, 'activities'), activityData);
+            return { success: true };
+        } catch (error) {
+            console.error('Error logging activity:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Get recent activities
+    async getRecentActivities(limit = 50) {
+        try {
+            const activitiesQuery = query(
+                collection(db, 'activities'),
+                orderBy('createdAt', 'desc')
+            );
+            const snapshot = await getDocs(activitiesQuery);
+
+            const activities = [];
+            snapshot.forEach(doc => {
+                activities.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort by createdAt (ISO string) and limit
+            return activities
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, limit);
+        } catch (error) {
+            console.error('Error getting activities:', error);
+            return [];
+        }
+    },
+
     // ---- Batch Operations ----
 
     // Import all data (for seeding/restoring)

@@ -148,9 +148,9 @@ class App {
 
     async loadAllData() {
         this.showLoading(true);
-        
+
         try {
-            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates] = await Promise.all([
+            const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates, activities] = await Promise.all([
                 DatabaseService.getStudents(),
                 DatabaseService.getTutors(),
                 DatabaseService.getLessons(),
@@ -162,11 +162,15 @@ class App {
                 DatabaseService.getSettings(),
                 DatabaseService.getForms(),
                 DatabaseService.getUsers(),
-                DatabaseService.getTemplates()
+                DatabaseService.getTemplates(),
+                DatabaseService.getRecentActivities(30)
             ]);
-            
-            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates };
-            
+
+            this.data = { students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates, activities };
+
+            // Update activity notification badge
+            this.updateActivityBadge();
+
             // If no data, show welcome message
             if (students.length === 0 && tutors.length === 0) {
                 this.showToast('Welcome! Load demo data from Settings to get started.', 'info');
@@ -462,6 +466,9 @@ class App {
         this.renderRecentRequests();
         this.renderOverdueHires();
         this.renderTodaysLessons();
+        this.renderRecentActivity();
+        // Mark activities as viewed when Dashboard is visible
+        this.markActivitiesViewed();
     }
 
     renderOverdueEventTasks() {
@@ -578,6 +585,118 @@ class App {
         if (period === 'PM' && hours !== 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
         return hours * 60 + minutes;
+    }
+
+    renderRecentActivity() {
+        const container = document.getElementById('recent-activity-list');
+        if (!container) return;
+
+        const activities = this.data.activities || [];
+
+        if (activities.length === 0) {
+            container.innerHTML = '<div class="no-activity">No recent activity</div>';
+            return;
+        }
+
+        container.innerHTML = activities.slice(0, 15).map(activity => {
+            const icon = this.getActivityIcon(activity.type);
+            const timeAgo = this.formatTimeAgo(activity.createdAt);
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon ${activity.type}">
+                        ${icon}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">${activity.message}</div>
+                        <div class="activity-meta">
+                            <span class="activity-time">${timeAgo}</span>
+                            ${activity.actor ? `<span>by ${activity.actor}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getActivityIcon(type) {
+        const icons = {
+            lesson: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+            event: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+            task: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+            student: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>',
+            staff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+            group: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+            email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>'
+        };
+        return icons[type] || icons.task;
+    }
+
+    formatTimeAgo(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' });
+    }
+
+    // Log an activity to the database
+    async logActivity(type, message, details = {}) {
+        try {
+            await DatabaseService.logActivity({
+                type,
+                message,
+                details,
+                actor: this.currentUser?.displayName || this.currentUser?.email || 'System'
+            });
+        } catch (error) {
+            console.error('Error logging activity:', error);
+        }
+    }
+
+    // Update the activity notification badge
+    updateActivityBadge() {
+        const badge = document.getElementById('activity-badge');
+        if (!badge) return;
+
+        const activities = this.data.activities || [];
+        if (activities.length === 0) {
+            badge.style.display = 'none';
+            return;
+        }
+
+        // Get last viewed timestamp from localStorage
+        const lastViewed = localStorage.getItem('mgs_last_activity_view');
+        const lastViewedDate = lastViewed ? new Date(lastViewed) : new Date(0);
+
+        // Count activities newer than last viewed
+        const newCount = activities.filter(a => {
+            const activityDate = new Date(a.createdAt);
+            return activityDate > lastViewedDate;
+        }).length;
+
+        if (newCount > 0 && this.currentPage !== 'dashboard') {
+            badge.textContent = newCount > 99 ? '99+' : newCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Mark activities as viewed (called when viewing Dashboard)
+    markActivitiesViewed() {
+        localStorage.setItem('mgs_last_activity_view', new Date().toISOString());
+        const badge = document.getElementById('activity-badge');
+        if (badge) badge.style.display = 'none';
     }
 
     renderUpcomingEvents() {
@@ -2898,8 +3017,10 @@ class App {
         };
         
         const result = await DatabaseService.updateLesson(id, lesson);
-        
+
         if (result.success) {
+            const student = this.data.students.find(s => s.id === lesson.studentId);
+            this.logActivity('lesson', `Lesson updated for ${student?.name || 'Unknown'}`, { lessonId: id });
             this.showToast('Lesson updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -3001,8 +3122,9 @@ class App {
         };
         
         const result = await DatabaseService.updateStudent(id, student);
-        
+
         if (result.success) {
+            this.logActivity('student', `Student updated: ${student.name}`, { studentId: id });
             this.showToast('Student updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -3280,8 +3402,9 @@ class App {
         };
         
         const result = await DatabaseService.updateEvent(id, event);
-        
+
         if (result.success) {
+            this.logActivity('event', `Event updated: ${event.name}`, { eventId: id });
             this.showToast('Event updated successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -3890,6 +4013,7 @@ class App {
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
 
         if (result.success) {
+            this.logActivity('task', `New task "${taskName}" added to ${event.name}`, { eventId, taskName });
             this.closeModal();
             this.showToast('Task added successfully', 'success');
             this.renderEventDetails();
@@ -4167,8 +4291,12 @@ class App {
         
         // Update in database
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
-        
+
         if (result.success) {
+            // Log task completion/uncompletion
+            const statusText = completed ? 'completed' : 'marked incomplete';
+            this.logActivity('task', `Task "${taskName}" ${statusText} on ${event.name}`, { eventId, taskName });
+
             // Update UI - safely check for elements before manipulating
             const taskElement = document.querySelector(`[data-task-name="${taskName}"]`);
             const taskItem = taskElement?.closest('.task-item');
@@ -5100,8 +5228,11 @@ class App {
         };
         
         const result = await DatabaseService.addLesson(lesson);
-        
+
         if (result.success) {
+            const student = this.data.students.find(s => s.id === lesson.studentId);
+            const tutor = this.data.tutors.find(t => t.id === lesson.tutorId);
+            this.logActivity('lesson', `New lesson created for ${student?.name || 'Unknown'} with ${tutor?.name || 'No tutor'}`, { lessonId: result.id });
             this.showToast('Lesson added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5186,8 +5317,9 @@ class App {
         };
         
         const result = await DatabaseService.addStudent(student);
-        
+
         if (result.success) {
+            this.logActivity('student', `New student added: ${student.name}`, { studentId: result.id });
             this.showToast('Student added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5346,8 +5478,9 @@ class App {
         };
         
         const result = await DatabaseService.addEvent(event);
-        
+
         if (result.success) {
+            this.logActivity('event', `New event created: ${event.name}`, { eventId: result.id, date: event.date });
             this.showToast('Event created successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5429,7 +5562,8 @@ class App {
             for (const groupId of groupIds) {
                 await DatabaseService.updateGroup(groupId, { leader: name });
             }
-            
+
+            this.logActivity('staff', `New staff member added: ${name}`, { staffId: result.id });
             this.showToast('Staff member added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -5522,6 +5656,7 @@ class App {
             // Update staff profiles to reflect group leadership
             await this.updateStaffGroupAssignments(result.id, leaderIds);
 
+            this.logActivity('group', `New group created: ${group.name}`, { groupId: result.id });
             this.showToast('Group created successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -6862,6 +6997,7 @@ class App {
                 const result = await EmailService.sendTutorPortalLink(tutor, portalUrl, lessonCount);
 
                 if (result.success) {
+                    this.logActivity('email', `Tutor portal link sent to ${tutor.name}`, { tutorId });
                     this.showToast(`Portal link sent to ${tutor.name}`, 'success');
                 } else {
                     this.showToast('Failed to send email: ' + (result.error || 'Unknown error'), 'error');
@@ -6948,6 +7084,9 @@ class App {
             }
 
             if (EmailService.isConfigured()) {
+                if (successCount > 0) {
+                    this.logActivity('email', `Staff portal links sent for ${event.name} (${successCount} staff)`, { eventId: event.id });
+                }
                 if (successCount > 0 && failCount === 0) {
                     this.showToast(`Portal links sent to ${successCount} staff member(s)`, 'success');
                 } else if (successCount > 0) {

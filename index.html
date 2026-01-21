@@ -146,6 +146,7 @@
                         <rect x="3" y="16" width="7" height="5" rx="1"/>
                     </svg>
                     <span>Dashboard</span>
+                    <span class="activity-badge" id="activity-badge" style="display: none;">0</span>
                 </a>
 
                 <div class="nav-section">
@@ -512,7 +513,25 @@
                         </div>
                     </div>
 
-                    <!-- 7. Days Since Joel Card -->
+                    <!-- 7. Recent Activity Card -->
+                    <div class="card card-activity">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 8v4l3 3"/>
+                                    <circle cx="12" cy="12" r="10"/>
+                                </svg>
+                                Recent Activity
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="activity-list" id="recent-activity-list">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Days Since Joel Card -->
                     <div class="card card-joel-counter">
                         <div class="card-header">
                             <h2 class="card-title">
