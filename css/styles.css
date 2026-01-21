@@ -2668,6 +2668,62 @@ tr.clickable:hover td {
     color: var(--color-text-muted);
 }
 
+.csv-import-section {
+    padding: var(--spacing-lg);
+}
+
+.csv-import-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.csv-import-controls .form-select {
+    width: auto;
+    min-width: 140px;
+}
+
+.csv-template-links {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.csv-template-links a {
+    color: var(--color-gold);
+    text-decoration: none;
+}
+
+.csv-template-links a:hover {
+    text-decoration: underline;
+}
+
+.csv-preview-table {
+    width: 100%;
+    margin-top: var(--spacing-md);
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.csv-preview-table th,
+.csv-preview-table td {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.csv-preview-table th {
+    background: var(--color-bg-tertiary);
+    font-weight: 600;
+}
+
+.csv-preview-summary {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
 .term-dates-list {
     padding: var(--spacing-lg);
     display: flex;

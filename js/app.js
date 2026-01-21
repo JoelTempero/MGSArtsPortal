@@ -252,7 +252,11 @@ class App {
         document.getElementById('wipe-all-data')?.addEventListener('click', () => this.showWipeDataModal());
         document.getElementById('save-school-settings')?.addEventListener('click', () => this.saveSchoolSettings());
         document.getElementById('add-category-btn')?.addEventListener('click', () => this.addCategory());
-        
+
+        // CSV Import
+        document.getElementById('csv-import-btn')?.addEventListener('click', () => document.getElementById('csv-import-file').click());
+        document.getElementById('csv-import-file')?.addEventListener('change', (e) => this.handleCSVImport(e));
+
         // Search inputs
         document.getElementById('lessons-search')?.addEventListener('input', (e) => this.handleSearch('lessons', e.target.value));
         document.getElementById('students-search')?.addEventListener('input', (e) => this.handleSearch('students', e.target.value));
@@ -6569,6 +6573,233 @@ class App {
         }
 
         this.showLoading(false);
+    }
+
+    // Direct CSV import from Settings page (simplified flow)
+    async handleCSVImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const importType = document.getElementById('csv-import-type').value;
+
+        try {
+            const text = await file.text();
+            const rows = this.parseCSV(text);
+
+            if (rows.length < 2) {
+                this.showToast('CSV file must have headers and at least one data row', 'error');
+                e.target.value = '';
+                return;
+            }
+
+            const headers = rows[0];
+            const dataRows = rows.slice(1);
+
+            // Show preview modal
+            this.showCSVPreviewModal(importType, headers, dataRows);
+
+        } catch (error) {
+            console.error('CSV parse error:', error);
+            this.showToast('Error reading CSV file', 'error');
+        }
+
+        e.target.value = '';
+    }
+
+    showCSVPreviewModal(importType, headers, dataRows) {
+        // Define expected fields for each type
+        const fieldMappings = {
+            students: ['name', 'class', 'year', 'instruments', 'parentEmail'],
+            lessons: ['studentName', 'tutorName', 'instrument', 'day', 'time'],
+            tutors: ['name', 'email', 'phone', 'instruments']
+        };
+
+        const expectedFields = fieldMappings[importType] || [];
+
+        // Auto-map columns based on header names
+        const mapping = {};
+        headers.forEach((header, index) => {
+            const normalizedHeader = header.toLowerCase().replace(/[^a-z]/g, '');
+            for (const field of expectedFields) {
+                const normalizedField = field.toLowerCase();
+                if (normalizedHeader.includes(normalizedField) ||
+                    normalizedField.includes(normalizedHeader)) {
+                    mapping[field] = index;
+                    break;
+                }
+            }
+        });
+
+        // Generate mapping form
+        const mappingHtml = expectedFields.map(field => {
+            const options = headers.map((h, i) =>
+                `<option value="${i}" ${mapping[field] === i ? 'selected' : ''}>${h}</option>`
+            ).join('');
+
+            return `
+                <div class="form-row" style="margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: var(--spacing-md);">
+                    <label style="flex: 1; font-weight: 500;">${this.formatFieldName(field)}</label>
+                    <select id="csv-map-${field}" class="form-control" style="flex: 2;">
+                        <option value="">-- Skip --</option>
+                        ${options}
+                    </select>
+                </div>
+            `;
+        }).join('');
+
+        // Generate preview table
+        const previewRows = dataRows.slice(0, 5);
+        const previewHtml = `
+            <table class="csv-preview-table">
+                <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${previewRows.map(row =>
+                        `<tr>${row.map(cell => `<td>${cell || '-'}</td>`).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        `;
+
+        const content = `
+            <div class="csv-import-preview">
+                <h4 style="margin-bottom: var(--spacing-md);">Column Mapping</h4>
+                <p class="help-text" style="margin-bottom: var(--spacing-md);">Match your CSV columns to the correct fields:</p>
+                ${mappingHtml}
+
+                <h4 style="margin: var(--spacing-lg) 0 var(--spacing-md);">Preview (${dataRows.length} rows)</h4>
+                <div style="overflow-x: auto;">
+                    ${previewHtml}
+                </div>
+            </div>
+        `;
+
+        // Store data for import
+        this.pendingCSVImport = { importType, headers, dataRows, expectedFields };
+
+        this.showModal(`Import ${importType.charAt(0).toUpperCase() + importType.slice(1)} from CSV`, content, () => this.confirmCSVImport());
+        document.getElementById('modal-save').textContent = 'Import';
+    }
+
+    async confirmCSVImport() {
+        const { importType, dataRows, expectedFields } = this.pendingCSVImport;
+
+        // Build mapping from form
+        const mapping = {};
+        for (const field of expectedFields) {
+            const select = document.getElementById(`csv-map-${field}`);
+            if (select && select.value !== '') {
+                mapping[field] = parseInt(select.value);
+            }
+        }
+
+        this.closeModal();
+        this.showLoading(true);
+
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const row of dataRows) {
+                const record = {};
+                for (const [field, colIndex] of Object.entries(mapping)) {
+                    let value = row[colIndex] || '';
+                    // Handle arrays (instruments, etc.)
+                    if (field === 'instruments') {
+                        value = value.split(/[,;]/).map(v => v.trim()).filter(v => v);
+                    }
+                    record[field] = value;
+                }
+
+                // Skip empty records
+                if (!Object.values(record).some(v => v && (Array.isArray(v) ? v.length : true))) {
+                    continue;
+                }
+
+                // Add type-specific defaults
+                if (importType === 'students') {
+                    record.status = record.status || 'active';
+                } else if (importType === 'lessons') {
+                    record.status = record.status || 'active';
+                } else if (importType === 'tutors') {
+                    record.active = true;
+                    record.initials = this.getInitials(record.name);
+                    const colors = ['#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#22c55e', '#3b82f6'];
+                    record.color = colors[Math.floor(Math.random() * colors.length)];
+                }
+
+                try {
+                    let result;
+                    switch (importType) {
+                        case 'students':
+                            result = await DatabaseService.addStudent(record);
+                            break;
+                        case 'lessons':
+                            result = await DatabaseService.addLesson(record);
+                            break;
+                        case 'tutors':
+                            result = await DatabaseService.addTutor(record);
+                            break;
+                    }
+                    if (result?.success) successCount++;
+                    else errorCount++;
+                } catch (err) {
+                    errorCount++;
+                }
+            }
+
+            this.logActivity('import', `Imported ${successCount} ${importType} from CSV`, { count: successCount });
+
+            if (errorCount === 0) {
+                this.showToast(`Successfully imported ${successCount} ${importType}!`, 'success');
+            } else {
+                this.showToast(`Imported ${successCount} of ${successCount + errorCount} records`, 'warning');
+            }
+
+            await this.loadAllData();
+            this.renderCurrentPage();
+
+        } catch (error) {
+            console.error('CSV import error:', error);
+            this.showToast('Error importing CSV data', 'error');
+        }
+
+        this.showLoading(false);
+    }
+
+    downloadCSVTemplate(type) {
+        const templates = {
+            students: {
+                headers: ['Name', 'Class', 'Year', 'Instruments', 'Parent Email'],
+                example: ['John Smith', '10A', '10', 'Piano, Guitar', 'parent@email.com']
+            },
+            lessons: {
+                headers: ['Student Name', 'Tutor Name', 'Instrument', 'Day', 'Time'],
+                example: ['John Smith', 'Mrs Jones', 'Piano', 'Monday', '9:00 AM']
+            },
+            tutors: {
+                headers: ['Name', 'Email', 'Phone', 'Instruments'],
+                example: ['Mrs Jones', 'jones@school.nz', '021 123 4567', 'Piano, Keyboard']
+            }
+        };
+
+        const template = templates[type];
+        if (!template) {
+            this.showToast('Unknown template type', 'error');
+            return;
+        }
+
+        const csv = [template.headers.join(','), template.example.join(',')].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mgs-${type}-template.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        this.showToast('Template downloaded!', 'success');
     }
 
     // ========================================

@@ -1063,6 +1063,36 @@
                     </div>
 
                     <div class="settings-section">
+                        <h2 class="settings-section-title">CSV Import</h2>
+                        <div class="card">
+                            <div class="csv-import-section">
+                                <div class="data-action-item">
+                                    <div class="data-action-info">
+                                        <h4>Import from CSV</h4>
+                                        <p>Import students, lessons, or tutors from a CSV file</p>
+                                    </div>
+                                    <div class="csv-import-controls">
+                                        <select id="csv-import-type" class="form-select">
+                                            <option value="students">Students</option>
+                                            <option value="lessons">Lessons</option>
+                                            <option value="tutors">Tutors/Staff</option>
+                                        </select>
+                                        <input type="file" id="csv-import-file" accept=".csv" style="display: none;">
+                                        <button class="btn btn-outline" id="csv-import-btn">Select CSV File</button>
+                                    </div>
+                                </div>
+                                <div class="csv-template-links">
+                                    <small>Download templates:
+                                        <a href="#" onclick="app.downloadCSVTemplate('students'); return false;">Students</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('lessons'); return false;">Lessons</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('tutors'); return false;">Tutors</a>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
                         <h2 class="settings-section-title">Admin Profile</h2>
                         <div class="card">
                             <div class="users-list" id="users-list">
