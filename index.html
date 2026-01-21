@@ -1130,13 +1130,18 @@
                                 <div class="data-action-item">
                                     <div class="data-action-info">
                                         <h4>Import from CSV</h4>
-                                        <p>Import students, lessons, or tutors from a CSV file</p>
+                                        <p>Import any data type from a CSV file</p>
                                     </div>
                                     <div class="csv-import-controls">
                                         <select id="csv-import-type" class="form-select">
                                             <option value="students">Students</option>
-                                            <option value="lessons">Lessons</option>
-                                            <option value="tutors">Tutors/Staff</option>
+                                            <option value="tutors">Staff/Tutors</option>
+                                            <option value="lessons">Lesson List</option>
+                                            <option value="lessonRequests">Lesson Requests</option>
+                                            <option value="events">Upcoming Events</option>
+                                            <option value="groups">Performing Arts Groups</option>
+                                            <option value="instruments">Instrument List</option>
+                                            <option value="instrumentHires">Instrument Hire</option>
                                         </select>
                                         <input type="file" id="csv-import-file" accept=".csv" style="display: none;">
                                         <button class="btn btn-outline" id="csv-import-btn">Select CSV File</button>
@@ -1145,8 +1150,13 @@
                                 <div class="csv-template-links">
                                     <small>Download templates:
                                         <a href="#" onclick="app.downloadCSVTemplate('students'); return false;">Students</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('tutors'); return false;">Tutors</a> |
                                         <a href="#" onclick="app.downloadCSVTemplate('lessons'); return false;">Lessons</a> |
-                                        <a href="#" onclick="app.downloadCSVTemplate('tutors'); return false;">Tutors</a>
+                                        <a href="#" onclick="app.downloadCSVTemplate('lessonRequests'); return false;">Requests</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('events'); return false;">Events</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('groups'); return false;">Groups</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('instruments'); return false;">Instruments</a> |
+                                        <a href="#" onclick="app.downloadCSVTemplate('instrumentHires'); return false;">Hires</a>
                                     </small>
                                 </div>
                             </div>

@@ -1534,15 +1534,13 @@ class App {
                 const tutorGroupIds = t.groupIds || (t.groupId ? [t.groupId] : []);
                 return tutorGroupIds.includes(group.id);
             });
-            const staffDisplay = groupStaff.length > 0 
+            const staffDisplay = groupStaff.length > 0
                 ? groupStaff.map(s => s.name).join(', ')
                 : (group.leader || 'No leader assigned');
-            
-            // Count students in this group (students with this groupId)
-            const memberCount = group.memberCount || this.data.students.filter(s => 
-                s.groupIds && s.groupIds.includes(group.id)
-            ).length || 0;
-            
+
+            // Count responses/signups for this group
+            const responseCount = (group.responses || []).length;
+
             return `
                 <div class="group-card" data-id="${group.id}">
                     <div class="group-card-header">
@@ -1552,12 +1550,14 @@ class App {
                     <div class="group-card-body">
                         <div class="group-meta">
                             <div class="group-meta-item">
-                                <span class="group-meta-value">${memberCount}</span>
-                                <span class="group-meta-label">Members</span>
-                            </div>
-                            <div class="group-meta-item">
                                 <span class="group-meta-value discipline-tag discipline-${categoryColors[group.category] || 'music'}">${group.category}</span>
                             </div>
+                            ${responseCount > 0 ? `
+                                <div class="group-meta-item">
+                                    <span class="group-meta-value">${responseCount}</span>
+                                    <span class="group-meta-label">Signups</span>
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="group-leader">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
@@ -1575,7 +1575,7 @@ class App {
                         </div>
                     </div>
                     <div class="group-card-actions">
-                        <button class="btn btn-outline btn-sm" onclick="app.showGroupMembersModal('${group.id}')">Members</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.showGroupResponsesModal('${group.id}')">Responses</button>
                         <button class="btn btn-outline btn-sm" onclick="app.showNotifyStaffModal('group', '${group.id}')" title="Email leaders">Notify</button>
                         <button class="btn btn-outline btn-sm" onclick="app.showEditGroupModal('${group.id}')">Edit</button>
                         <button class="btn btn-outline btn-sm" onclick="app.handleDelete('group', '${group.id}')">Delete</button>
@@ -1874,52 +1874,173 @@ class App {
             this.showToast('Form not found', 'error');
             return;
         }
-        
+
+        // Store current questions for editing
+        this.editingFormQuestions = JSON.parse(JSON.stringify(form.questions || []));
+
         const content = `
             <form id="edit-form-form" class="modal-form">
                 <input type="hidden" name="id" value="${formId}">
-                <div class="form-group">
-                    <label>Form Name</label>
-                    <input type="text" name="name" value="${form.name || ''}" required>
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Form Name</label>
+                        <input type="text" name="name" value="${form.name || ''}" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="draft" ${form.status === 'draft' ? 'selected' : ''}>Draft</option>
+                            <option value="active" ${form.status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="closed" ${form.status === 'closed' ? 'selected' : ''}>Closed</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
-                    <textarea name="description">${form.description || ''}</textarea>
+                    <textarea name="description" rows="2">${form.description || ''}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
-                    <select name="status">
-                        <option value="draft" ${form.status === 'draft' ? 'selected' : ''}>Draft</option>
-                        <option value="active" ${form.status === 'active' ? 'selected' : ''}>Active</option>
-                        <option value="closed" ${form.status === 'closed' ? 'selected' : ''}>Closed</option>
-                    </select>
+                    <label>Available Options (comma-separated, for dropdown questions)</label>
+                    <input type="text" name="instruments" value="${(form.instruments || []).join(', ')}" placeholder="Guitar, Piano, Drums, Violin">
                 </div>
-                <div class="form-group">
-                    <label>Available Instruments (if music form)</label>
-                    <input type="text" name="instruments" value="${(form.instruments || []).join(', ')}" placeholder="Guitar, Piano, Drums">
+
+                <div class="form-questions-section">
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin: var(--spacing-lg) 0 var(--spacing-md);">
+                        <h4 style="margin: 0;">Form Questions</h4>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="app.addFormQuestion()">+ Add Question</button>
+                    </div>
+                    <div id="form-questions-list" class="form-questions-list">
+                        ${this.renderFormQuestionsList()}
+                    </div>
                 </div>
             </form>
         `;
-        
+
         this.showModal('Edit Form', content, () => this.updateForm());
+    }
+
+    renderFormQuestionsList() {
+        if (!this.editingFormQuestions || this.editingFormQuestions.length === 0) {
+            return '<p class="text-muted" style="text-align: center; padding: var(--spacing-md);">No questions added yet. Click "Add Question" to start building your form.</p>';
+        }
+
+        return this.editingFormQuestions.map((q, index) => `
+            <div class="form-question-item" data-index="${index}">
+                <div class="question-header">
+                    <span class="question-number">${index + 1}</span>
+                    <div class="question-controls">
+                        ${index > 0 ? `<button type="button" class="btn-icon-sm" onclick="app.moveFormQuestion(${index}, -1)" title="Move up">&uarr;</button>` : ''}
+                        ${index < this.editingFormQuestions.length - 1 ? `<button type="button" class="btn-icon-sm" onclick="app.moveFormQuestion(${index}, 1)" title="Move down">&darr;</button>` : ''}
+                        <button type="button" class="btn-icon-sm btn-danger" onclick="app.removeFormQuestion(${index})" title="Delete">×</button>
+                    </div>
+                </div>
+                <div class="question-content">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label>Question Label</label>
+                            <input type="text" value="${(q.label || '').replace(/"/g, '&quot;')}" onchange="app.updateFormQuestion(${index}, 'label', this.value)" placeholder="e.g., Student Name">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Type</label>
+                            <select onchange="app.updateFormQuestion(${index}, 'type', this.value)">
+                                <option value="text" ${q.type === 'text' ? 'selected' : ''}>Text</option>
+                                <option value="email" ${q.type === 'email' ? 'selected' : ''}>Email</option>
+                                <option value="tel" ${q.type === 'tel' ? 'selected' : ''}>Phone</option>
+                                <option value="select" ${q.type === 'select' ? 'selected' : ''}>Dropdown</option>
+                                <option value="checkbox" ${q.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
+                                <option value="textarea" ${q.type === 'textarea' ? 'selected' : ''}>Long Text</option>
+                                <option value="year" ${q.type === 'year' ? 'selected' : ''}>Year Level</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Field Name (internal)</label>
+                            <input type="text" value="${(q.name || '').replace(/"/g, '&quot;')}" onchange="app.updateFormQuestion(${index}, 'name', this.value)" placeholder="e.g., studentName">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>
+                                <input type="checkbox" ${q.required ? 'checked' : ''} onchange="app.updateFormQuestion(${index}, 'required', this.checked)">
+                                Required field
+                            </label>
+                        </div>
+                    </div>
+                    ${q.type === 'select' ? `
+                        <div class="form-group">
+                            <label>Options (comma-separated)</label>
+                            <input type="text" value="${(q.options || []).join(', ')}" onchange="app.updateFormQuestion(${index}, 'options', this.value.split(',').map(o => o.trim()).filter(o => o))" placeholder="Option 1, Option 2, Option 3">
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    addFormQuestion() {
+        if (!this.editingFormQuestions) {
+            this.editingFormQuestions = [];
+        }
+
+        this.editingFormQuestions.push({
+            label: '',
+            name: '',
+            type: 'text',
+            required: false,
+            options: []
+        });
+
+        document.getElementById('form-questions-list').innerHTML = this.renderFormQuestionsList();
+    }
+
+    removeFormQuestion(index) {
+        if (!this.editingFormQuestions) return;
+        this.editingFormQuestions.splice(index, 1);
+        document.getElementById('form-questions-list').innerHTML = this.renderFormQuestionsList();
+    }
+
+    moveFormQuestion(index, direction) {
+        if (!this.editingFormQuestions) return;
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= this.editingFormQuestions.length) return;
+
+        const temp = this.editingFormQuestions[index];
+        this.editingFormQuestions[index] = this.editingFormQuestions[newIndex];
+        this.editingFormQuestions[newIndex] = temp;
+
+        document.getElementById('form-questions-list').innerHTML = this.renderFormQuestionsList();
+    }
+
+    updateFormQuestion(index, field, value) {
+        if (!this.editingFormQuestions || !this.editingFormQuestions[index]) return;
+        this.editingFormQuestions[index][field] = value;
+
+        // Re-render if type changed (to show/hide options field)
+        if (field === 'type') {
+            document.getElementById('form-questions-list').innerHTML = this.renderFormQuestionsList();
+        }
     }
 
     async updateForm() {
         const formEl = document.getElementById('edit-form-form');
         const formData = new FormData(formEl);
         const id = formData.get('id');
-        
+
+        // Filter out empty questions
+        const validQuestions = (this.editingFormQuestions || []).filter(q => q.label && q.name);
+
         const updates = {
             name: formData.get('name'),
             description: formData.get('description'),
             status: formData.get('status'),
-            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i)
+            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
+            questions: validQuestions
         };
-        
+
         const result = await DatabaseService.updateForm(id, updates);
-        
+
         if (result.success) {
             this.showToast('Form updated successfully!', 'success');
+            this.editingFormQuestions = null;
             this.closeModal();
             await this.loadAllData();
             this.renderCurrentPage();
@@ -1965,34 +2086,51 @@ class App {
     renderTemplates() {
         const container = document.getElementById('templates-grid');
         if (!container) return;
-        
-        // Built-in templates (from EventTemplates)
+
+        // Custom templates from database (including overrides of built-in templates)
+        const customTemplates = this.data.templates || [];
+
+        // Built-in templates (from EventTemplates) - check for custom overrides
         const builtInTemplates = [
             { id: 'school-during', name: 'School Performance During School Hours', description: 'For performances held at school during the school day', icon: 'school', isBuiltIn: true },
             { id: 'school-after', name: 'School Performance After School Hours', description: 'For performances held at school after the school day', icon: 'evening', isBuiltIn: true },
             { id: 'offsite-during', name: 'Offsite Performance During School Hours', description: 'For performances held at external venues during school hours', icon: 'offsite', isBuiltIn: true },
             { id: 'offsite-after', name: 'Offsite Performance After School Hours', description: 'For performances held at external venues after school hours', icon: 'offsite-evening', isBuiltIn: true }
-        ];
-        
-        // Get built-in template task counts
-        builtInTemplates.forEach(t => {
+        ].map(t => {
+            // Check if there's a custom override for this built-in template
+            const customOverride = customTemplates.find(ct => ct.builtInId === t.id);
+            if (customOverride) {
+                // Use the custom override data
+                return {
+                    ...t,
+                    id: customOverride.id,
+                    name: customOverride.name,
+                    description: customOverride.description,
+                    tasks: customOverride.tasks,
+                    isCustomized: true,
+                    originalBuiltInId: t.id,
+                    taskCount: `${customOverride.tasks?.length || 0} phases • ${(customOverride.tasks || []).reduce((sum, phase) => sum + (phase.items?.length || 0), 0)} tasks`
+                };
+            }
+            // Use the original built-in template
             const template = EventTemplates[t.id];
             if (template) {
                 const phaseCount = template.tasks.length;
                 const taskCount = template.tasks.reduce((sum, phase) => sum + phase.items.length, 0);
                 t.taskCount = `${phaseCount} phases • ${taskCount} tasks`;
             }
+            return t;
         });
-        
-        // Custom templates from database
-        const customTemplates = (this.data.templates || []).map(t => ({
+
+        // Filter custom templates to only show ones that aren't overrides
+        const standaloneCustomTemplates = customTemplates.filter(t => !t.builtInId).map(t => ({
             ...t,
             isBuiltIn: false,
             icon: 'custom',
             taskCount: `${t.tasks?.length || 0} phases • ${(t.tasks || []).reduce((sum, phase) => sum + (phase.items?.length || 0), 0)} tasks`
         }));
-        
-        const allTemplates = [...builtInTemplates, ...customTemplates];
+
+        const allTemplates = [...builtInTemplates, ...standaloneCustomTemplates];
         
         const iconSvgs = {
             'school': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
@@ -2012,13 +2150,18 @@ class App {
                     <p class="template-description">${template.description}</p>
                     <div class="template-meta">
                         <span class="template-tasks">${template.taskCount || ''}</span>
-                        ${template.isBuiltIn ? '<span class="template-badge">Built-in</span>' : '<span class="template-badge custom">Custom</span>'}
+                        ${template.isCustomized ? '<span class="template-badge custom">Customized</span>' :
+                          template.isBuiltIn ? '<span class="template-badge">Built-in</span>' :
+                          '<span class="template-badge custom">Custom</span>'}
                     </div>
                 </div>
                 <div class="template-actions">
-                    <button class="btn btn-outline btn-sm" onclick="app.showTemplateModal('${template.id}')">View</button>
-                    ${template.isBuiltIn ? `
-                        <button class="btn btn-outline btn-sm" onclick="app.customizeBuiltInTemplate('${template.id}')">Customize</button>
+                    <button class="btn btn-outline btn-sm" onclick="app.showTemplateModal('${template.isCustomized ? template.id : template.id}')">View</button>
+                    ${template.isCustomized ? `
+                        <button class="btn btn-outline btn-sm" onclick="app.showEditTemplateModal('${template.id}')">Edit</button>
+                        <button class="btn btn-outline btn-sm" onclick="app.resetBuiltInTemplate('${template.id}', '${template.originalBuiltInId}')">Reset</button>
+                    ` : template.isBuiltIn ? `
+                        <button class="btn btn-outline btn-sm" onclick="app.editBuiltInTemplate('${template.id}')">Edit</button>
                     ` : `
                         <button class="btn btn-outline btn-sm" onclick="app.showEditTemplateModal('${template.id}')">Edit</button>
                         <button class="btn btn-outline btn-sm" onclick="app.deleteTemplate('${template.id}')">Delete</button>
@@ -2320,7 +2463,7 @@ class App {
         }
     }
 
-    async customizeBuiltInTemplate(templateId) {
+    editBuiltInTemplate(templateId) {
         // Get the built-in template data
         const builtInTemplate = EventTemplates[templateId];
         if (!builtInTemplate) {
@@ -2328,28 +2471,129 @@ class App {
             return;
         }
 
-        // Create a copy with a new name
-        const customTemplate = {
-            name: `${builtInTemplate.name} (Custom)`,
-            description: builtInTemplate.description,
-            tasks: JSON.parse(JSON.stringify(builtInTemplate.tasks)) // Deep copy
-        };
+        // Store that we're editing a built-in template
+        this.editingBuiltInTemplateId = templateId;
+
+        const phasesHtml = builtInTemplate.tasks.map((phase, pIndex) => `
+            <div class="phase-item" data-phase-index="${pIndex}">
+                <div class="phase-header">
+                    <input type="text" class="phase-name-input" placeholder="Phase name" value="${phase.phase || ''}">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="app.removePhase(${pIndex})">Remove Phase</button>
+                </div>
+                <div class="phase-tasks-list">
+                    ${(phase.items || []).map(task => `
+                        <div class="task-input-row">
+                            <input type="text" class="task-input" placeholder="Task description" value="${task}">
+                            <button type="button" class="btn-icon" onclick="app.removeTask(this)">×</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.addTaskToPhase(${pIndex})">+ Add Task</button>
+            </div>
+        `).join('');
+
+        const content = `
+            <div class="template-phases-editor" id="template-phases-editor">
+                <input type="hidden" id="template-id" value="${templateId}">
+                <div class="form-group">
+                    <label>Template Name <span class="required">*</span></label>
+                    <input type="text" id="template-name" required value="${builtInTemplate.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="template-description" rows="2">${builtInTemplate.description || ''}</textarea>
+                </div>
+
+                <h4 style="margin-top: var(--spacing-lg);">Task Phases</h4>
+                <p class="help-text">Edit the phases and tasks for this template. Changes will be saved as your custom version.</p>
+
+                <div id="phases-container">
+                    ${phasesHtml}
+                </div>
+
+                <button type="button" class="btn btn-outline" onclick="app.addPhase()" style="margin-top: var(--spacing-md);">+ Add Phase</button>
+            </div>
+        `;
+
+        this.showModal('Edit Template', content, () => this.saveBuiltInTemplateEdit());
+    }
+
+    async saveBuiltInTemplateEdit() {
+        const templateId = this.editingBuiltInTemplateId;
+        const name = document.getElementById('template-name').value.trim();
+        const description = document.getElementById('template-description').value.trim();
+
+        if (!name) {
+            this.showToast('Please enter a template name', 'error');
+            return;
+        }
+
+        // Gather phases and tasks
+        const tasks = [];
+        document.querySelectorAll('.phase-item').forEach((phase, order) => {
+            const phaseName = phase.querySelector('.phase-name-input').value.trim();
+            const items = [];
+            phase.querySelectorAll('.task-input').forEach(input => {
+                const task = input.value.trim();
+                if (task) items.push(task);
+            });
+
+            if (phaseName && items.length > 0) {
+                tasks.push({ phase: phaseName, order: order + 1, items });
+            }
+        });
+
+        if (tasks.length === 0) {
+            this.showToast('Please add at least one phase with tasks', 'error');
+            return;
+        }
 
         try {
-            // Save as new custom template
-            const result = await DatabaseService.addTemplate(customTemplate);
-            if (result.success) {
-                await this.loadAllData();
-                this.renderTemplates();
-                this.showToast('Template customized! You can now edit it.', 'success');
-                // Open the edit modal for the new template
-                this.showEditTemplateModal(result.id);
+            // Check if there's already a custom version of this built-in template
+            const existingCustom = this.data.templates?.find(t => t.builtInId === templateId);
+
+            if (existingCustom) {
+                // Update the existing custom version
+                await DatabaseService.updateTemplate(existingCustom.id, {
+                    name,
+                    description,
+                    tasks,
+                    builtInId: templateId
+                });
             } else {
-                this.showToast('Error creating custom template', 'error');
+                // Create a new custom version linked to the built-in template
+                await DatabaseService.addTemplate({
+                    name,
+                    description,
+                    tasks,
+                    builtInId: templateId
+                });
             }
+
+            this.editingBuiltInTemplateId = null;
+            await this.loadAllData();
+            this.renderTemplates();
+            this.closeModal();
+            this.showToast('Template saved successfully', 'success');
         } catch (error) {
-            console.error('Error customizing template:', error);
-            this.showToast('Error customizing template', 'error');
+            console.error('Error saving template:', error);
+            this.showToast('Error saving template', 'error');
+        }
+    }
+
+    async resetBuiltInTemplate(customId, builtInId) {
+        if (!confirm('Reset this template to its original built-in version? Your customizations will be lost.')) {
+            return;
+        }
+
+        try {
+            await DatabaseService.deleteTemplate(customId);
+            await this.loadAllData();
+            this.renderTemplates();
+            this.showToast('Template reset to built-in version', 'success');
+        } catch (error) {
+            console.error('Error resetting template:', error);
+            this.showToast('Error resetting template', 'error');
         }
     }
 
@@ -4096,6 +4340,7 @@ class App {
                 <div>Notes</div>
                 <div style="text-align: center;">Due Date:</div>
                 <div style="text-align: center;">Status:</div>
+                <div style="text-align: center;">Actions</div>
             </div>
 
             <div class="event-tasks-section">
@@ -4161,6 +4406,22 @@ class App {
                                         ${task.isOverdue && !task.completed && assignedStaffList.length > 0 ? `
                                             <button class="btn btn-sm btn-outline notify-btn" onclick="app.sendOverdueTaskNotification('${event.id}', '${task.name.replace(/'/g, "\\'")}'); event.stopPropagation();" title="Send reminder to assigned staff">
                                                 Notify
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                    <div class="event-task-actions">
+                                        <button class="btn-icon-sm" onclick="app.showEditTaskModal('${event.id}', '${task.name.replace(/'/g, "\\'")}', ${task.isCustom || false})" title="Edit task">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                        ${task.isCustom ? `
+                                            <button class="btn-icon-sm btn-danger" onclick="app.deleteTask('${event.id}', '${task.name.replace(/'/g, "\\'")}')" title="Delete task">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                </svg>
                                             </button>
                                         ` : ''}
                                     </div>
@@ -4297,6 +4558,194 @@ class App {
             this.renderEventDetails();
         } else {
             this.showToast('Error adding task', 'error');
+        }
+    }
+
+    showEditTaskModal(eventId, taskName, isCustom) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
+
+        // Find the task
+        const savedTask = (event.tasks || []).find(t => t.name === taskName);
+
+        // Get task info from template if not custom
+        const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+        const templateTask = templateTasks.find(t => t.name === taskName);
+
+        // Current values
+        let currentAssignees = savedTask?.assignedToIds || [];
+        if (!currentAssignees.length && savedTask?.assignedTo) {
+            currentAssignees = [savedTask.assignedTo];
+        }
+        const currentNotes = savedTask?.notes || '';
+        const currentPhase = savedTask?.phase || templateTask?.phase || 'Custom Tasks';
+
+        // Calculate due date
+        let currentDueDate = event.date;
+        if (savedTask?.dueDate) {
+            currentDueDate = savedTask.dueDate;
+        } else if (templateTask?.daysBefore !== undefined) {
+            const eventDate = new Date(event.date);
+            eventDate.setDate(eventDate.getDate() - templateTask.daysBefore);
+            currentDueDate = eventDate.toISOString().split('T')[0];
+        }
+
+        // Get phases
+        const existingPhases = [...new Set(templateTasks.map(t => t.phase))];
+        const defaultPhases = ['Planning', 'Logistics', 'Communications', 'Event Day', 'Post-Event'];
+        const phases = existingPhases.length > 0 ? existingPhases : defaultPhases;
+        const phaseOptions = phases.map(p => `<option value="${p}" ${currentPhase === p ? 'selected' : ''}>${p}</option>`).join('');
+
+        const staffCheckboxes = eventStaff.length > 0 ? eventStaff.map(s => `
+            <label class="staff-checkbox-item">
+                <input type="checkbox" name="edit-task-assignee" value="${s.id}" ${currentAssignees.includes(s.id) ? 'checked' : ''}>
+                <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'}; width: 24px; height: 24px; font-size: 0.65rem;">
+                    ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <span>${s.name}</span>
+            </label>
+        `).join('') : '<p class="text-muted">No staff linked to this event</p>';
+
+        const content = `
+            <form id="edit-task-form">
+                <input type="hidden" id="edit-task-event-id" value="${eventId}">
+                <input type="hidden" id="edit-task-original-name" value="${taskName}">
+                <input type="hidden" id="edit-task-is-custom" value="${isCustom}">
+                <div class="form-group">
+                    <label>Task Name ${isCustom ? '<span class="required">*</span>' : ''}</label>
+                    <input type="text" id="edit-task-name" value="${taskName}" ${isCustom ? '' : 'readonly style="background: var(--color-bg-tertiary); cursor: not-allowed;"'}>
+                    ${!isCustom ? '<small class="text-muted">Template tasks cannot be renamed</small>' : ''}
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="edit-task-due-date" value="${currentDueDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phase</label>
+                        <select id="edit-task-phase" ${isCustom ? '' : 'disabled style="background: var(--color-bg-tertiary); cursor: not-allowed;"'}>
+                            ${phaseOptions}
+                            <option value="Custom Tasks" ${currentPhase === 'Custom Tasks' ? 'selected' : ''}>Custom Tasks</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assign To</label>
+                    <div class="staff-checkbox-list">
+                        ${staffCheckboxes}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" id="edit-task-notes" value="${currentNotes}" placeholder="Optional notes...">
+                </div>
+            </form>
+        `;
+
+        this.showModal(`Edit Task: ${taskName}`, content, () => this.saveEditTask());
+    }
+
+    async saveEditTask() {
+        const eventId = document.getElementById('edit-task-event-id').value;
+        const originalName = document.getElementById('edit-task-original-name').value;
+        const isCustom = document.getElementById('edit-task-is-custom').value === 'true';
+        const taskName = document.getElementById('edit-task-name').value.trim();
+        const dueDate = document.getElementById('edit-task-due-date').value;
+        const phase = document.getElementById('edit-task-phase').value;
+        const notes = document.getElementById('edit-task-notes').value.trim();
+        const checkboxes = document.querySelectorAll('input[name="edit-task-assignee"]:checked');
+        const assignedToIds = Array.from(checkboxes).map(cb => cb.value);
+
+        if (isCustom && !taskName) {
+            this.showToast('Please enter a task name', 'error');
+            return;
+        }
+
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+
+        // Check if renamed task already exists (for custom tasks)
+        if (isCustom && taskName !== originalName && event.tasks.find(t => t.name === taskName)) {
+            this.showToast('A task with this name already exists', 'error');
+            return;
+        }
+
+        // Find existing task entry
+        const existingTaskIndex = event.tasks.findIndex(t => t.name === originalName);
+
+        if (existingTaskIndex >= 0) {
+            // Update existing task
+            const existingTask = event.tasks[existingTaskIndex];
+            event.tasks[existingTaskIndex] = {
+                ...existingTask,
+                name: isCustom ? taskName : originalName,
+                assignedToIds: assignedToIds,
+                notes: notes,
+                dueDate: dueDate,
+                phase: isCustom ? phase : existingTask.phase
+            };
+        } else {
+            // Create new task entry (for template tasks that haven't been saved before)
+            event.tasks.push({
+                name: originalName,
+                completed: false,
+                assignedToIds: assignedToIds,
+                notes: notes,
+                dueDate: dueDate,
+                phase: phase,
+                isCustom: false
+            });
+        }
+
+        // Update in database
+        const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
+
+        if (result.success) {
+            this.logActivity('task', `Task "${isCustom ? taskName : originalName}" updated on ${event.name}`, { eventId, taskName: isCustom ? taskName : originalName });
+            this.closeModal();
+            this.showToast('Task updated successfully', 'success');
+            this.renderEventDetails();
+        } else {
+            this.showToast('Error updating task', 'error');
+        }
+    }
+
+    async deleteTask(eventId, taskName) {
+        if (!confirm(`Are you sure you want to delete the task "${taskName}"?`)) {
+            return;
+        }
+
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event || !event.tasks) return;
+
+        // Remove the task
+        const taskIndex = event.tasks.findIndex(t => t.name === taskName);
+        if (taskIndex === -1) {
+            this.showToast('Task not found', 'error');
+            return;
+        }
+
+        event.tasks.splice(taskIndex, 1);
+
+        // Update in database
+        const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
+
+        if (result.success) {
+            this.logActivity('task', `Task "${taskName}" deleted from ${event.name}`, { eventId, taskName });
+            this.showToast('Task deleted successfully', 'success');
+            this.renderEventDetails();
+        } else {
+            this.showToast('Error deleting task', 'error');
         }
     }
 
@@ -4823,6 +5272,147 @@ class App {
         
         this.showModal(`${group.name} Members`, content, null);
         document.getElementById('modal-save').style.display = 'none';
+    }
+
+    showGroupResponsesModal(groupId) {
+        const group = this.data.groups.find(g => g.id === groupId);
+        if (!group) return;
+
+        const responses = group.responses || [];
+
+        const responsesList = responses.length > 0
+            ? responses.map((r, index) => `
+                <div class="response-item">
+                    <div class="response-header">
+                        <strong>${r.studentName || 'Unknown Student'}</strong>
+                        <span class="response-date">${r.submittedAt ? this.formatDate(r.submittedAt) : ''}</span>
+                    </div>
+                    <div class="response-details">
+                        ${r.year ? `<span>Year ${r.year}</span>` : ''}
+                        ${r.class ? `<span>${r.class}</span>` : ''}
+                        ${r.email ? `<span>${r.email}</span>` : ''}
+                    </div>
+                    ${r.notes ? `<div class="response-notes">${r.notes}</div>` : ''}
+                    <div class="response-actions">
+                        <button class="btn btn-sm btn-outline" onclick="app.removeGroupResponse('${groupId}', ${index})">Remove</button>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="no-responses">No signups for this group yet.</div>';
+
+        const content = `
+            <div class="group-responses-modal">
+                <div class="responses-summary">
+                    <p><strong>${responses.length}</strong> total signups for ${group.name}</p>
+                </div>
+                <div class="responses-list">
+                    ${responsesList}
+                </div>
+                <div class="responses-footer">
+                    <button class="btn btn-outline" onclick="app.addGroupResponseManual('${groupId}')">
+                        + Add Signup Manually
+                    </button>
+                </div>
+            </div>
+        `;
+
+        this.showModal(`${group.name} - Signups`, content, null);
+        document.getElementById('modal-save').style.display = 'none';
+    }
+
+    async removeGroupResponse(groupId, responseIndex) {
+        if (!confirm('Remove this signup?')) return;
+
+        const group = this.data.groups.find(g => g.id === groupId);
+        if (!group || !group.responses) return;
+
+        group.responses.splice(responseIndex, 1);
+        const result = await DatabaseService.updateGroup(groupId, { responses: group.responses });
+
+        if (result.success) {
+            this.showToast('Signup removed', 'success');
+            this.closeModal();
+            this.renderGroups();
+        } else {
+            this.showToast('Error removing signup', 'error');
+        }
+    }
+
+    addGroupResponseManual(groupId) {
+        const group = this.data.groups.find(g => g.id === groupId);
+        if (!group) return;
+
+        const content = `
+            <form id="add-group-response-form" class="modal-form">
+                <input type="hidden" id="group-response-id" value="${groupId}">
+                <div class="form-group">
+                    <label>Student Name <span class="required">*</span></label>
+                    <input type="text" id="response-student-name" required placeholder="Full name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Year Level</label>
+                        <select id="response-year">
+                            ${[7, 8, 9, 10, 11, 12, 13].map(y => `<option value="${y}">Year ${y}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Class</label>
+                        <input type="text" id="response-class" placeholder="e.g., 10A">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="response-email" placeholder="student@school.nz">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="response-notes" rows="2" placeholder="Any additional notes..."></textarea>
+                </div>
+            </form>
+        `;
+
+        this.showModal(`Add Signup to ${group.name}`, content, () => this.saveGroupResponse());
+    }
+
+    async saveGroupResponse() {
+        const groupId = document.getElementById('group-response-id').value;
+        const studentName = document.getElementById('response-student-name').value.trim();
+        const year = document.getElementById('response-year').value;
+        const studentClass = document.getElementById('response-class').value.trim();
+        const email = document.getElementById('response-email').value.trim();
+        const notes = document.getElementById('response-notes').value.trim();
+
+        if (!studentName) {
+            this.showToast('Please enter student name', 'error');
+            return;
+        }
+
+        const group = this.data.groups.find(g => g.id === groupId);
+        if (!group) return;
+
+        if (!group.responses) {
+            group.responses = [];
+        }
+
+        group.responses.push({
+            studentName,
+            year,
+            class: studentClass,
+            email,
+            notes,
+            submittedAt: new Date().toISOString()
+        });
+
+        const result = await DatabaseService.updateGroup(groupId, { responses: group.responses });
+
+        if (result.success) {
+            this.showToast('Signup added successfully', 'success');
+            this.closeModal();
+            this.renderGroups();
+        } else {
+            this.showToast('Error adding signup', 'error');
+        }
     }
 
     showEditInstrumentModal(id) {
@@ -6470,11 +7060,12 @@ class App {
         const dataTypes = [
             { value: 'students', label: 'Students' },
             { value: 'tutors', label: 'Staff/Tutors' },
-            { value: 'lessons', label: 'Lessons' },
-            { value: 'events', label: 'Events' },
-            { value: 'groups', label: 'Groups' },
-            { value: 'instruments', label: 'Instruments' },
-            { value: 'instrumentHires', label: 'Instrument Hires' }
+            { value: 'lessons', label: 'Lesson List' },
+            { value: 'lessonRequests', label: 'Lesson Requests' },
+            { value: 'events', label: 'Upcoming Events' },
+            { value: 'groups', label: 'Performing Arts Groups' },
+            { value: 'instruments', label: 'Instrument List' },
+            { value: 'instrumentHires', label: 'Instrument Hire' }
         ];
 
         const typeOptions = dataTypes.map(t =>
@@ -6601,10 +7192,12 @@ class App {
         const dataTypes = [
             { value: 'students', label: 'Students', fields: ['name', 'class', 'year', 'email', 'parentEmail', 'instrument'] },
             { value: 'tutors', label: 'Staff/Tutors', fields: ['name', 'email', 'phone', 'instruments', 'role'] },
-            { value: 'lessons', label: 'Lessons', fields: ['studentName', 'tutorName', 'instrument', 'day', 'time', 'location'] },
-            { value: 'events', label: 'Events', fields: ['name', 'date', 'time', 'location', 'category', 'term', 'description'] },
-            { value: 'groups', label: 'Groups', fields: ['name', 'type', 'category', 'meetingDay', 'meetingTime', 'location'] },
-            { value: 'instruments', label: 'Instruments', fields: ['name', 'type', 'brand', 'serialNumber', 'condition', 'location'] }
+            { value: 'lessons', label: 'Lesson List', fields: ['studentName', 'tutorName', 'instrument', 'day', 'time', 'location', 'type'] },
+            { value: 'lessonRequests', label: 'Lesson Requests', fields: ['studentName', 'instrument', 'parentEmail', 'notes', 'status', 'preferredDay'] },
+            { value: 'events', label: 'Upcoming Events', fields: ['name', 'date', 'time', 'location', 'category', 'term', 'description'] },
+            { value: 'groups', label: 'Performing Arts Groups', fields: ['name', 'type', 'category', 'meetingDay', 'meetingTime', 'location', 'description'] },
+            { value: 'instruments', label: 'Instrument List', fields: ['name', 'type', 'brand', 'serialNumber', 'condition', 'location'] },
+            { value: 'instrumentHires', label: 'Instrument Hire', fields: ['studentName', 'instrumentName', 'startDate', 'status', 'notes', 'hireType'] }
         ];
 
         const typeOptions = dataTypes.map(t =>
@@ -7025,16 +7618,36 @@ class App {
     downloadCSVTemplate(type) {
         const templates = {
             students: {
-                headers: ['Name', 'Class', 'Year', 'Instruments', 'Parent Email'],
-                example: ['John Smith', '10A', '10', 'Piano, Guitar', 'parent@email.com']
-            },
-            lessons: {
-                headers: ['Student Name', 'Tutor Name', 'Instrument', 'Day', 'Time'],
-                example: ['John Smith', 'Mrs Jones', 'Piano', 'Monday', '9:00 AM']
+                headers: ['Name', 'Class', 'Year', 'Email', 'Parent Email', 'Instrument'],
+                example: ['John Smith', '10A', '10', 'john.smith@school.nz', 'parent@email.com', 'Piano']
             },
             tutors: {
-                headers: ['Name', 'Email', 'Phone', 'Instruments'],
-                example: ['Mrs Jones', 'jones@school.nz', '021 123 4567', 'Piano, Keyboard']
+                headers: ['Name', 'Email', 'Phone', 'Instruments', 'Role'],
+                example: ['Mrs Jones', 'jones@school.nz', '021 123 4567', 'Piano, Keyboard', 'Tutor']
+            },
+            lessons: {
+                headers: ['Student Name', 'Tutor Name', 'Instrument', 'Day', 'Time', 'Location', 'Type'],
+                example: ['John Smith', 'Mrs Jones', 'Piano', 'Monday', '9:00 AM', 'Music Room 1', 'private']
+            },
+            lessonRequests: {
+                headers: ['Student Name', 'Instrument', 'Parent Email', 'Notes', 'Status', 'Preferred Day'],
+                example: ['Jane Doe', 'Violin', 'parent@email.com', 'Beginner level', 'pending', 'Tuesday']
+            },
+            events: {
+                headers: ['Name', 'Date', 'Time', 'Location', 'Category', 'Term', 'Description'],
+                example: ['Spring Concert', '2025-09-15', '7:00 PM', 'School Hall', 'Concert', 'Term 3', 'Annual spring concert']
+            },
+            groups: {
+                headers: ['Name', 'Type', 'Category', 'Meeting Day', 'Meeting Time', 'Location', 'Description'],
+                example: ['Junior Choir', 'Choir', 'Vocal', 'Wednesday', '3:30 PM', 'Music Room 2', 'For Years 7-9']
+            },
+            instruments: {
+                headers: ['Name', 'Type', 'Brand', 'Serial Number', 'Condition', 'Location'],
+                example: ['Flute #1', 'Woodwind', 'Yamaha', 'FL12345', 'Good', 'Music Office']
+            },
+            instrumentHires: {
+                headers: ['Student Name', 'Instrument Name', 'Start Date', 'Status', 'Notes', 'Hire Type'],
+                example: ['John Smith', 'Flute #1', '2025-02-01', 'active', 'Term hire', 'term']
             }
         };
 
