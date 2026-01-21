@@ -310,6 +310,99 @@ MGS Performing Arts`;
             type: 'staff-portal'
         });
     }
+
+    /**
+     * Send automatic lesson assignment notification to tutor
+     * (Triggered when admin assigns a lesson and tutor has notifications enabled)
+     * @param {Object} tutor - Tutor object with email property
+     * @param {Object} student - Student object
+     * @param {Object} lesson - Lesson object
+     * @param {string} portalUrl - The tutor portal URL with token
+     * @returns {Promise}
+     */
+    static async sendLessonAssignmentNotification(tutor, student, lesson, portalUrl) {
+        if (!tutor.email) {
+            return { success: false, error: 'Tutor has no email address' };
+        }
+
+        const subject = `New Lesson Request: ${student?.name || 'Unknown Student'}`;
+        const message = `Hi ${tutor.name},
+
+You have a new lesson request that needs your attention.
+
+STUDENT DETAILS:
+- Name: ${student?.name || 'Unknown'}
+- Year: ${student?.year || 'N/A'}
+- Class: ${student?.class || 'N/A'}
+- Instrument: ${lesson.instrument || 'N/A'}
+
+REQUESTED SCHEDULE:
+- Day: ${lesson.day || 'To be confirmed'}
+- Time: ${lesson.time || 'To be confirmed'}
+
+ACTION REQUIRED:
+Please click the link below to review this request and either accept it or add the student to your waitlist:
+
+${portalUrl}
+
+From your portal you can:
+- Accept the lesson and confirm the schedule
+- Add the student to your waitlist
+- View all your assigned students
+
+If you have any questions, please contact the Performing Arts Department.
+
+Best regards,
+MGS Performing Arts`;
+
+        return this.send({
+            to_email: tutor.email,
+            to_name: tutor.name,
+            subject,
+            message,
+            type: 'lesson-assignment'
+        });
+    }
+
+    /**
+     * Send overdue task notification to staff
+     * @param {Object} staff - Staff object with email property
+     * @param {Object} event - Event object
+     * @param {Object} task - Task object
+     * @param {string} portalUrl - The staff portal URL with token
+     * @returns {Promise}
+     */
+    static async sendOverdueTaskNotification(staff, event, task, portalUrl) {
+        if (!staff.email) {
+            return { success: false, error: 'Staff has no email address' };
+        }
+
+        const subject = `Overdue Task: ${task.name} - ${event.name}`;
+        const message = `Hi ${staff.name},
+
+You have an overdue task that requires your attention.
+
+EVENT: ${event.name}
+DATE: ${event.date}
+TASK: ${task.name}
+DUE DATE: ${task.dueDate || 'Overdue'}
+
+Please complete this task as soon as possible or contact the Performing Arts Department if you need assistance.
+
+ACCESS YOUR PORTAL:
+${portalUrl}
+
+Best regards,
+MGS Performing Arts`;
+
+        return this.send({
+            to_email: staff.email,
+            to_name: staff.name,
+            subject,
+            message,
+            type: 'overdue-task'
+        });
+    }
 }
 
 // Initialize EmailJS when the script loads

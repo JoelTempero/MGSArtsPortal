@@ -485,6 +485,7 @@
             query,
             where,
             updateDoc,
+            addDoc,
             serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
@@ -863,6 +864,23 @@
                     tasks: tasks,
                     updatedAt: serverTimestamp()
                 });
+
+                // Log activity for admin to see
+                try {
+                    const activitiesRef = collection(db, 'activities');
+                    const statusText = completed ? 'completed' : 'marked incomplete';
+                    await addDoc(activitiesRef, {
+                        type: 'task',
+                        message: `Task "${taskName}" ${statusText} on ${event.name}`,
+                        details: { eventId, taskName },
+                        actor: currentStaff.name + ' (Staff Portal)',
+                        timestamp: serverTimestamp(),
+                        createdAt: new Date().toISOString(),
+                        isStaffPortalActivity: true
+                    });
+                } catch (activityError) {
+                    console.warn('Failed to log activity:', activityError);
+                }
 
                 // Update local data
                 const localTask = event.myTasks.find(t => t.name === taskName);
