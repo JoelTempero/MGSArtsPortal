@@ -234,9 +234,7 @@ Please check the MGS Arts Portal for more details.`;
         }
 
         const subject = `Your MGS Arts Portal Access Link`;
-        const message = `Hi ${tutor.name},
-
-You have been set up in the MGS Performing Arts system${lessonCount > 0 ? ` with ${lessonCount} lesson${lessonCount > 1 ? 's' : ''} assigned to you` : ''}.
+        const message = `You have been set up in the MGS Performing Arts system${lessonCount > 0 ? ` with ${lessonCount} lesson${lessonCount > 1 ? 's' : ''} assigned to you` : ''}.
 
 ACCESS YOUR TUTOR PORTAL:
 ${portalUrl}
@@ -279,9 +277,7 @@ MGS Performing Arts`;
         }
 
         const subject = `Your MGS Event Portal Access Link`;
-        const message = `Hi ${staff.name},
-
-You have been assigned to events in the MGS Performing Arts system${eventCount > 0 ? ` (${eventCount} event${eventCount > 1 ? 's' : ''}, ${taskCount} task${taskCount > 1 ? 's' : ''})` : ''}.
+        const message = `You have been assigned to events in the MGS Performing Arts system${eventCount > 0 ? ` (${eventCount} event${eventCount > 1 ? 's' : ''}, ${taskCount} task${taskCount > 1 ? 's' : ''})` : ''}.
 
 ACCESS YOUR STAFF PORTAL:
 ${portalUrl}
@@ -297,10 +293,7 @@ When you first access the portal, you'll need to enter your last name to verify 
 
 This link is personal to you and will expire in 90 days. Please do not share it with others.
 
-If you have any questions, please contact the Performing Arts Department.
-
-Best regards,
-MGS Performing Arts`;
+If you have any questions, please contact the Performing Arts Department.`;
 
         return this.send({
             to_email: staff.email,

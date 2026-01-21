@@ -4,93 +4,112 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Tuition Signups 2026 - MGS Arts Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --color-bg-primary: #0f1219;
+            --color-bg-secondary: #161b26;
+            --color-bg-card: #1a1f2e;
+            --color-gold: #c9a962;
+            --color-gold-light: #dfc88a;
+            --color-text-primary: #f4f4f5;
+            --color-text-secondary: #a1a1aa;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-success: #22c55e;
+            --color-success-bg: rgba(34, 197, 94, 0.15);
+            --color-warning: #f59e0b;
+            --color-warning-bg: rgba(245, 158, 11, 0.15);
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1f2e 0%, #0f1219 100%);
+            font-family: var(--font-body);
+            background: var(--color-bg-primary);
             min-height: 100vh;
-            color: #1f2937;
+            color: var(--color-text-primary);
         }
-        
+
         .form-container {
             max-width: 700px;
             margin: 0 auto;
             padding: 2rem 1rem;
         }
-        
+
         .form-header {
-            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
-            color: #1a1f2e;
+            background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
+            color: var(--color-bg-primary);
             padding: 2rem;
             border-radius: 12px 12px 0 0;
             text-align: center;
         }
-        
+
         .form-header h1 {
+            font-family: var(--font-display);
             font-size: 1.75rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
-        
+
         .form-header p {
             opacity: 0.8;
             font-size: 0.95rem;
         }
-        
+
         .form-body {
-            background: white;
+            background: var(--color-bg-card);
             padding: 2rem;
             border-radius: 0 0 12px 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
         
         .form-section {
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--color-border);
         }
-        
+
         .form-section:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-        
+
         .form-section h2 {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #1a1f2e;
+            color: var(--color-gold);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .form-section h2 .emoji {
             font-size: 1.25rem;
         }
-        
+
         .form-group {
             margin-bottom: 1.25rem;
         }
-        
+
         .form-group label {
             display: block;
             font-weight: 500;
-            color: #374151;
+            color: var(--color-text-primary);
             margin-bottom: 0.5rem;
             font-size: 0.95rem;
         }
-        
+
         .form-group label .required {
             color: #ef4444;
         }
-        
+
         .form-group input[type="text"],
         .form-group input[type="email"],
         .form-group input[type="tel"],
@@ -98,28 +117,30 @@
         .form-group select {
             width: 100%;
             padding: 0.75rem 1rem;
-            border: 2px solid #e5e7eb;
+            border: 2px solid var(--color-border);
             border-radius: 8px;
             font-size: 1rem;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        
+
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
-            border-color: #c9a227;
-            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.15);
+            border-color: var(--color-gold);
+            box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.15);
         }
-        
+
         .form-group textarea {
             min-height: 100px;
             resize: vertical;
         }
-        
+
         .form-group small {
             display: block;
-            color: #6b7280;
+            color: var(--color-text-secondary);
             font-size: 0.8rem;
             margin-top: 0.25rem;
         }
@@ -129,102 +150,104 @@
             flex-direction: column;
             gap: 0.75rem;
         }
-        
+
         .radio-group.inline, .checkbox-group.inline {
             flex-direction: row;
             flex-wrap: wrap;
             gap: 1rem;
         }
-        
+
         .radio-option, .checkbox-option {
             display: flex;
             align-items: flex-start;
             gap: 0.5rem;
             cursor: pointer;
         }
-        
+
         .radio-option input, .checkbox-option input {
             margin-top: 3px;
-            accent-color: #c9a227;
+            accent-color: var(--color-gold);
             width: 18px;
             height: 18px;
         }
-        
+
         .radio-option span, .checkbox-option span {
             font-size: 0.95rem;
-            color: #374151;
+            color: var(--color-text-primary);
         }
-        
+
         .instrument-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 0.75rem;
         }
-        
+
         .instrument-option {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             padding: 0.75rem;
-            border: 2px solid #e5e7eb;
+            border: 2px solid var(--color-border);
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
         }
-        
+
         .instrument-option:hover {
-            border-color: #c9a227;
-            background: #fffbeb;
+            border-color: var(--color-gold);
+            background: rgba(201, 169, 98, 0.1);
         }
-        
+
         .instrument-option.selected {
-            border-color: #c9a227;
-            background: #fef3c7;
+            border-color: var(--color-gold);
+            background: rgba(201, 169, 98, 0.2);
         }
-        
+
         .instrument-option input {
-            accent-color: #c9a227;
+            accent-color: var(--color-gold);
         }
-        
+
         .instrument-option .emoji {
             font-size: 1.25rem;
         }
-        
+
         .info-box {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
         }
-        
+
         .info-box.warning {
-            background: #fef3c7;
-            border-color: #fcd34d;
+            background: var(--color-warning-bg);
+            border-color: var(--color-warning);
         }
-        
+
         .info-box p {
             font-size: 0.9rem;
-            color: #1e40af;
+            color: var(--color-text-secondary);
         }
-        
+
         .info-box.warning p {
-            color: #92400e;
+            color: var(--color-warning);
         }
         
         .tutor-select {
             display: none;
         }
-        
+
         .tutor-select.visible {
             display: block;
         }
-        
+
         .submit-btn {
             width: 100%;
             padding: 1rem 2rem;
-            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
-            color: #1a1f2e;
+            background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-light) 100%);
+            color: var(--color-bg-primary);
             font-size: 1.1rem;
             font-weight: 600;
             border: none;
@@ -232,49 +255,68 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
-        
+
         .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(201, 162, 39, 0.4);
+            box-shadow: 0 4px 12px rgba(201, 169, 98, 0.4);
         }
-        
+
         .submit-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-        
+
         .success-message {
             display: none;
             text-align: center;
             padding: 3rem 2rem;
         }
-        
+
         .success-message.visible {
             display: block;
         }
-        
+
         .success-message .icon {
             font-size: 4rem;
             margin-bottom: 1rem;
         }
-        
+
         .success-message h2 {
-            color: #059669;
+            color: var(--color-success);
             margin-bottom: 0.5rem;
         }
-        
+
         .success-message p {
-            color: #6b7280;
+            color: var(--color-text-secondary);
         }
-        
+
         .success-message .ref-number {
-            background: #f3f4f6;
+            background: var(--color-bg-secondary);
             padding: 0.5rem 1rem;
             border-radius: 4px;
             font-family: monospace;
             margin-top: 1rem;
             display: inline-block;
+            color: var(--color-text-primary);
+        }
+
+        .btn-another {
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 2px solid var(--color-gold);
+            color: var(--color-gold);
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-another:hover {
+            background: var(--color-gold);
+            color: var(--color-bg-primary);
         }
         
         @media (max-width: 640px) {
@@ -452,6 +494,7 @@
                 <h2>Registration Submitted!</h2>
                 <p>Thank you for registering for music lessons. We will be in touch soon.</p>
                 <div class="ref-number" id="ref-number">REF-2026-XXXX</div>
+                <button type="button" class="btn-another" onclick="submitAnotherRequest()">Submit Another Request</button>
             </div>
         </div>
     </div>
@@ -530,25 +573,28 @@
                 // Student info
                 studentName: formData.get('studentName'),
                 studentEmail: formData.get('studentEmail') || '',
-                yearLevel: formData.get('yearLevel'),
-                
+                year: formData.get('yearLevel'), // Use 'year' for consistency with portal
+                yearLevel: formData.get('yearLevel'), // Keep original field too
+
                 // Parent info
                 parentName: formData.get('parentName'),
                 parentEmail: formData.get('parentEmail'),
                 parentPhone: formData.get('parentPhone'),
-                
+
                 // Lesson details
                 lessonType: formData.get('lessonType'),
+                fundedRequested: formData.get('lessonType') === 'funded',
                 instrument: formData.get('instrument'),
                 tutorPreference: formData.get('tutorPreference') || '',
                 styles: styles,
-                
+
                 // Experience
                 experience: formData.get('experience') || '',
                 otherInstruments: formData.get('otherInstruments') || '',
-                
+
                 // Meta
-                status: 'awaiting',
+                status: 'pending',
+                received: new Date().toISOString().split('T')[0],
                 submittedAt: new Date().toISOString(),
                 source: 'music-tuition-2026'
             };
@@ -569,6 +615,29 @@
                 submitBtn.textContent = 'Submit Registration';
             }
         });
+
+        // Submit another request function
+        window.submitAnotherRequest = function() {
+            const form = document.getElementById('signup-form');
+            const successMsg = document.getElementById('success-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            // Reset form
+            form.reset();
+            form.style.display = 'block';
+            successMsg.classList.remove('visible');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Registration';
+
+            // Remove selected state from instruments
+            document.querySelectorAll('.instrument-option').forEach(opt => opt.classList.remove('selected'));
+
+            // Hide tutor section
+            document.getElementById('tutor-section').classList.remove('visible');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
     </script>
 </body>
 </html>

@@ -69,10 +69,6 @@
                     <a href="#" class="forgot-password" id="forgot-password">Forgot password?</a>
                 </form>
                 
-                <div class="login-footer">
-                    <p>Demo Credentials:</p>
-                    <code><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="43316d2b2c312d032e2a27272f26372c2d6d30202b2c2c2f6d2d39">[email&#160;protected]</a> / demo123</code>
-                </div>
             </div>
             
             <div class="login-decoration">
@@ -557,9 +553,40 @@
                     </div>
                 </div>
 
-                <div class="activity-page-content">
-                    <div class="card">
-                        <div class="card-body">
+                <div class="page-toolbar">
+                    <div class="activity-filters" style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+                        <div class="form-group" style="margin: 0; min-width: 150px;">
+                            <select id="activity-filter-user" class="form-select" onchange="app.filterActivity()">
+                                <option value="">All Users</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0; min-width: 150px;">
+                            <select id="activity-filter-type" class="form-select" onchange="app.filterActivity()">
+                                <option value="">All Actions</option>
+                                <option value="lesson">Lessons</option>
+                                <option value="event">Events</option>
+                                <option value="student">Students</option>
+                                <option value="staff">Staff</option>
+                                <option value="group">Groups</option>
+                                <option value="email">Email</option>
+                                <option value="task">Tasks</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0; min-width: 150px;">
+                            <select id="activity-filter-date" class="form-select" onchange="app.filterActivity()">
+                                <option value="">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="app.clearActivityFilters()">Clear Filters</button>
+                    </div>
+                </div>
+
+                <div class="activity-page-content" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                    <div class="card" style="flex: 1; display: flex; flex-direction: column; min-height: calc(100vh - 280px);">
+                        <div class="card-body" style="flex: 1; overflow-y: auto;">
                             <div class="activity-list activity-list-full" id="recent-activity-list">
                                 <!-- Populated by JS -->
                             </div>
@@ -1059,7 +1086,7 @@
                     </div>
                 </div>
 
-                <div class="settings-grid">
+                <div class="settings-grid" style="max-width: 900px;">
                     <div class="settings-section">
                         <h2 class="settings-section-title">School Information</h2>
                         <div class="card">
@@ -1100,55 +1127,27 @@
                                 <div class="data-action-item">
                                     <div class="data-action-info">
                                         <h4>Export Data</h4>
-                                        <p>Download all data as a JSON file</p>
+                                        <p>Download data as CSV or JSON</p>
                                     </div>
-                                    <button class="btn btn-outline" id="export-all-data">Export All</button>
+                                    <button class="btn btn-outline" id="export-all-data">Export Data</button>
                                 </div>
                                 <div class="data-action-item">
                                     <div class="data-action-info">
-                                        <h4>Import Data</h4>
+                                        <h4>Import JSON Data</h4>
                                         <p>Import data from a JSON file</p>
                                     </div>
                                     <input type="file" id="import-file" accept=".json" style="display: none;">
-                                    <button class="btn btn-outline" id="import-data-btn">Import</button>
+                                    <button class="btn btn-outline" id="import-data-btn">Import JSON</button>
                                 </div>
-                                <div class="data-action-item danger">
-                                    <div class="data-action-info">
-                                        <h4>Wipe All Data</h4>
-                                        <p>Permanently delete all data from the database</p>
-                                    </div>
-                                    <button class="btn btn-danger" id="wipe-all-data">Wipe Data</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="settings-section">
-                        <h2 class="settings-section-title">CSV Import</h2>
-                        <div class="card">
-                            <div class="csv-import-section">
                                 <div class="data-action-item">
                                     <div class="data-action-info">
-                                        <h4>Import from CSV</h4>
+                                        <h4>Import CSV Data</h4>
                                         <p>Import any data type from a CSV file</p>
                                     </div>
-                                    <div class="csv-import-controls">
-                                        <select id="csv-import-type" class="form-select">
-                                            <option value="students">Students</option>
-                                            <option value="tutors">Staff/Tutors</option>
-                                            <option value="lessons">Lesson List</option>
-                                            <option value="lessonRequests">Lesson Requests</option>
-                                            <option value="events">Upcoming Events</option>
-                                            <option value="groups">Performing Arts Groups</option>
-                                            <option value="instruments">Instrument List</option>
-                                            <option value="instrumentHires">Instrument Hire</option>
-                                        </select>
-                                        <input type="file" id="csv-import-file" accept=".csv" style="display: none;">
-                                        <button class="btn btn-outline" id="csv-import-btn">Select CSV File</button>
-                                    </div>
+                                    <button class="btn btn-outline" id="csv-import-btn">Import CSV</button>
                                 </div>
-                                <div class="csv-template-links">
-                                    <small>Download templates:
+                                <div class="csv-template-links" style="padding: var(--spacing-sm) var(--spacing-md); background: var(--color-bg-tertiary); border-radius: var(--radius-sm); margin-top: var(--spacing-sm);">
+                                    <small>CSV Templates:
                                         <a href="#" onclick="app.downloadCSVTemplate('students'); return false;">Students</a> |
                                         <a href="#" onclick="app.downloadCSVTemplate('tutors'); return false;">Tutors</a> |
                                         <a href="#" onclick="app.downloadCSVTemplate('lessons'); return false;">Lessons</a> |
@@ -1159,6 +1158,13 @@
                                         <a href="#" onclick="app.downloadCSVTemplate('instrumentHires'); return false;">Hires</a>
                                     </small>
                                 </div>
+                                <div class="data-action-item danger" style="margin-top: var(--spacing-lg);">
+                                    <div class="data-action-info">
+                                        <h4>Wipe Data</h4>
+                                        <p>Selectively delete data from specific sections</p>
+                                    </div>
+                                    <button class="btn btn-danger" id="wipe-all-data">Wipe Data</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1168,6 +1174,11 @@
                         <div class="card">
                             <div class="users-list" id="users-list">
                                 <!-- Populated by JS -->
+                            </div>
+                            <div class="admin-note" style="margin-top: var(--spacing-md); padding: var(--spacing-md); background: var(--color-info-bg); border-radius: var(--radius-sm); border-left: 3px solid var(--color-info);">
+                                <p style="margin: 0; font-size: 0.875rem; color: var(--color-text-secondary);">
+                                    <strong>Note:</strong> Admin profiles sync with Firebase Authentication. To add a new administrator, please contact <strong>Sidequest Digital</strong> to add the account to Firebase Authentication.
+                                </p>
                             </div>
                         </div>
                     </div>
