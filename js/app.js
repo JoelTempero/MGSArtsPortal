@@ -3390,6 +3390,12 @@ class App {
             const isDueToday = dueDate.toDateString() === today.toDateString();
             const isDueSoon = !isOverdue && !isDueToday && dueDate <= new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
             
+            // Handle both legacy single assignedTo and new assignedToIds array
+            let assignedToIds = savedTask.assignedToIds || [];
+            if (!assignedToIds.length && savedTask.assignedTo) {
+                assignedToIds = [savedTask.assignedTo];
+            }
+
             return {
                 ...task,
                 id: index,
@@ -3397,7 +3403,7 @@ class App {
                 completed: savedTask.completed || false,
                 completedBy: savedTask.completedBy || null,
                 completedDate: savedTask.completedDate || null,
-                assignedTo: savedTask.assignedTo || null,
+                assignedToIds: assignedToIds,
                 isOverdue,
                 isDueToday,
                 isDueSoon
@@ -3454,8 +3460,10 @@ class App {
                                 </div>
                                 <div class="phase-tasks">
                                     ${phase.tasks.map(task => {
-                                        const assignedStaff = task.assignedTo ? eventStaff.find(s => s.id === task.assignedTo) : null;
-                                        
+                                        const assignedStaffList = task.assignedToIds
+                                            .map(id => eventStaff.find(s => s.id === id))
+                                            .filter(s => s);
+
                                         return `
                                             <div class="task-item ${task.completed ? 'completed' : ''} ${task.isOverdue ? 'overdue' : ''} ${task.isDueToday ? 'due-today' : ''} ${task.isDueSoon ? 'due-soon' : ''}" data-task-id="${task.id}">
                                                 <label class="task-checkbox">
@@ -3466,16 +3474,19 @@ class App {
                                                     <span class="task-name">${task.name}</span>
                                                     <div class="task-meta">
                                                         <span class="task-due">
-                                                            ${task.daysBefore === 0 ? 'Event day' : 
+                                                            ${task.daysBefore === 0 ? 'Event day' :
                                                               task.daysBefore === 1 ? '1 day before' :
                                                               `${task.daysBefore} days before`}
                                                             <span class="task-date">(${this.formatDate(task.dueDate)})</span>
                                                         </span>
                                                         ${eventStaff.length > 0 ? `
-                                                            <select class="task-assign" data-event-id="${eventId}" data-task-name="${task.name}">
-                                                                <option value="">Assign to...</option>
-                                                                ${staffOptions}
-                                                            </select>
+                                                            <div class="task-assignees-group modal-assignees" onclick="app.showTaskAssignmentModal('${eventId}', '${task.name.replace(/'/g, "\\'")}')">
+                                                                ${assignedStaffList.length > 0 ? assignedStaffList.map(s => `
+                                                                    <div class="staff-avatar-sm" style="background: ${s.color || '#8b5cf6'};" title="${s.name}">
+                                                                        ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                                    </div>
+                                                                `).join('') : '<span class="assign-link">Assign...</span>'}
+                                                            </div>
                                                         ` : ''}
                                                     </div>
                                                 </div>
@@ -3562,7 +3573,7 @@ class App {
         const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
         const savedTasks = event.tasks || [];
 
-        // Process tasks with due dates and status
+        // Process template tasks with due dates and status
         const tasks = templateTasks.map((task, index) => {
             const savedTask = savedTasks.find(t => t.name === task.name) || {};
             const dueDate = new Date(eventDate);
@@ -3571,22 +3582,56 @@ class App {
             const isOverdue = !savedTask.completed && dueDate < today;
             const isDueToday = dueDate.toDateString() === today.toDateString();
 
+            // Handle both legacy single assignedTo and new assignedToIds array
+            let assignedToIds = savedTask.assignedToIds || [];
+            if (!assignedToIds.length && savedTask.assignedTo) {
+                assignedToIds = [savedTask.assignedTo];
+            }
+
             return {
                 ...task,
                 id: index,
                 dueDate: dueDate,
                 completed: savedTask.completed || false,
-                assignedTo: savedTask.assignedTo || null,
+                assignedToIds: assignedToIds,
+                notes: savedTask.notes || '',
                 isOverdue,
                 isDueToday
             };
         });
 
+        // Add custom tasks (tasks not from template)
+        const customTasks = savedTasks.filter(t => t.isCustom).map((task, idx) => {
+            const dueDate = task.dueDate ? new Date(task.dueDate) : eventDate;
+            const isOverdue = !task.completed && dueDate < today;
+            const isDueToday = dueDate.toDateString() === today.toDateString();
+
+            let assignedToIds = task.assignedToIds || [];
+            if (!assignedToIds.length && task.assignedTo) {
+                assignedToIds = [task.assignedTo];
+            }
+
+            return {
+                name: task.name,
+                phase: task.phase || 'Custom Tasks',
+                id: `custom-${idx}`,
+                dueDate: dueDate,
+                completed: task.completed || false,
+                assignedToIds: assignedToIds,
+                notes: task.notes || '',
+                isOverdue,
+                isDueToday,
+                isCustom: true
+            };
+        });
+
+        const allTasks = [...tasks, ...customTasks];
+
         // Group tasks by phase
-        const phases = [...new Set(tasks.map(t => t.phase))];
+        const phases = [...new Set(allTasks.map(t => t.phase))];
         const tasksByPhase = phases.map(phase => ({
             name: phase,
-            tasks: tasks.filter(t => t.phase === phase)
+            tasks: allTasks.filter(t => t.phase === phase)
         }));
 
         // Staff avatars HTML
@@ -3652,6 +3697,7 @@ class App {
             <div class="event-task-header-row">
                 <div>Description</div>
                 <div style="text-align: center;">Assigned:</div>
+                <div>Notes</div>
                 <div style="text-align: center;">Due Date:</div>
                 <div style="text-align: center;">Status:</div>
             </div>
@@ -3661,7 +3707,9 @@ class App {
                     <div class="event-tasks-phase">
                         <div class="event-tasks-phase-header">${phase.name}</div>
                         ${phase.tasks.map(task => {
-                            const assignedStaff = task.assignedTo ? eventStaff.find(s => s.id === task.assignedTo) : null;
+                            const assignedStaffList = task.assignedToIds
+                                .map(id => eventStaff.find(s => s.id === id))
+                                .filter(s => s);
                             const statusClass = task.completed ? 'completed' : (task.isOverdue ? 'overdue' : 'pending');
 
                             return `
@@ -3672,17 +3720,31 @@ class App {
                                     </div>
                                     <div class="event-task-assigned">
                                         ${eventStaff.length > 0 ? `
-                                            ${assignedStaff ? `
-                                                <div class="event-staff-avatar" style="background: ${assignedStaff.color || '#8b5cf6'}; width: 28px; height: 28px; font-size: 0.7rem;" title="${assignedStaff.name}">
-                                                    ${assignedStaff.initials || assignedStaff.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                                </div>
-                                            ` : `
-                                                <select class="task-assign-select" data-event-id="${event.id}" data-task-name="${task.name}" style="font-size: 0.75rem; padding: 2px 4px;">
-                                                    <option value="">Assign...</option>
-                                                    ${staffOptions}
-                                                </select>
-                                            `}
+                                            <div class="task-assignees-group" onclick="app.showTaskAssignmentModal('${event.id}', '${task.name.replace(/'/g, "\\'")}')">
+                                                ${assignedStaffList.length > 0 ? assignedStaffList.map(s => `
+                                                    <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'}; width: 28px; height: 28px; font-size: 0.7rem;" title="${s.name}">
+                                                        ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                    </div>
+                                                `).join('') : `
+                                                    <div class="assign-placeholder" title="Click to assign">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                                            <circle cx="12" cy="7" r="4"/>
+                                                            <path d="M5.5 21a8.5 8.5 0 0117 0"/>
+                                                            <line x1="12" y1="14" x2="12" y2="20"/>
+                                                            <line x1="9" y1="17" x2="15" y2="17"/>
+                                                        </svg>
+                                                    </div>
+                                                `}
+                                            </div>
                                         ` : '—'}
+                                    </div>
+                                    <div class="event-task-notes">
+                                        <input type="text" class="task-notes-input"
+                                            value="${(task.notes || '').replace(/"/g, '&quot;')}"
+                                            placeholder="Add note..."
+                                            data-event-id="${event.id}"
+                                            data-task-name="${task.name.replace(/"/g, '&quot;')}"
+                                            onblur="app.saveTaskNote(this)">
                                     </div>
                                     <div class="event-task-date ${task.isOverdue && !task.completed ? 'overdue' : ''}">
                                         ${this.formatDate(task.dueDate)}
@@ -3707,16 +3769,125 @@ class App {
                     </div>
                 `).join('')}
             </div>
+
+            <div class="event-tasks-actions">
+                <button class="btn btn-outline" onclick="app.showAddTaskModal('${event.id}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Custom Task
+                </button>
+            </div>
         `;
 
-        // Bind assignment dropdowns
-        setTimeout(() => {
-            document.querySelectorAll('.task-assign-select').forEach(select => {
-                select.addEventListener('change', (e) => {
-                    this.assignEventTaskFromDetails(e.target.dataset.eventId, e.target.dataset.taskName, e.target.value);
-                });
-            });
-        }, 100);
+    }
+
+    showAddTaskModal(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
+
+        const staffCheckboxes = eventStaff.length > 0 ? eventStaff.map(s => `
+            <label class="staff-checkbox-item">
+                <input type="checkbox" name="new-task-assignee" value="${s.id}">
+                <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'}; width: 24px; height: 24px; font-size: 0.65rem;">
+                    ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <span>${s.name}</span>
+            </label>
+        `).join('') : '<p class="text-muted">No staff linked to this event</p>';
+
+        const content = `
+            <form id="add-task-form">
+                <input type="hidden" id="new-task-event-id" value="${eventId}">
+                <div class="form-group">
+                    <label>Task Name <span class="required">*</span></label>
+                    <input type="text" id="new-task-name" required placeholder="e.g., Book catering">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="new-task-due-date" value="${event.date}">
+                    </div>
+                    <div class="form-group">
+                        <label>Phase</label>
+                        <select id="new-task-phase">
+                            <option value="Pre-Event">Pre-Event</option>
+                            <option value="Event Day">Event Day</option>
+                            <option value="Post-Event">Post-Event</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assign To</label>
+                    <div class="staff-checkbox-list">
+                        ${staffCheckboxes}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" id="new-task-notes" placeholder="Optional notes...">
+                </div>
+            </form>
+        `;
+
+        this.showModal('Add Custom Task', content, () => this.saveNewTask());
+    }
+
+    async saveNewTask() {
+        const eventId = document.getElementById('new-task-event-id').value;
+        const taskName = document.getElementById('new-task-name').value.trim();
+        const dueDate = document.getElementById('new-task-due-date').value;
+        const phase = document.getElementById('new-task-phase').value;
+        const notes = document.getElementById('new-task-notes').value.trim();
+        const checkboxes = document.querySelectorAll('input[name="new-task-assignee"]:checked');
+        const assignedToIds = Array.from(checkboxes).map(cb => cb.value);
+
+        if (!taskName) {
+            this.showToast('Please enter a task name', 'error');
+            return;
+        }
+
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+
+        // Check if task with same name exists
+        if (event.tasks.find(t => t.name === taskName)) {
+            this.showToast('A task with this name already exists', 'error');
+            return;
+        }
+
+        // Add the new custom task
+        event.tasks.push({
+            name: taskName,
+            completed: false,
+            assignedToIds: assignedToIds,
+            notes: notes,
+            dueDate: dueDate,
+            phase: phase,
+            isCustom: true
+        });
+
+        // Update in database
+        const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
+
+        if (result.success) {
+            this.closeModal();
+            this.showToast('Task added successfully', 'success');
+            this.renderEventDetails();
+        } else {
+            this.showToast('Error adding task', 'error');
+        }
     }
 
     async toggleEventTaskFromDetails(eventId, taskName, completed) {
@@ -3725,10 +3896,97 @@ class App {
         this.renderEventDetails();
     }
 
-    async assignEventTaskFromDetails(eventId, taskName, staffId) {
-        await this.assignEventTask(eventId, taskName, staffId);
+    async assignEventTaskFromDetails(eventId, taskName, staffIds) {
+        await this.assignEventTask(eventId, taskName, staffIds);
         // Re-render the details page to reflect changes
         this.renderEventDetails();
+    }
+
+    showTaskAssignmentModal(eventId, taskName) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Get staff involved in event
+        const eventStaff = (event.staffIds || [])
+            .map(sid => this.data.tutors.find(t => t.id === sid))
+            .filter(s => s);
+
+        if (eventStaff.length === 0) {
+            this.showToast('No staff linked to this event', 'warning');
+            return;
+        }
+
+        // Get currently assigned staff for this task
+        const savedTask = (event.tasks || []).find(t => t.name === taskName);
+        let currentAssignees = savedTask?.assignedToIds || [];
+        if (!currentAssignees.length && savedTask?.assignedTo) {
+            currentAssignees = [savedTask.assignedTo];
+        }
+
+        const staffCheckboxes = eventStaff.map(s => `
+            <label class="staff-checkbox-item">
+                <input type="checkbox" name="task-assignee" value="${s.id}" ${currentAssignees.includes(s.id) ? 'checked' : ''}>
+                <div class="event-staff-avatar" style="background: ${s.color || '#8b5cf6'};">
+                    ${s.initials || s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <span>${s.name}</span>
+            </label>
+        `).join('');
+
+        const content = `
+            <form id="task-assignment-form">
+                <input type="hidden" id="task-event-id" value="${eventId}">
+                <input type="hidden" id="task-name" value="${taskName}">
+                <p style="margin-bottom: var(--spacing-md); color: var(--color-text-secondary);">
+                    Select staff members to assign to this task:
+                </p>
+                <div class="staff-checkbox-list">
+                    ${staffCheckboxes}
+                </div>
+            </form>
+        `;
+
+        this.showModal(`Assign: ${taskName}`, content, () => this.saveTaskAssignment());
+    }
+
+    async saveTaskAssignment() {
+        const eventId = document.getElementById('task-event-id').value;
+        const taskName = document.getElementById('task-name').value;
+        const checkboxes = document.querySelectorAll('input[name="task-assignee"]:checked');
+        const staffIds = Array.from(checkboxes).map(cb => cb.value);
+
+        await this.assignEventTaskFromDetails(eventId, taskName, staffIds);
+        this.closeModal();
+    }
+
+    async saveTaskNote(inputEl) {
+        const eventId = inputEl.dataset.eventId;
+        const taskName = inputEl.dataset.taskName;
+        const notes = inputEl.value.trim();
+
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) return;
+
+        // Initialize tasks array if needed
+        if (!event.tasks) {
+            event.tasks = [];
+        }
+
+        // Find or create task entry
+        let task = event.tasks.find(t => t.name === taskName);
+        if (task) {
+            task.notes = notes;
+        } else {
+            event.tasks.push({
+                name: taskName,
+                completed: false,
+                assignedToIds: [],
+                notes: notes
+            });
+        }
+
+        // Update in database (silent - no toast for notes)
+        await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
     }
 
     showEventActionsMenu() {
@@ -3925,33 +4183,37 @@ class App {
         }
     }
 
-    async assignEventTask(eventId, taskName, staffId) {
+    async assignEventTask(eventId, taskName, staffIds) {
         const event = this.data.events.find(e => e.id === eventId);
         if (!event) return;
-        
+
+        // Normalize staffIds to array
+        const assignedIds = Array.isArray(staffIds) ? staffIds : (staffIds ? [staffIds] : []);
+
         // Initialize tasks array if needed
         if (!event.tasks) {
             event.tasks = [];
         }
-        
+
         // Find or create task entry
         let task = event.tasks.find(t => t.name === taskName);
         if (task) {
-            task.assignedTo = staffId || null;
+            task.assignedToIds = assignedIds;
+            delete task.assignedTo; // Remove legacy field
         } else {
             event.tasks.push({
                 name: taskName,
                 completed: false,
-                assignedTo: staffId || null
+                assignedToIds: assignedIds
             });
         }
-        
+
         // Update in database
         const result = await DatabaseService.updateEvent(eventId, { tasks: event.tasks });
-        
+
         if (result.success) {
-            const staff = staffId ? this.data.tutors.find(t => t.id === staffId) : null;
-            this.showToast(staff ? `Task assigned to ${staff.name}` : 'Task unassigned', 'success');
+            const count = assignedIds.length;
+            this.showToast(count > 0 ? `Task assigned to ${count} staff member${count > 1 ? 's' : ''}` : 'Task unassigned', 'success');
         }
     }
 
@@ -6464,10 +6726,16 @@ class App {
         let tasksList = '';
         if (event.tasks && event.tasks.length > 0) {
             tasksList = '\n\nTASKS:\n' + event.tasks.map(task => {
-                const assignedStaff = task.assignedTo
-                    ? (this.data.tutors.find(t => t.id === task.assignedTo)?.name || 'Unassigned')
-                    : 'Unassigned';
-                return `- ${task.name} [${assignedStaff}]`;
+                // Handle both legacy assignedTo and new assignedToIds
+                let assignedIds = task.assignedToIds || [];
+                if (!assignedIds.length && task.assignedTo) {
+                    assignedIds = [task.assignedTo];
+                }
+                const assignedNames = assignedIds
+                    .map(id => this.data.tutors.find(t => t.id === id)?.name)
+                    .filter(n => n);
+                const assignedText = assignedNames.length > 0 ? assignedNames.join(', ') : 'Unassigned';
+                return `- ${task.name} [${assignedText}]`;
             }).join('\n');
         }
 

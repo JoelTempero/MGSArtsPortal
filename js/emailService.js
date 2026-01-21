@@ -121,10 +121,16 @@ class EmailService {
         let tasksList = '';
         if (event.tasks && event.tasks.length > 0) {
             tasksList = '\n\nTASKS:\n' + event.tasks.map(task => {
-                const assignedStaff = task.assignedTo
-                    ? (allStaff.find(s => s.id === task.assignedTo)?.name || 'Unassigned')
-                    : 'Unassigned';
-                return `- ${task.name} [${assignedStaff}]`;
+                // Handle both legacy assignedTo and new assignedToIds
+                let assignedIds = task.assignedToIds || [];
+                if (!assignedIds.length && task.assignedTo) {
+                    assignedIds = [task.assignedTo];
+                }
+                const assignedNames = assignedIds
+                    .map(id => allStaff.find(s => s.id === id)?.name)
+                    .filter(n => n);
+                const assignedText = assignedNames.length > 0 ? assignedNames.join(', ') : 'Unassigned';
+                return `- ${task.name} [${assignedText}]`;
             }).join('\n');
         }
 
