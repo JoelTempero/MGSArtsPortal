@@ -4042,6 +4042,13 @@ class App {
                     </svg>
                     Notify Staff
                 </button>
+                <button class="action-menu-item" onclick="app.closeModal(); app.sendEventPortalLinks('${event.id}');">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    Send Staff Portal Links
+                </button>
                 <div class="action-menu-divider"></div>
                 <button class="action-menu-item danger" onclick="app.closeModal(); setTimeout(() => app.handleDelete('event', '${event.id}'), 100);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -6876,6 +6883,85 @@ class App {
         } catch (error) {
             console.error('Error sending portal link:', error);
             this.showToast('Error generating portal link', 'error');
+        }
+    }
+
+    async sendEventPortalLinks(eventId) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) {
+            this.showToast('Event not found', 'error');
+            return;
+        }
+
+        // Get staff assigned to this event with emails
+        const eventStaff = (event.staffIds || [])
+            .map(id => this.data.tutors.find(t => t.id === id))
+            .filter(s => s && s.email);
+
+        if (eventStaff.length === 0) {
+            this.showToast('No staff with email addresses assigned to this event', 'warning');
+            return;
+        }
+
+        this.showToast(`Sending portal links to ${eventStaff.length} staff...`, 'info');
+
+        try {
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const staff of eventStaff) {
+                // Get or create staff token
+                const tokenResult = await DatabaseService.getOrCreateStaffToken(staff.id);
+
+                if (!tokenResult.success) {
+                    failCount++;
+                    continue;
+                }
+
+                const portalUrl = `${baseUrl}/staff-portal.html?token=${tokenResult.token}`;
+
+                // Count events and tasks for this staff member
+                const staffEvents = this.data.events.filter(e => e.staffIds?.includes(staff.id));
+                const taskCount = staffEvents.reduce((sum, e) => {
+                    const myTasks = (e.tasks || []).filter(t => {
+                        const assignedIds = t.assignedToIds || (t.assignedTo ? [t.assignedTo] : []);
+                        return assignedIds.includes(staff.id);
+                    });
+                    return sum + myTasks.length;
+                }, 0);
+
+                if (EmailService.isConfigured()) {
+                    const result = await EmailService.sendStaffPortalLink(staff, portalUrl, staffEvents.length, taskCount);
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } else {
+                    // Just count as success for now, we'll show the links
+                    successCount++;
+                }
+
+                // Small delay between emails
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+
+            if (EmailService.isConfigured()) {
+                if (successCount > 0 && failCount === 0) {
+                    this.showToast(`Portal links sent to ${successCount} staff member(s)`, 'success');
+                } else if (successCount > 0) {
+                    this.showToast(`Sent to ${successCount}, failed for ${failCount}`, 'warning');
+                } else {
+                    this.showToast('Failed to send portal links', 'error');
+                }
+            } else {
+                // Show info about EmailJS not being configured
+                this.showToast('EmailJS not configured - configure it to send portal links automatically', 'info');
+            }
+        } catch (error) {
+            console.error('Error sending portal links:', error);
+            this.showToast('Error sending portal links', 'error');
         }
     }
 

@@ -516,6 +516,52 @@ const DatabaseService = {
         }
     },
 
+    // ---- Staff Tokens (for Event Portal) ----
+
+    // Create a staff portal token
+    async createStaffToken(staffId, expiryDays = 90) {
+        const token = this.generateToken();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+        try {
+            await setDoc(doc(db, 'staffTokens', token), {
+                staffId,
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt.toISOString()
+            });
+
+            return { success: true, token };
+        } catch (error) {
+            console.error('Error creating staff token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Get or create staff token
+    async getOrCreateStaffToken(staffId) {
+        try {
+            const tokensQuery = query(
+                collection(db, 'staffTokens'),
+                where('staffId', '==', staffId)
+            );
+            const snapshot = await getDocs(tokensQuery);
+
+            const now = new Date();
+            for (const tokenDoc of snapshot.docs) {
+                const data = tokenDoc.data();
+                if (data.expiresAt && new Date(data.expiresAt) > now) {
+                    return { success: true, token: tokenDoc.id, existing: true };
+                }
+            }
+
+            return this.createStaffToken(staffId);
+        } catch (error) {
+            console.error('Error getting/creating staff token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
     // ---- Batch Operations ----
 
     // Import all data (for seeding/restoring)

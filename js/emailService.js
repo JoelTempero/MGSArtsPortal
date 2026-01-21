@@ -264,6 +264,52 @@ MGS Performing Arts`;
             type: 'tutor-portal'
         });
     }
+
+    /**
+     * Send staff event portal link
+     * @param {Object} staff - Staff object with email property
+     * @param {string} portalUrl - The staff portal URL with token
+     * @param {number} eventCount - Number of events assigned
+     * @param {number} taskCount - Number of tasks assigned
+     * @returns {Promise}
+     */
+    static async sendStaffPortalLink(staff, portalUrl, eventCount = 0, taskCount = 0) {
+        if (!staff.email) {
+            return { success: false, error: 'Staff has no email address' };
+        }
+
+        const subject = `Your MGS Event Portal Access Link`;
+        const message = `Hi ${staff.name},
+
+You have been assigned to events in the MGS Performing Arts system${eventCount > 0 ? ` (${eventCount} event${eventCount > 1 ? 's' : ''}, ${taskCount} task${taskCount > 1 ? 's' : ''})` : ''}.
+
+ACCESS YOUR STAFF PORTAL:
+${portalUrl}
+
+Use this link to:
+- View all your assigned events
+- See tasks assigned to you for each event
+- Mark tasks as complete
+- Track your event schedule
+
+VERIFICATION:
+When you first access the portal, you'll need to enter your last name to verify your identity.
+
+This link is personal to you and will expire in 90 days. Please do not share it with others.
+
+If you have any questions, please contact the Performing Arts Department.
+
+Best regards,
+MGS Performing Arts`;
+
+        return this.send({
+            to_email: staff.email,
+            to_name: staff.name,
+            subject,
+            message,
+            type: 'staff-portal'
+        });
+    }
 }
 
 // Initialize EmailJS when the script loads
