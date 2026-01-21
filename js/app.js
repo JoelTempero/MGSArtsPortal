@@ -44,6 +44,7 @@ class App {
 
         // Tab state for pages with tabs
         this.lessonsTab = 'all';
+        this.fundedLessonsTab = 'requests';
 
         this.init();
     }
@@ -385,6 +386,9 @@ class App {
             case 'dashboard':
                 this.renderDashboard();
                 break;
+            case 'recent-activity':
+                this.renderRecentActivityPage();
+                break;
             case 'lessons':
                 this.renderLessons();
                 break;
@@ -399,6 +403,9 @@ class App {
                 break;
             case 'requests':
                 this.renderRequests();
+                break;
+            case 'funded-lessons':
+                this.renderFundedLessons();
                 break;
             case 'groups':
                 this.renderGroups();
@@ -473,8 +480,11 @@ class App {
         this.renderRecentRequests();
         this.renderOverdueHires();
         this.renderTodaysLessons();
+    }
+
+    renderRecentActivityPage() {
         this.renderRecentActivity();
-        // Mark activities as viewed when Dashboard is visible
+        // Mark activities as viewed when Recent Activity page is visible
         this.markActivitiesViewed();
     }
 
@@ -1275,6 +1285,229 @@ class App {
         `).join('');
         
         this.bindRowActions('request');
+    }
+
+    // ========================================
+    // Funded Lessons Rendering
+    // ========================================
+
+    renderFundedLessons() {
+        const statsContainer = document.getElementById('funded-stats-cards');
+        const tbody = document.getElementById('funded-lessons-body');
+        if (!tbody) return;
+
+        const currentTab = this.fundedLessonsTab || 'requests';
+
+        // Calculate stats
+        const fundedLessons = this.data.lessons.filter(l => l.funded);
+        const fundedRequests = this.data.lessonRequests.filter(r => r.fundedRequested);
+        const confirmedFunded = fundedLessons.filter(l => l.status === 'active');
+        const movedToPrivate = this.data.lessons.filter(l => l.fundedConverted);
+
+        // Calculate tutor slots
+        const tutorSlots = this.data.tutors
+            .filter(t => t.fundedSlots && t.fundedSlots > 0)
+            .map(t => {
+                const usedSlots = fundedLessons.filter(l => l.tutorId === t.id && l.status === 'active').length;
+                return {
+                    name: t.name,
+                    total: t.fundedSlots,
+                    used: usedSlots,
+                    remaining: t.fundedSlots - usedSlots
+                };
+            });
+
+        const totalSlots = tutorSlots.reduce((sum, t) => sum + t.total, 0);
+        const usedSlots = tutorSlots.reduce((sum, t) => sum + t.used, 0);
+        const remainingSlots = totalSlots - usedSlots;
+
+        // Render stats cards
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <div class="funded-stat-card">
+                    <div class="stat-value">${fundedRequests.length}</div>
+                    <div class="stat-label">Pending Requests</div>
+                    <div class="stat-sublabel">Awaiting decision</div>
+                </div>
+                <div class="funded-stat-card success">
+                    <div class="stat-value">${confirmedFunded.length}</div>
+                    <div class="stat-label">Confirmed Funded</div>
+                    <div class="stat-sublabel">Active funded lessons</div>
+                </div>
+                <div class="funded-stat-card ${remainingSlots < 5 ? 'warning' : ''}">
+                    <div class="stat-value">${remainingSlots}/${totalSlots}</div>
+                    <div class="stat-label">Slots Remaining</div>
+                    <div class="stat-sublabel">${tutorSlots.length} tutors with funded slots</div>
+                </div>
+                <div class="funded-stat-card">
+                    <div class="stat-value">${movedToPrivate.length}</div>
+                    <div class="stat-label">Moved to Private</div>
+                    <div class="stat-sublabel">Converted from funded</div>
+                </div>
+            `;
+        }
+
+        // Get data based on current tab
+        let data = [];
+        switch (currentTab) {
+            case 'requests':
+                data = fundedRequests.map(r => ({
+                    id: r.id,
+                    type: 'request',
+                    studentName: r.studentName,
+                    year: r.year,
+                    instrument: r.instrument,
+                    tutorId: r.tutorId,
+                    status: r.status
+                }));
+                break;
+            case 'confirmed':
+                data = confirmedFunded.map(l => {
+                    const student = this.getStudentById(l.studentId);
+                    return {
+                        id: l.id,
+                        type: 'lesson',
+                        studentName: student?.name || l.studentName || 'Unknown',
+                        year: student?.year || '',
+                        instrument: l.instrument,
+                        tutorId: l.tutorId,
+                        status: 'funded'
+                    };
+                });
+                break;
+            case 'converted':
+                data = movedToPrivate.map(l => {
+                    const student = this.getStudentById(l.studentId);
+                    return {
+                        id: l.id,
+                        type: 'lesson',
+                        studentName: student?.name || l.studentName || 'Unknown',
+                        year: student?.year || '',
+                        instrument: l.instrument,
+                        tutorId: l.tutorId,
+                        status: 'private'
+                    };
+                });
+                break;
+        }
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="no-data">No ${currentTab} found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(item => {
+            const tutor = this.getTutorById(item.tutorId);
+            const statusBadge = item.status === 'funded'
+                ? '<span class="status-badge status-active">Funded</span>'
+                : item.status === 'private'
+                ? '<span class="status-badge status-assigned">Private</span>'
+                : `<span class="status-badge status-${item.status === 'awaiting' ? 'pending' : 'waiting'}">${item.status}</span>`;
+
+            return `
+                <tr data-id="${item.id}">
+                    <td><strong>${item.studentName}</strong></td>
+                    <td>${item.year || '—'}</td>
+                    <td>${item.instrument || '—'}</td>
+                    <td>${tutor ? `
+                        <div class="cell-tutor">
+                            <div class="tutor-avatar" style="background: ${tutor.color || '#8b5cf6'}; color: white;">${tutor.initials}</div>
+                            <span>${tutor.name}</span>
+                        </div>
+                    ` : '—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="row-actions">
+                            ${currentTab === 'requests' ? `
+                                <button class="btn btn-sm btn-outline" onclick="app.confirmFundedLesson('${item.id}')" title="Confirm as Funded">
+                                    Confirm Funded
+                                </button>
+                                <button class="btn btn-sm btn-outline" onclick="app.convertToPrivate('${item.id}')" title="Move to Private">
+                                    Move to Private
+                                </button>
+                            ` : currentTab === 'confirmed' ? `
+                                <button class="btn btn-sm btn-outline" onclick="app.convertToPrivate('${item.id}')" title="Convert to Private">
+                                    Convert to Private
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    async confirmFundedLesson(requestId) {
+        const request = this.data.lessonRequests.find(r => r.id === requestId);
+        if (!request) return;
+
+        // Create a funded lesson from the request
+        const lesson = {
+            studentName: request.studentName,
+            instrument: request.instrument,
+            tutorId: request.tutorId,
+            day: request.day || '',
+            time: request.time || '',
+            status: 'active',
+            funded: true,
+            fundedConfirmedAt: new Date().toISOString()
+        };
+
+        const result = await DatabaseService.addLesson(lesson);
+        if (result.success) {
+            // Remove the request
+            await DatabaseService.deleteDocument('lessonRequests', requestId);
+            this.logActivity('lesson', `Funded lesson confirmed for ${request.studentName}`, { lessonId: result.id });
+            this.showToast('Funded lesson confirmed!', 'success');
+            await this.loadAllData();
+            this.renderFundedLessons();
+        } else {
+            this.showToast('Error confirming lesson', 'error');
+        }
+    }
+
+    async convertToPrivate(id) {
+        // Check if it's a request or a lesson
+        const request = this.data.lessonRequests.find(r => r.id === id);
+        const lesson = this.data.lessons.find(l => l.id === id);
+
+        if (request) {
+            // Convert request to private lesson
+            const newLesson = {
+                studentName: request.studentName,
+                instrument: request.instrument,
+                tutorId: request.tutorId,
+                day: request.day || '',
+                time: request.time || '',
+                status: 'active',
+                funded: false,
+                fundedConverted: true,
+                convertedAt: new Date().toISOString()
+            };
+
+            const result = await DatabaseService.addLesson(newLesson);
+            if (result.success) {
+                await DatabaseService.deleteDocument('lessonRequests', id);
+                this.logActivity('lesson', `Funded request converted to private for ${request.studentName}`, { lessonId: result.id });
+                this.showToast('Moved to private lessons', 'success');
+                await this.loadAllData();
+                this.renderFundedLessons();
+            }
+        } else if (lesson) {
+            // Convert funded lesson to private
+            const result = await DatabaseService.updateLesson(id, {
+                funded: false,
+                fundedConverted: true,
+                convertedAt: new Date().toISOString()
+            });
+
+            if (result.success) {
+                this.logActivity('lesson', `Funded lesson converted to private for student`, { lessonId: id });
+                this.showToast('Converted to private lesson', 'success');
+                await this.loadAllData();
+                this.renderFundedLessons();
+            }
+        }
     }
 
     // ========================================
@@ -3213,9 +3446,21 @@ class App {
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Funded Lesson Slots</label>
+                    <input type="number" name="fundedSlots" value="${tutor.fundedSlots || 0}" min="0">
+                    <small class="form-hint">Maximum funded lesson slots for this tutor</small>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="lessonNotifications" ${tutor.lessonNotifications ? 'checked' : ''}>
+                        <span>Lesson Approval Notifications</span>
+                    </label>
+                    <small class="form-hint">When enabled, tutor receives email when assigned new students</small>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Edit Staff Member', content, () => this.updateTutor());
     }
 
@@ -3238,9 +3483,11 @@ class App {
             instruments: (formData.get('instruments') || '').split(',').map(i => i.trim()).filter(i => i),
             groupIds: groupIds,
             color: formData.get('color'),
-            active: formData.get('active') === 'true'
+            active: formData.get('active') === 'true',
+            fundedSlots: parseInt(formData.get('fundedSlots')) || 0,
+            lessonNotifications: formData.get('lessonNotifications') === 'on'
         };
-        
+
         const result = await DatabaseService.updateTutor(id, tutor);
         
         if (result.success) {
@@ -3917,6 +4164,11 @@ class App {
                                                 </svg>
                                             `}
                                         </div>
+                                        ${task.isOverdue && !task.completed && assignedStaffList.length > 0 ? `
+                                            <button class="btn btn-sm btn-outline notify-btn" onclick="app.sendOverdueTaskNotification('${event.id}', '${task.name.replace(/'/g, "\\'")}'); event.stopPropagation();" title="Send reminder to assigned staff">
+                                                Notify
+                                            </button>
+                                        ` : ''}
                                     </div>
                                 </div>
                             `;
@@ -5265,6 +5517,12 @@ class App {
             const student = this.data.students.find(s => s.id === lesson.studentId);
             const tutor = this.data.tutors.find(t => t.id === lesson.tutorId);
             this.logActivity('lesson', `New lesson created for ${student?.name || 'Unknown'} with ${tutor?.name || 'No tutor'}`, { lessonId: result.id });
+
+            // Send notification to tutor if notifications enabled
+            if (tutor?.lessonNotifications && tutor?.email) {
+                await this.sendTutorLessonNotification(tutor, student, lesson, result.id);
+            }
+
             this.showToast('Lesson added successfully!', 'success');
             this.closeModal();
             await this.loadAllData();
@@ -7041,6 +7299,13 @@ class App {
             this.lessonsTab = lessonsTab;
             this.renderLessons();
         }
+
+        // Handle funded lessons page tabs
+        const fundedTab = e.target.dataset.fundedTab;
+        if (this.currentPage === 'funded-lessons' && fundedTab) {
+            this.fundedLessonsTab = fundedTab;
+            this.renderFundedLessons();
+        }
     }
 
     changeDate(days) {
@@ -7285,6 +7550,84 @@ class App {
         } catch (error) {
             console.error('Error sending portal link:', error);
             this.showToast('Error generating portal link', 'error');
+        }
+    }
+
+    async sendTutorLessonNotification(tutor, student, lesson, lessonId) {
+        try {
+            // Get or create tutor token for portal access
+            const tokenResult = await DatabaseService.getOrCreateTutorToken(tutor.id);
+            if (!tokenResult.success) return;
+
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            const portalUrl = `${baseUrl}/tutor-portal.html?token=${tokenResult.token}`;
+
+            if (EmailService.isConfigured()) {
+                const result = await EmailService.sendLessonAssignmentNotification(tutor, student, lesson, portalUrl);
+                if (result.success) {
+                    this.logActivity('email', `Lesson notification sent to ${tutor.name} for ${student?.name}`, { tutorId: tutor.id, lessonId });
+                }
+            }
+        } catch (error) {
+            console.error('Error sending lesson notification:', error);
+        }
+    }
+
+    async sendOverdueTaskNotification(eventId, taskName) {
+        const event = this.data.events.find(e => e.id === eventId);
+        if (!event) {
+            this.showToast('Event not found', 'error');
+            return;
+        }
+
+        // Find the task and get assigned staff
+        const savedTasks = event.tasks || [];
+        const savedTask = savedTasks.find(t => t.name === taskName);
+        const assignedIds = savedTask?.assignedToIds || (savedTask?.assignedTo ? [savedTask.assignedTo] : []);
+
+        if (assignedIds.length === 0) {
+            this.showToast('No staff assigned to this task', 'warning');
+            return;
+        }
+
+        const assignedStaff = assignedIds
+            .map(id => this.data.tutors.find(t => t.id === id))
+            .filter(s => s && s.email);
+
+        if (assignedStaff.length === 0) {
+            this.showToast('No staff with email addresses assigned', 'warning');
+            return;
+        }
+
+        this.showToast(`Sending reminders to ${assignedStaff.length} staff...`, 'info');
+
+        try {
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            let successCount = 0;
+
+            for (const staff of assignedStaff) {
+                const tokenResult = await DatabaseService.getOrCreateStaffToken(staff.id);
+                if (!tokenResult.success) continue;
+
+                const portalUrl = `${baseUrl}/staff-portal.html?token=${tokenResult.token}`;
+
+                if (EmailService.isConfigured()) {
+                    const result = await EmailService.sendOverdueTaskNotification(staff, event, { name: taskName, dueDate: savedTask?.dueDate }, portalUrl);
+                    if (result.success) successCount++;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+
+            if (successCount > 0) {
+                this.logActivity('email', `Overdue task reminder sent for "${taskName}" on ${event.name} (${successCount} staff)`, { eventId, taskName });
+                this.showToast(`Reminder sent to ${successCount} staff member${successCount > 1 ? 's' : ''}`, 'success');
+            } else {
+                this.showToast('Failed to send reminders', 'error');
+            }
+        } catch (error) {
+            console.error('Error sending overdue task notification:', error);
+            this.showToast('Error sending reminders', 'error');
         }
     }
 

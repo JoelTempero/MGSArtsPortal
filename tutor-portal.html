@@ -395,6 +395,7 @@
             query,
             where,
             updateDoc,
+            addDoc,
             serverTimestamp
         } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
@@ -705,11 +706,28 @@
                     updatedAt: serverTimestamp()
                 });
 
-                // Update local data and re-render
+                // Update local data
                 const lesson = currentLessons.find(l => l.id === lessonId);
                 if (lesson) {
                     lesson.acknowledged = true;
                     lesson.acknowledgmentStatus = status;
+                }
+
+                // Log activity for admin to see
+                try {
+                    const activitiesRef = collection(db, 'activities');
+                    const statusText = status === 'accepted' ? 'accepted' : 'added to waitlist';
+                    await addDoc(activitiesRef, {
+                        type: 'lesson',
+                        message: `Lesson ${statusText} by ${currentTutor.name}`,
+                        details: { lessonId, status },
+                        actor: currentTutor.name + ' (Tutor Portal)',
+                        timestamp: serverTimestamp(),
+                        createdAt: new Date().toISOString(),
+                        isTutorPortalActivity: true
+                    });
+                } catch (activityError) {
+                    console.warn('Failed to log activity:', activityError);
                 }
 
                 renderTutorPortal();
