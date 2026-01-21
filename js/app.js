@@ -914,6 +914,7 @@ class App {
                     </div>
                     <div class="tutor-card-actions">
                         <button class="btn btn-outline btn-sm" data-action="edit-tutor" data-id="${tutor.id}">Edit</button>
+                        ${tutor.email ? `<button class="btn btn-outline btn-sm" data-action="send-portal-link" data-id="${tutor.id}" title="Send portal access link">Portal Link</button>` : ''}
                         <button class="btn btn-outline btn-sm" data-action="delete-tutor" data-id="${tutor.id}">Delete</button>
                     </div>
                 </div>
@@ -2753,6 +2754,13 @@ class App {
         if (type === 'hire') {
             document.querySelectorAll('[data-action="return-hire"]').forEach(btn => {
                 btn.addEventListener('click', () => this.handleReturnHire(btn.dataset.id));
+            });
+        }
+
+        // Tutor-specific actions
+        if (type === 'tutor') {
+            document.querySelectorAll('[data-action="send-portal-link"]').forEach(btn => {
+                btn.addEventListener('click', () => this.sendTutorPortalLink(btn.dataset.id));
             });
         }
     }
@@ -6809,6 +6817,65 @@ class App {
             );
             window.open(`mailto:${leaderEmails.join(',')}?subject=${subject}&body=${body}`, '_blank');
             this.showToast('Email draft opened (configure EmailJS for direct sending)', 'info');
+        }
+    }
+
+    async sendTutorPortalLink(tutorId) {
+        const tutor = this.data.tutors.find(t => t.id === tutorId);
+        if (!tutor) {
+            this.showToast('Tutor not found', 'error');
+            return;
+        }
+
+        if (!tutor.email) {
+            this.showToast('Tutor has no email address. Please add an email first.', 'warning');
+            return;
+        }
+
+        this.showToast('Generating portal link...', 'info');
+
+        try {
+            // Get or create tutor token
+            const tokenResult = await DatabaseService.getOrCreateTutorToken(tutorId);
+
+            if (!tokenResult.success) {
+                this.showToast('Failed to generate portal link: ' + tokenResult.error, 'error');
+                return;
+            }
+
+            // Build the portal URL
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+            const portalUrl = `${baseUrl}/tutor-portal.html?token=${tokenResult.token}`;
+
+            // Count lessons for this tutor
+            const lessonCount = this.data.lessons.filter(l => l.tutorId === tutorId).length;
+
+            // Send the email
+            if (EmailService.isConfigured()) {
+                const result = await EmailService.sendTutorPortalLink(tutor, portalUrl, lessonCount);
+
+                if (result.success) {
+                    this.showToast(`Portal link sent to ${tutor.name}`, 'success');
+                } else {
+                    this.showToast('Failed to send email: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } else {
+                // Fallback - show the link in a modal
+                const content = `
+                    <p style="margin-bottom: 1rem;">EmailJS not configured. Here is the portal link for <strong>${tutor.name}</strong>:</p>
+                    <div style="background: var(--color-bg-secondary); padding: 1rem; border-radius: var(--radius-md); word-break: break-all; font-family: monospace; font-size: 0.85rem;">
+                        ${portalUrl}
+                    </div>
+                    <p style="margin-top: 1rem; color: var(--color-text-secondary); font-size: 0.9rem;">
+                        Copy this link and send it to the tutor manually, or configure EmailJS for automatic sending.
+                    </p>
+                `;
+                this.showModal('Tutor Portal Link', content, null);
+                document.getElementById('modal-save').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error sending portal link:', error);
+            this.showToast('Error generating portal link', 'error');
         }
     }
 

@@ -460,6 +460,62 @@ const DatabaseService = {
         return this.getById('lessonTokens', token);
     },
 
+    // ---- Tutor Tokens ----
+
+    // Create a tutor portal token
+    async createTutorToken(tutorId, expiryDays = 90) {
+        // Generate a random token
+        const token = this.generateToken();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+        try {
+            // Use setDoc with the token as document ID for easy lookup
+            await setDoc(doc(db, 'tutorTokens', token), {
+                tutorId,
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt.toISOString()
+            });
+
+            return { success: true, token };
+        } catch (error) {
+            console.error('Error creating tutor token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Get tutor token by token string
+    async getTutorToken(token) {
+        return this.getById('tutorTokens', token);
+    },
+
+    // Get or create tutor token (returns existing if valid, or creates new)
+    async getOrCreateTutorToken(tutorId) {
+        try {
+            // Query for existing valid token
+            const tokensQuery = query(
+                collection(db, 'tutorTokens'),
+                where('tutorId', '==', tutorId)
+            );
+            const snapshot = await getDocs(tokensQuery);
+
+            // Check for a valid (non-expired) token
+            const now = new Date();
+            for (const tokenDoc of snapshot.docs) {
+                const data = tokenDoc.data();
+                if (data.expiresAt && new Date(data.expiresAt) > now) {
+                    return { success: true, token: tokenDoc.id, existing: true };
+                }
+            }
+
+            // No valid token found, create a new one
+            return this.createTutorToken(tutorId);
+        } catch (error) {
+            console.error('Error getting/creating tutor token:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
     // ---- Batch Operations ----
 
     // Import all data (for seeding/restoring)

@@ -220,6 +220,50 @@ Please check the MGS Arts Portal for more details.`;
             type: 'lesson'
         });
     }
+
+    /**
+     * Send tutor portal link
+     * @param {Object} tutor - Tutor object with email property
+     * @param {string} portalUrl - The tutor portal URL with token
+     * @param {number} lessonCount - Number of lessons assigned
+     * @returns {Promise}
+     */
+    static async sendTutorPortalLink(tutor, portalUrl, lessonCount = 0) {
+        if (!tutor.email) {
+            return { success: false, error: 'Tutor has no email address' };
+        }
+
+        const subject = `Your MGS Arts Portal Access Link`;
+        const message = `Hi ${tutor.name},
+
+You have been set up in the MGS Performing Arts system${lessonCount > 0 ? ` with ${lessonCount} lesson${lessonCount > 1 ? 's' : ''} assigned to you` : ''}.
+
+ACCESS YOUR TUTOR PORTAL:
+${portalUrl}
+
+Use this link to:
+- View all your assigned lessons
+- Accept lessons or add students to your waitlist
+- Track your teaching schedule
+
+VERIFICATION:
+When you first access the portal, you'll need to enter your last name to verify your identity.
+
+This link is personal to you and will expire in 90 days. Please do not share it with others.
+
+If you have any questions, please contact the Performing Arts Department.
+
+Best regards,
+MGS Performing Arts`;
+
+        return this.send({
+            to_email: tutor.email,
+            to_name: tutor.name,
+            subject,
+            message,
+            type: 'tutor-portal'
+        });
+    }
 }
 
 // Initialize EmailJS when the script loads

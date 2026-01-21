@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutor Portal - MGS Arts Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1f2e 0%, #0f1219 100%);
+            min-height: 100vh;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
+            color: #1a1f2e;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .card-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-header p {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #c9a227;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            color: #dc2626;
+        }
+
+        .error-message svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+        }
+
+        /* Auth Form */
+        .auth-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .auth-form h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #1a1f2e;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #c9a227;
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
+            color: #1a1f2e;
+            width: 100%;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #b8921f 0%, #c9a227 100%);
+        }
+
+        .btn-accept {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-accept:hover:not(:disabled) {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        }
+
+        .btn-waitlist {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-waitlist:hover:not(:disabled) {
+            background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Tutor Welcome */
+        .tutor-welcome {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #c9a227;
+        }
+
+        .tutor-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
+            color: #1a1f2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        .tutor-welcome h2 {
+            color: #1a1f2e;
+            margin-bottom: 0.25rem;
+        }
+
+        .tutor-welcome p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        /* Lessons List */
+        .lessons-section h3 {
+            color: #1a1f2e;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lessons-count {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .lesson-card {
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        .lesson-card.pending {
+            border-left: 4px solid #6b7280;
+        }
+
+        .lesson-card.accepted {
+            border-left: 4px solid #10b981;
+        }
+
+        .lesson-card.waitlist {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .lesson-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .student-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1a1f2e;
+        }
+
+        .lesson-instrument {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .lesson-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-accepted {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-waitlist {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .lesson-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .lesson-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lesson-detail-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .lesson-detail-value {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .lesson-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .no-lessons {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .no-lessons svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .footer-note {
+            text-align: center;
+            padding: 1rem;
+            color: #9ca3af;
+            font-size: 0.85rem;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .lesson-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Tutor Portal</h1>
+                <p>MGS Performing Arts</p>
+            </div>
+            <div class="card-body" id="content">
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            getDocs,
+            collection,
+            query,
+            where,
+            updateDoc,
+            serverTimestamp
+        } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCL2ZHktfHNsFX6vI0mVY-i5WqM1Hb94RY",
+            authDomain: "mgs-performing-arts.firebaseapp.com",
+            projectId: "mgs-performing-arts",
+            storageBucket: "mgs-performing-arts.firebasestorage.app",
+            messagingSenderId: "968636316312",
+            appId: "1:968636316312:web:1b233ae8e176ceea85aeed"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const contentEl = document.getElementById('content');
+
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        let currentTutor = null;
+        let currentLessons = [];
+
+        if (!token) {
+            showError('Invalid link', 'This link is missing required information. Please use the link from your email.');
+        } else {
+            loadTutorToken();
+        }
+
+        async function loadTutorToken() {
+            try {
+                // Fetch the tutor token document
+                const tokenRef = doc(db, 'tutorTokens', token);
+                const tokenDoc = await getDoc(tokenRef);
+
+                if (!tokenDoc.exists()) {
+                    showError('Link expired or invalid', 'This link may have expired or is no longer valid. Please contact the school for a new link.');
+                    return;
+                }
+
+                const tokenData = tokenDoc.data();
+
+                // Check if token has expired
+                if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
+                    showError('Link expired', 'This link has expired. Please contact the school for a new link.');
+                    return;
+                }
+
+                // Fetch the tutor details
+                const tutorRef = doc(db, 'tutors', tokenData.tutorId);
+                const tutorDoc = await getDoc(tutorRef);
+
+                if (!tutorDoc.exists()) {
+                    showError('Tutor not found', 'The tutor associated with this link could not be found.');
+                    return;
+                }
+
+                currentTutor = { id: tutorDoc.id, ...tutorDoc.data() };
+
+                // Check if already authenticated in this session
+                const sessionAuth = sessionStorage.getItem(`tutor_auth_${token}`);
+                if (sessionAuth === 'true') {
+                    await loadTutorLessons();
+                } else {
+                    showAuthForm();
+                }
+
+            } catch (error) {
+                console.error('Error loading token:', error);
+                showError('Something went wrong', 'There was an error loading the page. Please try again later.');
+            }
+        }
+
+        function showError(title, message) {
+            contentEl.innerHTML = `
+                <div class="error-message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <h2>${title}</h2>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function showAuthForm() {
+            contentEl.innerHTML = `
+                <div class="auth-form">
+                    <h2>Verify Your Identity</h2>
+                    <p style="text-align: center; color: #6b7280; margin-bottom: 1.5rem;">
+                        Please enter your last name to access your lessons.
+                    </p>
+                    <form id="auth-form" onsubmit="return false;">
+                        <div class="form-group">
+                            <label for="last-name">Last Name</label>
+                            <input type="text" id="last-name" placeholder="Enter your last name" required autocomplete="off">
+                            <p class="form-hint">This must match the last name on file.</p>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="verify-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 12l2 2 4-4"/>
+                                <circle cx="12" cy="12" r="10"/>
+                            </svg>
+                            Verify & Continue
+                        </button>
+                    </form>
+                    <p id="auth-error" style="color: #dc2626; text-align: center; margin-top: 1rem; display: none;"></p>
+                </div>
+            `;
+
+            document.getElementById('auth-form').addEventListener('submit', handleAuth);
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const lastNameInput = document.getElementById('last-name');
+            const verifyBtn = document.getElementById('verify-btn');
+            const errorEl = document.getElementById('auth-error');
+
+            const enteredLastName = lastNameInput.value.trim().toLowerCase();
+
+            // Get the tutor's last name (last word in name)
+            const tutorNameParts = currentTutor.name.trim().split(' ');
+            const tutorLastName = tutorNameParts[tutorNameParts.length - 1].toLowerCase();
+
+            if (enteredLastName === tutorLastName) {
+                // Authenticated - save to session
+                sessionStorage.setItem(`tutor_auth_${token}`, 'true');
+
+                verifyBtn.disabled = true;
+                verifyBtn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; margin: 0;"></div> Loading...';
+
+                await loadTutorLessons();
+            } else {
+                errorEl.textContent = 'Last name does not match our records. Please try again.';
+                errorEl.style.display = 'block';
+                lastNameInput.value = '';
+                lastNameInput.focus();
+            }
+        }
+
+        async function loadTutorLessons() {
+            try {
+                // Fetch all lessons for this tutor
+                const lessonsQuery = query(
+                    collection(db, 'lessons'),
+                    where('tutorId', '==', currentTutor.id)
+                );
+                const lessonsSnapshot = await getDocs(lessonsQuery);
+
+                currentLessons = [];
+                lessonsSnapshot.forEach(doc => {
+                    currentLessons.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort: pending first, then by student name
+                currentLessons.sort((a, b) => {
+                    if (a.acknowledged === b.acknowledged) {
+                        return (a.studentName || '').localeCompare(b.studentName || '');
+                    }
+                    return a.acknowledged ? 1 : -1;
+                });
+
+                renderTutorPortal();
+
+            } catch (error) {
+                console.error('Error loading lessons:', error);
+                showError('Error loading lessons', 'There was a problem loading your lessons. Please try again.');
+            }
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        function renderTutorPortal() {
+            const pendingLessons = currentLessons.filter(l => !l.acknowledged);
+            const respondedLessons = currentLessons.filter(l => l.acknowledged);
+
+            contentEl.innerHTML = `
+                <div class="tutor-welcome">
+                    <div class="tutor-avatar">${getInitials(currentTutor.name)}</div>
+                    <h2>Welcome, ${currentTutor.name}</h2>
+                    <p>View and respond to your assigned lessons below.</p>
+                </div>
+
+                ${currentLessons.length === 0 ? `
+                    <div class="no-lessons">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        <h3>No Lessons Assigned</h3>
+                        <p>You don't have any lessons assigned yet.</p>
+                    </div>
+                ` : `
+                    ${pendingLessons.length > 0 ? `
+                        <div class="lessons-section">
+                            <h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                Awaiting Response
+                                <span class="lessons-count">${pendingLessons.length}</span>
+                            </h3>
+                            ${pendingLessons.map(lesson => renderLessonCard(lesson)).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${respondedLessons.length > 0 ? `
+                        <div class="lessons-section" style="margin-top: 2rem;">
+                            <h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                                Responded
+                                <span class="lessons-count">${respondedLessons.length}</span>
+                            </h3>
+                            ${respondedLessons.map(lesson => renderLessonCard(lesson)).join('')}
+                        </div>
+                    ` : ''}
+                `}
+
+                <div class="footer-note" style="margin-top: 2rem;">
+                    <p>Need help? Contact the Performing Arts Department at MGS.</p>
+                </div>
+            `;
+        }
+
+        function renderLessonCard(lesson) {
+            const statusClass = lesson.acknowledged
+                ? (lesson.acknowledgmentStatus === 'accepted' ? 'accepted' : 'waitlist')
+                : 'pending';
+
+            const statusLabel = lesson.acknowledged
+                ? (lesson.acknowledgmentStatus === 'accepted' ? 'Accepted' : 'Waitlist')
+                : 'Pending';
+
+            return `
+                <div class="lesson-card ${statusClass}" data-lesson-id="${lesson.id}">
+                    <div class="lesson-header">
+                        <div>
+                            <div class="student-name">${lesson.studentName || 'Unknown Student'}</div>
+                            <div class="lesson-instrument">${lesson.instrument || 'Instrument not specified'}</div>
+                        </div>
+                        <span class="lesson-status status-${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="lesson-details">
+                        <div class="lesson-detail">
+                            <span class="lesson-detail-label">Day</span>
+                            <span class="lesson-detail-value">${lesson.day || 'TBC'}</span>
+                        </div>
+                        <div class="lesson-detail">
+                            <span class="lesson-detail-label">Time</span>
+                            <span class="lesson-detail-value">${lesson.time || 'TBC'}</span>
+                        </div>
+                        <div class="lesson-detail">
+                            <span class="lesson-detail-label">Location</span>
+                            <span class="lesson-detail-value">${lesson.location || 'TBC'}</span>
+                        </div>
+                        <div class="lesson-detail">
+                            <span class="lesson-detail-label">Duration</span>
+                            <span class="lesson-detail-value">${lesson.duration || '30'} min</span>
+                        </div>
+                    </div>
+                    ${!lesson.acknowledged ? `
+                        <div class="lesson-actions">
+                            <button class="btn btn-accept btn-sm" onclick="handleLessonResponse('${lesson.id}', 'accepted')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 6L9 17l-5-5"/>
+                                </svg>
+                                Accept Lesson
+                            </button>
+                            <button class="btn btn-waitlist btn-sm" onclick="handleLessonResponse('${lesson.id}', 'waitlist')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                Add to Waitlist
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Expose to global scope
+        window.handleLessonResponse = async function(lessonId, status) {
+            const lessonCard = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+            const buttons = lessonCard.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            try {
+                // Update the lesson
+                const lessonRef = doc(db, 'lessons', lessonId);
+                await updateDoc(lessonRef, {
+                    acknowledged: true,
+                    acknowledgedAt: new Date().toISOString(),
+                    acknowledgmentStatus: status,
+                    updatedAt: serverTimestamp()
+                });
+
+                // Update local data and re-render
+                const lesson = currentLessons.find(l => l.id === lessonId);
+                if (lesson) {
+                    lesson.acknowledged = true;
+                    lesson.acknowledgmentStatus = status;
+                }
+
+                renderTutorPortal();
+
+            } catch (error) {
+                console.error('Error updating lesson:', error);
+                buttons.forEach(btn => btn.disabled = false);
+                alert('There was an error saving your response. Please try again.');
+            }
+        };
+    </script>
+</body>
+</html>
