@@ -42,6 +42,9 @@ class App {
             hires: {}
         };
 
+        // Tab state for pages with tabs
+        this.lessonsTab = 'all';
+
         this.init();
     }
 
@@ -827,8 +830,25 @@ class App {
             return;
         }
 
-        // Apply filtering and sorting
-        let lessons = this.getFilteredData('lessons', this.data.lessons);
+        // Apply tab filtering first
+        let lessons = [...this.data.lessons];
+        const activeTab = this.lessonsTab || 'all';
+
+        switch (activeTab) {
+            case 'funded':
+                lessons = lessons.filter(l => l.funded === true);
+                break;
+            case 'active':
+                lessons = lessons.filter(l => l.status === 'active');
+                break;
+            case 'paused':
+                lessons = lessons.filter(l => l.status === 'paused' || l.status === 'cancelled');
+                break;
+            // 'all' shows everything
+        }
+
+        // Apply column filtering and sorting
+        lessons = this.getFilteredData('lessons', lessons);
         lessons = this.getSortedData('lessons', lessons);
 
         tbody.innerHTML = lessons.map(lesson => {
@@ -5208,23 +5228,31 @@ class App {
                         <input type="text" name="time" placeholder="e.g., 9:00 AM" required>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="checkbox-label funded-checkbox">
+                        <input type="checkbox" name="funded">
+                        <span>Funded Lesson</span>
+                        <small class="form-hint">Check this if the lesson is funded/subsidised</small>
+                    </label>
+                </div>
             </form>
         `;
-        
+
         this.showModal('Add New Lesson', content, () => this.saveLesson());
     }
 
     async saveLesson() {
         const form = document.getElementById('add-lesson-form');
         const formData = new FormData(form);
-        
+
         const lesson = {
             studentId: formData.get('studentId'),
             tutorId: formData.get('tutorId'),
             instrument: formData.get('instrument'),
             day: formData.get('day'),
             time: formData.get('time'),
-            status: 'active'
+            status: 'active',
+            funded: formData.get('funded') === 'on'
         };
         
         const result = await DatabaseService.addLesson(lesson);
@@ -6761,6 +6789,7 @@ class App {
     handleTabClick(e) {
         const tab = e.target.dataset.tab;
         const hiresTab = e.target.dataset.hiresTab;
+        const lessonsTab = e.target.dataset.lessonsTab;
         const tabContainer = e.target.closest('.page-tabs');
 
         tabContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -6774,6 +6803,12 @@ class App {
         // Handle hires page tabs
         if (this.currentPage === 'hires' && hiresTab) {
             this.renderHires(hiresTab);
+        }
+
+        // Handle lessons page tabs
+        if (this.currentPage === 'lessons' && lessonsTab) {
+            this.lessonsTab = lessonsTab;
+            this.renderLessons();
         }
     }
 
