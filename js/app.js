@@ -3585,13 +3585,7 @@ class App {
                     </div>
                     <div class="form-group">
                         <label>Term <small>(auto-calculated from date)</small></label>
-                        <select name="term" id="edit-event-term">
-                            <option value="Term 1" ${event.term === 'Term 1' ? 'selected' : ''}>Term 1</option>
-                            <option value="Term 2" ${event.term === 'Term 2' ? 'selected' : ''}>Term 2</option>
-                            <option value="Term 3" ${event.term === 'Term 3' ? 'selected' : ''}>Term 3</option>
-                            <option value="Term 4" ${event.term === 'Term 4' ? 'selected' : ''}>Term 4</option>
-                            <option value="Holidays" ${event.term === 'Holidays' ? 'selected' : ''}>Holidays</option>
-                        </select>
+                        <input type="text" name="term" id="edit-event-term" value="${event.term || 'Term 1'}" readonly style="background: var(--color-bg-tertiary); cursor: not-allowed;">
                     </div>
                 </div>
                 <div class="form-row">
@@ -3635,11 +3629,11 @@ class App {
         // Add date change listener to auto-update term
         setTimeout(() => {
             const dateInput = document.getElementById('edit-event-date');
-            const termSelect = document.getElementById('edit-event-term');
-            if (dateInput && termSelect) {
+            const termInput = document.getElementById('edit-event-term');
+            if (dateInput && termInput) {
                 dateInput.addEventListener('change', () => {
                     const term = this.getTermFromDate(dateInput.value);
-                    termSelect.value = term;
+                    termInput.value = term;
                 });
             }
         }, 100);
@@ -4199,6 +4193,15 @@ class App {
             .map(sid => this.data.tutors.find(t => t.id === sid))
             .filter(s => s);
 
+        // Get existing phases from template tasks
+        const templateTasks = this.getEventTemplateTasks(event.template || event.templateType);
+        const existingPhases = [...new Set(templateTasks.map(t => t.phase))];
+        // Add default phases if none exist
+        const defaultPhases = ['Planning', 'Logistics', 'Communications', 'Event Day', 'Post-Event'];
+        const phases = existingPhases.length > 0 ? existingPhases : defaultPhases;
+
+        const phaseOptions = phases.map(p => `<option value="${p}">${p}</option>`).join('');
+
         const staffCheckboxes = eventStaff.length > 0 ? eventStaff.map(s => `
             <label class="staff-checkbox-item">
                 <input type="checkbox" name="new-task-assignee" value="${s.id}">
@@ -4224,9 +4227,8 @@ class App {
                     <div class="form-group">
                         <label>Phase</label>
                         <select id="new-task-phase">
-                            <option value="Pre-Event">Pre-Event</option>
-                            <option value="Event Day">Event Day</option>
-                            <option value="Post-Event">Post-Event</option>
+                            ${phaseOptions}
+                            <option value="Custom Tasks">Custom Tasks</option>
                         </select>
                     </div>
                 </div>
@@ -5685,13 +5687,7 @@ class App {
                     </div>
                     <div class="form-group">
                         <label>Term <small>(auto-calculated from date)</small></label>
-                        <select name="term" id="add-event-term">
-                            <option value="Term 1">Term 1</option>
-                            <option value="Term 2">Term 2</option>
-                            <option value="Term 3">Term 3</option>
-                            <option value="Term 4">Term 4</option>
-                            <option value="Holidays">Holidays</option>
-                        </select>
+                        <input type="text" name="term" id="add-event-term" value="Term 1" readonly style="background: var(--color-bg-tertiary); cursor: not-allowed;">
                     </div>
                 </div>
                 <div class="form-row">
@@ -5724,17 +5720,17 @@ class App {
                 </div>
             </form>
         `;
-        
+
         this.showModal('Create New Event', content, () => this.saveEvent());
 
         // Add date change listener to auto-update term
         setTimeout(() => {
             const dateInput = document.getElementById('add-event-date');
-            const termSelect = document.getElementById('add-event-term');
-            if (dateInput && termSelect) {
+            const termInput = document.getElementById('add-event-term');
+            if (dateInput && termInput) {
                 dateInput.addEventListener('change', () => {
                     const term = this.getTermFromDate(dateInput.value);
-                    termSelect.value = term;
+                    termInput.value = term;
                 });
             }
         }, 100);
