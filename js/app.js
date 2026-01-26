@@ -254,9 +254,8 @@ class App {
         document.getElementById('save-school-settings')?.addEventListener('click', () => this.saveSchoolSettings());
         document.getElementById('add-category-btn')?.addEventListener('click', () => this.addCategory());
 
-        // CSV Import
-        document.getElementById('csv-import-btn')?.addEventListener('click', () => document.getElementById('csv-import-file').click());
-        document.getElementById('csv-import-file')?.addEventListener('change', (e) => this.handleCSVImport(e));
+        // CSV Import - use modal-based flow which has full type support
+        document.getElementById('csv-import-btn')?.addEventListener('click', () => this.showCSVImportModal());
 
         // Search inputs
         document.getElementById('lessons-search')?.addEventListener('input', (e) => this.handleSearch('lessons', e.target.value));
