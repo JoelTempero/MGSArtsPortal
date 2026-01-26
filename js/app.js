@@ -7760,11 +7760,19 @@ class App {
         this.showLoading(true);
 
         try {
+            // Date fields that need NZ format conversion
+            const dateFields = ['date', 'startDate'];
+
             const records = [];
             for (const row of this.csvImportData.rows) {
                 const record = {};
                 for (const [field, colIndex] of Object.entries(mapping)) {
-                    record[field] = row[colIndex] || '';
+                    let value = row[colIndex] || '';
+                    // Convert date fields from NZ format (DD/MM/YYYY) to ISO (YYYY-MM-DD)
+                    if (dateFields.includes(field) && value) {
+                        value = this.parseNZDate(value);
+                    }
+                    record[field] = value;
                 }
                 records.push(record);
             }
@@ -7914,6 +7922,9 @@ class App {
             let successCount = 0;
             let errorCount = 0;
 
+            // Date fields that need NZ format conversion
+            const dateFields = ['date', 'startDate'];
+
             for (const row of dataRows) {
                 const record = {};
                 for (const [field, colIndex] of Object.entries(mapping)) {
@@ -7921,6 +7932,10 @@ class App {
                     // Handle arrays (instruments, etc.)
                     if (field === 'instruments') {
                         value = value.split(/[,;]/).map(v => v.trim()).filter(v => v);
+                    }
+                    // Convert date fields from NZ format (DD/MM/YYYY) to ISO (YYYY-MM-DD)
+                    if (dateFields.includes(field) && value && typeof value === 'string') {
+                        value = this.parseNZDate(value);
                     }
                     record[field] = value;
                 }
@@ -8052,6 +8067,33 @@ class App {
         const date = new Date(dateStr);
         if (isNaN(date)) return dateStr;
         return date.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    // Parse date from NZ format (DD/MM/YYYY) or other formats to ISO (YYYY-MM-DD)
+    parseNZDate(dateStr) {
+        if (!dateStr) return '';
+
+        // Already in ISO format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr;
+        }
+
+        // NZ format: DD/MM/YYYY or D/M/YYYY
+        const nzMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (nzMatch) {
+            const day = nzMatch[1].padStart(2, '0');
+            const month = nzMatch[2].padStart(2, '0');
+            const year = nzMatch[3];
+            return `${year}-${month}-${day}`;
+        }
+
+        // Try parsing as-is (e.g., "15 Feb 2025")
+        const date = new Date(dateStr);
+        if (!isNaN(date)) {
+            return date.toISOString().split('T')[0];
+        }
+
+        return dateStr;
     }
 
     getInitials(name) {
