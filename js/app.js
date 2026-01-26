@@ -7594,6 +7594,14 @@ class App {
         setTimeout(() => {
             const fileInput = document.getElementById('csv-import-file');
             fileInput.addEventListener('change', (e) => this.handleCSVFileSelect(e));
+
+            // Update mapping when type changes (if file already loaded)
+            const typeSelect = document.getElementById('csv-import-type');
+            typeSelect.addEventListener('change', () => {
+                if (this.csvImportData) {
+                    this.showCSVMappingFields();
+                }
+            });
         }, 100);
     }
 
