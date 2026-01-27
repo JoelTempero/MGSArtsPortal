@@ -4127,68 +4127,13 @@ class App {
 
     // Event Task Templates - tasks with days before event, organized by phase
     getEventTemplateTasks(templateType) {
-        // Built-in templates
-        const builtInTemplates = {
-            'school-during': [
-                { phase: 'Planning', name: 'Book venue/room', daysBefore: 28, assignTo: 'coordinator' },
-                { phase: 'Planning', name: 'Create event on school calendar', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Notify staff involved', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Send parent notification', daysBefore: 14, assignTo: 'coordinator' },
-                { phase: 'Logistics', name: 'Confirm catering (if needed)', daysBefore: 7, assignTo: 'coordinator' },
-                { phase: 'Preparation', name: 'Prepare equipment/resources', daysBefore: 3, assignTo: 'group-leader' },
-                { phase: 'Preparation', name: 'Final run-through', daysBefore: 1, assignTo: 'group-leader' },
-                { phase: 'Event Day', name: 'Event day setup', daysBefore: 0, assignTo: 'all' }
-            ],
-            'school-after': [
-                { phase: 'Planning', name: 'Book venue/room', daysBefore: 28, assignTo: 'coordinator' },
-                { phase: 'Planning', name: 'Create event on school calendar', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Arrange staff supervision', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Send parent notification with pickup info', daysBefore: 14, assignTo: 'coordinator' },
-                { phase: 'Logistics', name: 'Confirm catering (if needed)', daysBefore: 7, assignTo: 'coordinator' },
-                { phase: 'Logistics', name: 'Arrange lighting/sound', daysBefore: 7, assignTo: 'group-leader' },
-                { phase: 'Preparation', name: 'Prepare equipment/resources', daysBefore: 3, assignTo: 'group-leader' },
-                { phase: 'Preparation', name: 'Final run-through', daysBefore: 1, assignTo: 'group-leader' },
-                { phase: 'Event Day', name: 'Event day setup', daysBefore: 0, assignTo: 'all' }
-            ],
-            'offsite-during': [
-                { phase: 'Planning', name: 'Book external venue', daysBefore: 42, assignTo: 'coordinator' },
-                { phase: 'Planning', name: 'Arrange transport', daysBefore: 28, assignTo: 'coordinator' },
-                { phase: 'Compliance', name: 'Complete RAMS form', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Send permission slips', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Collect permission slips', daysBefore: 7, assignTo: 'coordinator' },
-                { phase: 'Logistics', name: 'Confirm transport & numbers', daysBefore: 3, assignTo: 'coordinator' },
-                { phase: 'Preparation', name: 'Prepare equipment to take', daysBefore: 2, assignTo: 'group-leader' },
-                { phase: 'Preparation', name: 'Final briefing with students', daysBefore: 1, assignTo: 'group-leader' },
-                { phase: 'Event Day', name: 'Event day - check roll', daysBefore: 0, assignTo: 'all' }
-            ],
-            'offsite-after': [
-                { phase: 'Planning', name: 'Book external venue', daysBefore: 42, assignTo: 'coordinator' },
-                { phase: 'Planning', name: 'Arrange transport', daysBefore: 28, assignTo: 'coordinator' },
-                { phase: 'Compliance', name: 'Complete RAMS form', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Send permission slips with return time', daysBefore: 21, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Arrange staff supervision for return', daysBefore: 14, assignTo: 'coordinator' },
-                { phase: 'Communication', name: 'Collect permission slips', daysBefore: 7, assignTo: 'coordinator' },
-                { phase: 'Logistics', name: 'Confirm transport & numbers', daysBefore: 3, assignTo: 'coordinator' },
-                { phase: 'Preparation', name: 'Prepare equipment to take', daysBefore: 2, assignTo: 'group-leader' },
-                { phase: 'Preparation', name: 'Final briefing with students', daysBefore: 1, assignTo: 'group-leader' },
-                { phase: 'Event Day', name: 'Event day - check roll', daysBefore: 0, assignTo: 'all' }
-            ]
-        };
-        
-        // Check built-in templates first
-        if (builtInTemplates[templateType]) {
-            return builtInTemplates[templateType];
-        }
-        
-        // Check custom templates from database
-        const customTemplate = this.data.templates?.find(t => t.id === templateType);
-        if (customTemplate && customTemplate.tasks) {
-            // Convert custom template format to task list format
+        // Helper function to convert template phase format to task list format
+        const convertTemplateToTaskList = (phases) => {
             const tasks = [];
-            customTemplate.tasks.forEach((phase, phaseIndex) => {
-                // Calculate default daysBefore based on phase order (spread across 4 weeks)
-                const baseDays = Math.max(0, (customTemplate.tasks.length - phaseIndex) * 7);
-                
+            phases.forEach((phase, phaseIndex) => {
+                // Calculate default daysBefore based on phase order (spread across weeks)
+                const baseDays = Math.max(0, (phases.length - phaseIndex) * 7);
+
                 (phase.items || []).forEach((taskName, taskIndex) => {
                     tasks.push({
                         phase: phase.phase,
@@ -4199,10 +4144,28 @@ class App {
                 });
             });
             return tasks;
+        };
+
+        // First, check if there's a custom template that overrides a built-in template
+        const customOverride = this.data.templates?.find(t => t.builtInId === templateType);
+        if (customOverride && customOverride.tasks) {
+            return convertTemplateToTaskList(customOverride.tasks);
         }
-        
-        // Default fallback
-        return builtInTemplates['school-during'];
+
+        // Then check if it's a direct custom template reference
+        const customTemplate = this.data.templates?.find(t => t.id === templateType);
+        if (customTemplate && customTemplate.tasks) {
+            return convertTemplateToTaskList(customTemplate.tasks);
+        }
+
+        // Then check built-in templates from EventTemplates
+        const builtInTemplate = EventTemplates[templateType];
+        if (builtInTemplate && builtInTemplate.tasks) {
+            return convertTemplateToTaskList(builtInTemplate.tasks);
+        }
+
+        // Default fallback to school-during
+        return convertTemplateToTaskList(EventTemplates['school-during'].tasks);
     }
 
     showEventTasksModal(eventId) {
