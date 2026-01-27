@@ -7,18 +7,18 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --color-bg-primary: #0f1219;
-            --color-bg-secondary: #161b26;
-            --color-bg-card: #1a1f2e;
-            --color-gold: #c9a962;
-            --color-gold-light: #dfc88a;
-            --color-text-primary: #f4f4f5;
-            --color-text-secondary: #a1a1aa;
-            --color-border: rgba(255, 255, 255, 0.08);
+            --color-bg-primary: #f8f9fa;
+            --color-bg-secondary: #ffffff;
+            --color-bg-card: #ffffff;
+            --color-gold: #b8922f;
+            --color-gold-light: #c9a227;
+            --color-text-primary: #1a1f2e;
+            --color-text-secondary: #6b7280;
+            --color-border: rgba(0, 0, 0, 0.1);
             --color-success: #22c55e;
             --color-success-bg: rgba(34, 197, 94, 0.15);
             --color-warning: #f59e0b;
-            --color-warning-bg: rgba(245, 158, 11, 0.15);
+            --color-warning-bg: rgba(245, 158, 11, 0.1);
             --font-display: 'Playfair Display', Georgia, serif;
             --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -66,7 +66,9 @@
             background: var(--color-bg-card);
             padding: 2rem;
             border-radius: 0 0 12px 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: 1px solid var(--color-border);
+            border-top: none;
         }
         
         .form-section {
@@ -117,10 +119,10 @@
         .form-group select {
             width: 100%;
             padding: 0.75rem 1rem;
-            border: 2px solid var(--color-border);
+            border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 1rem;
-            background: var(--color-bg-secondary);
+            background: #ffffff;
             color: var(--color-text-primary);
             transition: border-color 0.2s, box-shadow 0.2s;
         }
@@ -191,18 +193,18 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
-            background: var(--color-bg-secondary);
+            background: #f9fafb;
             color: var(--color-text-primary);
         }
 
         .instrument-option:hover {
             border-color: var(--color-gold);
-            background: rgba(201, 169, 98, 0.1);
+            background: #fef9e7;
         }
 
         .instrument-option.selected {
             border-color: var(--color-gold);
-            background: rgba(201, 169, 98, 0.2);
+            background: #fef3c7;
         }
 
         .instrument-option input {
@@ -214,25 +216,16 @@
         }
 
         .info-box {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
         }
 
-        .info-box.warning {
-            background: var(--color-warning-bg);
-            border-color: var(--color-warning);
-        }
-
         .info-box p {
             font-size: 0.9rem;
-            color: var(--color-text-secondary);
-        }
-
-        .info-box.warning p {
-            color: var(--color-warning);
+            color: #1e40af;
         }
         
         .tutor-select {
@@ -292,7 +285,8 @@
         }
 
         .success-message .ref-number {
-            background: var(--color-bg-secondary);
+            background: #f3f4f6;
+            border: 1px solid var(--color-border);
             padding: 0.5rem 1rem;
             border-radius: 4px;
             font-family: monospace;
@@ -396,28 +390,6 @@
                     </div>
                 </div>
                 
-                <!-- Lesson Type -->
-                <div class="form-section">
-                    <h2><span class="emoji">📋</span> Lesson Type</h2>
-                    
-                    <div class="info-box warning">
-                        <p><strong>Please note:</strong> Requests for funded lessons will be reviewed. Priority will be given to those in curriculum music in Years 10-12 and to specific instruments. Some funded lessons may be delivered in group settings.</p>
-                    </div>
-                    
-                    <div class="form-group">
-                        <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="lessonType" value="funded" required>
-                                <span>I would like my child to be considered for <strong>funded</strong> itinerant lessons at school</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="lessonType" value="private">
-                                <span>I would like to book a <strong>private</strong> itinerant lesson at school</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Instrument Selection -->
                 <div class="form-section">
                     <h2><span class="emoji">🎸</span> Instrument</h2>
@@ -428,12 +400,12 @@
                             <label class="instrument-option"><input type="radio" name="instrument" value="Violin" required><span class="emoji">🎻</span><span>Violin</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Viola"><span class="emoji">🎻</span><span>Viola</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Cello"><span class="emoji">🎻</span><span>Cello</span></label>
-                            <label class="instrument-option"><input type="radio" name="instrument" value="Bass"><span class="emoji">🎻</span><span>Bass</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Bass"><span class="emoji">🎸</span><span>Bass</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Guitar"><span class="emoji">🎸</span><span>Guitar</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Saxophone"><span class="emoji">🎷</span><span>Saxophone</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Clarinet"><span class="emoji">🎵</span><span>Clarinet</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Trumpet"><span class="emoji">🎺</span><span>Trumpet</span></label>
-                            <label class="instrument-option"><input type="radio" name="instrument" value="Trombone"><span class="emoji">🎺</span><span>Trombone</span></label>
+                            <label class="instrument-option"><input type="radio" name="instrument" value="Trombone"><span class="emoji">📯</span><span>Trombone</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Flute"><span class="emoji">🎵</span><span>Flute</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Drums"><span class="emoji">🥁</span><span>Drums</span></label>
                             <label class="instrument-option"><input type="radio" name="instrument" value="Piano"><span class="emoji">🎹</span><span>Piano</span></label>
@@ -457,10 +429,10 @@
                     </div>
                 </div>
                 
-                <!-- Style Preference -->
-                <div class="form-section">
+                <!-- Style Preference (Piano only) -->
+                <div class="form-section tutor-select" id="style-section">
                     <h2><span class="emoji">🎼</span> Style Preference</h2>
-                    
+
                     <div class="form-group">
                         <label>Please indicate your preferred style (tick all that apply)</label>
                         <div class="checkbox-group inline">
@@ -532,22 +504,33 @@
             'Trombone': ['David Thompson']
         };
         
-        // Handle instrument selection to show/hide tutor preference
+        // Handle instrument selection to show/hide tutor preference and style preference
         document.querySelectorAll('input[name="instrument"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 const instrument = e.target.value;
                 const tutors = tutorsByInstrument[instrument] || [];
                 const tutorSection = document.getElementById('tutor-section');
                 const tutorDropdown = document.getElementById('tutor-dropdown');
-                
+                const styleSection = document.getElementById('style-section');
+
+                // Show tutor preference if multiple tutors available
                 if (tutors.length > 1) {
                     tutorSection.classList.add('visible');
-                    tutorDropdown.innerHTML = '<option value="">No preference</option>' + 
+                    tutorDropdown.innerHTML = '<option value="">No preference</option>' +
                         tutors.map(t => `<option value="${t}">${t}</option>`).join('');
                 } else {
                     tutorSection.classList.remove('visible');
                 }
-                
+
+                // Show style preference only for Piano
+                if (instrument === 'Piano') {
+                    styleSection.classList.add('visible');
+                } else {
+                    styleSection.classList.remove('visible');
+                    // Uncheck style preferences when switching away from Piano
+                    styleSection.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                }
+
                 // Highlight selected instrument
                 document.querySelectorAll('.instrument-option').forEach(opt => opt.classList.remove('selected'));
                 e.target.closest('.instrument-option').classList.add('selected');
@@ -582,8 +565,8 @@
                 parentPhone: formData.get('parentPhone'),
 
                 // Lesson details
-                lessonType: formData.get('lessonType'),
-                fundedRequested: formData.get('lessonType') === 'funded',
+                lessonType: 'private',
+                fundedRequested: false,
                 instrument: formData.get('instrument'),
                 tutorPreference: formData.get('tutorPreference') || '',
                 styles: styles,
@@ -632,8 +615,9 @@
             // Remove selected state from instruments
             document.querySelectorAll('.instrument-option').forEach(opt => opt.classList.remove('selected'));
 
-            // Hide tutor section
+            // Hide tutor and style sections
             document.getElementById('tutor-section').classList.remove('visible');
+            document.getElementById('style-section').classList.remove('visible');
 
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });

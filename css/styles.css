@@ -2071,6 +2071,19 @@ tr.clickable:hover td {
     color: var(--color-music);
 }
 
+.status-inactive {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+}
+
+.row-finished {
+    opacity: 0.6;
+}
+
+.row-finished:hover {
+    opacity: 0.8;
+}
+
 .attendance-status {
     width: 10px;
     height: 10px;

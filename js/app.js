@@ -910,12 +910,13 @@ class App {
                 <th class="sortable" onclick="app.sortData('lessons', 'status')">Status ${this.getSortIcon('lessons', 'status')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'acknowledged')">Confirmed ${this.getSortIcon('lessons', 'acknowledged')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'funded')">Funded ${this.getSortIcon('lessons', 'funded')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'finished')">Finished ${this.getSortIcon('lessons', 'finished')}</th>
                 <th class="th-actions"></th>
             `;
         }
 
         if (this.data.lessons.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="no-data">No lessons found. Add your first lesson!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="no-data">No lessons found. Add your first lesson!</td></tr>';
             return;
         }
 
@@ -962,8 +963,13 @@ class App {
                 acknowledgedBadge = '<span class="status-badge status-pending" title="Awaiting tutor confirmation">Pending</span>';
             }
 
+            // Finished status badge
+            const finishedBadge = lesson.finished
+                ? `<span class="status-badge status-inactive" title="Ended ${lesson.finishedAt ? this.formatDate(lesson.finishedAt) : ''}">Finished</span>`
+                : '<span class="text-muted">—</span>';
+
             return `
-                <tr data-id="${lesson.id}">
+                <tr data-id="${lesson.id}" ${lesson.finished ? 'class="row-finished"' : ''}>
                     <td>
                         <div class="cell-student">
                             <div class="student-avatar music">${student.name.charAt(0)}</div>
@@ -982,6 +988,7 @@ class App {
                     <td><span class="status-badge status-${lesson.status === 'active' ? 'active' : 'waiting'}">${lesson.status}</span></td>
                     <td>${acknowledgedBadge}</td>
                     <td>${fundedBadge}</td>
+                    <td>${finishedBadge}</td>
                     <td>
                         <div class="row-actions">
                             <button class="row-action-btn" title="Edit" data-action="edit-lesson" data-id="${lesson.id}">
