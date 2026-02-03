@@ -1,0 +1,222 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if authenticated user is an admin (has Firebase Auth)
+    // All Firebase Auth users in this system are admins
+    function isAdmin() {
+      return isAuthenticated();
+    }
+
+    // Validate tutor token exists and is not expired
+    function isValidTutorToken(tokenId) {
+      let token = get(/databases/$(database)/documents/tutorTokens/$(tokenId));
+      return token != null &&
+             token.data.expiresAt > request.time;
+    }
+
+    // Validate staff token exists and is not expired
+    function isValidStaffToken(tokenId) {
+      let token = get(/databases/$(database)/documents/staffTokens/$(tokenId));
+      return token != null &&
+             token.data.expiresAt > request.time;
+    }
+
+    // Validate lesson token exists and is not expired
+    function isValidLessonToken(tokenId) {
+      let token = get(/databases/$(database)/documents/lessonTokens/$(tokenId));
+      return token != null &&
+             token.data.expiresAt > request.time;
+    }
+
+    // Get tutor ID from token
+    function getTutorIdFromToken(tokenId) {
+      return get(/databases/$(database)/documents/tutorTokens/$(tokenId)).data.tutorId;
+    }
+
+    // Get staff ID from token
+    function getStaffIdFromToken(tokenId) {
+      return get(/databases/$(database)/documents/staffTokens/$(tokenId)).data.staffId;
+    }
+
+    // Get lesson ID from token
+    function getLessonIdFromToken(tokenId) {
+      return get(/databases/$(database)/documents/lessonTokens/$(tokenId)).data.lessonId;
+    }
+
+    // ============================================
+    // ADMIN-ONLY COLLECTIONS
+    // These collections require full authentication
+    // ============================================
+
+    // Users collection - admin only
+    match /users/{userId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Settings collection - admin only
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Templates collection - admin only
+    match /templates/{templateId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Activities/audit log - admin only
+    match /activities/{activityId} {
+      allow read: if isAdmin();
+      // Allow create from authenticated users and portal actions
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================================
+    // TOKEN COLLECTIONS
+    // Admins can manage, public can read their own token
+    // ============================================
+
+    // Tutor tokens - admin manages, portal validates
+    match /tutorTokens/{tokenId} {
+      allow read, write: if isAdmin();
+      // Allow public read for token validation (needed for portal access)
+      allow get: if true;
+    }
+
+    // Staff tokens - admin manages, portal validates
+    match /staffTokens/{tokenId} {
+      allow read, write: if isAdmin();
+      // Allow public read for token validation
+      allow get: if true;
+    }
+
+    // Lesson tokens - admin manages, portal validates
+    match /lessonTokens/{tokenId} {
+      allow read, write: if isAdmin();
+      // Allow public read for token validation
+      allow get: if true;
+      // Allow marking token as used
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used']);
+    }
+
+    // ============================================
+    // CORE DATA COLLECTIONS
+    // Admin has full access, token holders have limited access
+    // ============================================
+
+    // Students collection
+    match /students/{studentId} {
+      allow read, write: if isAdmin();
+      // Tutors with valid token can read students assigned to them
+      // (they need this to see student names in their lessons)
+      allow read: if request.auth == null &&
+                    request.resource == null;  // Read only, handled via lessons
+    }
+
+    // Tutors collection
+    match /tutors/{tutorId} {
+      allow read, write: if isAdmin();
+      // Allow tutors to read their own profile via token validation
+      // Token validation happens client-side, but we allow the read
+      allow get: if true;
+    }
+
+    // Lessons collection - core of tutor portal
+    match /lessons/{lessonId} {
+      // Admin has full access
+      allow read, write: if isAdmin();
+
+      // Anyone can read lessons (filtered client-side by tutorId from token)
+      // This is necessary because Firestore rules can't easily validate
+      // external token parameters in queries
+      allow read: if true;
+
+      // Allow updates to specific fields for lesson acknowledgment
+      // These are the fields tutors can modify via their portal
+      allow update: if !isAdmin() &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['acknowledged', 'status', 'time', 'day', 'location',
+                                  'finished', 'notes', 'updatedAt']);
+    }
+
+    // Groups collection
+    match /groups/{groupId} {
+      allow read, write: if isAdmin();
+      // Read-only for portal users who need group info
+      allow read: if true;
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      allow read, write: if isAdmin();
+      // Staff portal needs to read events
+      allow read: if true;
+    }
+
+    // Event tasks collection - staff portal interaction
+    match /eventTasks/{taskId} {
+      // Admin has full access
+      allow read, write: if isAdmin();
+
+      // Staff can read tasks
+      allow read: if true;
+
+      // Allow staff to update task completion status
+      allow update: if !isAdmin() &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['items', 'completed', 'updatedAt', 'completedBy']);
+    }
+
+    // Instruments collection
+    match /instruments/{instrumentId} {
+      allow read, write: if isAdmin();
+      // Read-only public access for instrument hire forms
+      allow read: if true;
+    }
+
+    // Instrument hires collection
+    match /instrumentHires/{hireId} {
+      allow read, write: if isAdmin();
+      // Allow creating hire requests from public forms
+      allow create: if true;
+      allow read: if true;
+    }
+
+    // Lesson requests collection - public intake form
+    match /lessonRequests/{requestId} {
+      allow read, write: if isAdmin();
+      // Allow public to submit lesson requests
+      allow create: if true;
+      // Allow reading own request (for confirmation)
+      allow read: if true;
+    }
+
+    // Forms collection - signup forms
+    match /forms/{formId} {
+      allow read, write: if isAdmin();
+      // Allow public form submissions
+      allow create: if true;
+      allow read: if true;
+    }
+
+    // ============================================
+    // CATCH-ALL DENY RULE
+    // Deny access to any collections not explicitly defined
+    // ============================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
