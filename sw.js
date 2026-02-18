@@ -1,11 +1,10 @@
 // MGS Arts Portal - Service Worker
-const CACHE_NAME = 'mgs-arts-v2';
+const CACHE_NAME = 'mgs-arts-v3';
 const urlsToCache = [
     '/',
     '/index.html',
-    '/css/styles.css',
-    '/js/data.js',
-    '/js/app.js',
+    '/css/styles.css?v=2',
+    '/js/app.js?v=2',
     '/manifest.json',
     '/assets/favicon.svg',
     '/assets/icon-192.svg',
