@@ -3529,6 +3529,57 @@ tr.clickable:hover td {
     color: var(--color-text-muted);
 }
 
+/* Searchable select component */
+.searchable-select {
+    position: relative;
+}
+
+.searchable-select-input {
+    width: 100%;
+}
+
+.searchable-select-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.searchable-select-dropdown.visible {
+    display: block;
+}
+
+.searchable-select-item {
+    padding: 0.6rem var(--spacing-md);
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    transition: background var(--transition-fast);
+}
+
+.searchable-select-item:hover {
+    background: var(--color-bg-tertiary);
+}
+
+.searchable-select-item.disabled {
+    color: var(--color-text-muted);
+    cursor: default;
+    font-style: italic;
+}
+
+.searchable-select-item.disabled:hover {
+    background: transparent;
+}
+
 .modal-form .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

@@ -715,6 +715,28 @@
                     currentLessons.push({ id: doc.id, ...doc.data() });
                 });
 
+                // Resolve student names for lessons that have studentId but no studentName
+                const needsLookup = currentLessons.filter(l => !l.studentName && l.studentId);
+                if (needsLookup.length > 0) {
+                    const studentIds = [...new Set(needsLookup.map(l => l.studentId))];
+                    const studentMap = {};
+                    for (const sid of studentIds) {
+                        try {
+                            const studentDoc = await getDoc(doc(db, 'students', sid));
+                            if (studentDoc.exists()) {
+                                studentMap[sid] = studentDoc.data();
+                            }
+                        } catch (e) {
+                            console.warn('Could not fetch student:', sid, e);
+                        }
+                    }
+                    currentLessons.forEach(l => {
+                        if (!l.studentName && l.studentId && studentMap[l.studentId]) {
+                            l.studentName = studentMap[l.studentId].name;
+                        }
+                    });
+                }
+
                 // Sort: pending first, then by student name
                 currentLessons.sort((a, b) => {
                     if (a.acknowledged === b.acknowledged) {
