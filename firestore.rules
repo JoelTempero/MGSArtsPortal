@@ -162,6 +162,10 @@ service cloud.firestore {
       allow read, write: if isAdmin();
       // Staff portal needs to read events
       allow read: if true;
+      // Staff portal needs to update task completion status within events
+      allow update: if !isAdmin() &&
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['tasks', 'updatedAt']);
     }
 
     // Event tasks collection - staff portal interaction

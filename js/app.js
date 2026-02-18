@@ -28,7 +28,7 @@ class App {
         this.sortState = {
             lessons: { column: null, direction: 'asc' },
             students: { column: null, direction: 'asc' },
-            events: { column: null, direction: 'asc' },
+            events: { column: 'date', direction: 'asc' },
             instruments: { column: null, direction: 'asc' },
             hires: { column: null, direction: 'asc' }
         };
