@@ -2,7 +2,7 @@
 // MGS Arts Portal - Firebase Integrated App
 // ========================================
 
-import { AuthService, DatabaseService, EventTemplates } from './firebase.js';
+import { AuthService, DatabaseService, EventTemplates, auth } from './firebase.js';
 import { EmailService } from './emailService.js';
 import { DummyData } from './dummyData.js';
 
@@ -50,6 +50,9 @@ class App {
     }
 
     async init() {
+        // Check domain authorization for Firebase Auth
+        this.checkDomainAuthorization();
+
         // Listen for auth state changes
         AuthService.onAuthStateChanged(async (user) => {
             if (user) {
@@ -62,6 +65,23 @@ class App {
         });
 
         this.bindEvents();
+    }
+
+    checkDomainAuthorization() {
+        const currentDomain = window.location.hostname;
+        const authorizedDomains = [
+            'localhost',
+            '127.0.0.1',
+            'mgs-performing-arts.firebaseapp.com',
+            'mgs-performing-arts.web.app'
+        ];
+        if (!authorizedDomains.includes(currentDomain) && !currentDomain.endsWith('.firebaseapp.com')) {
+            console.warn(
+                `Domain "${currentDomain}" may not be authorized for Firebase Auth. ` +
+                `Add it to Firebase Console → Authentication → Settings → Authorized domains.`
+            );
+            this.unauthorizedDomain = currentDomain;
+        }
     }
 
     showLogin() {
@@ -153,6 +173,17 @@ class App {
     async loadAllData() {
         this.showLoading(true);
 
+        // Verify real Firebase auth before querying Firestore
+        if (!auth.currentUser) {
+            console.error('No Firebase auth session. Firestore queries will fail.');
+            const domainMsg = this.unauthorizedDomain
+                ? ` The domain "${this.unauthorizedDomain}" needs to be added to Firebase Console → Authentication → Settings → Authorized domains.`
+                : '';
+            this.showToast('Authentication error — not signed in to Firebase.' + domainMsg, 'error');
+            this.showLoading(false);
+            return;
+        }
+
         try {
             const [students, tutors, lessons, events, groups, instruments, instrumentHires, lessonRequests, settings, forms, users, templates, activities] = await Promise.all([
                 DatabaseService.getStudents(),
@@ -181,9 +212,16 @@ class App {
             }
         } catch (error) {
             console.error('Error loading data:', error);
-            this.showToast('Error loading data. Please refresh.', 'error');
+            if (error.code === 'permission-denied') {
+                const domainMsg = this.unauthorizedDomain
+                    ? ` Try adding "${this.unauthorizedDomain}" to Firebase Console → Authentication → Settings → Authorized domains.`
+                    : '';
+                this.showToast('Permission denied — your account may not have access.' + domainMsg, 'error');
+            } else {
+                this.showToast('Error loading data. Please refresh.', 'error');
+            }
         }
-        
+
         this.showLoading(false);
     }
 
@@ -301,17 +339,6 @@ class App {
         btn.disabled = true;
         errorEl.textContent = '';
         
-        // Demo login bypass (for testing without Firebase auth setup)
-        if (email === 'r.horn@middleton.school.nz' && password === 'demo123') {
-            // Create a fake user for demo
-            this.currentUser = { email: email, displayName: 'Rhian Horn' };
-            await this.showApp();
-            btn.querySelector('.btn-text').style.display = 'inline';
-            btn.querySelector('.btn-loader').style.display = 'none';
-            btn.disabled = false;
-            return;
-        }
-        
         const result = await AuthService.signIn(email, password);
         
         btn.querySelector('.btn-text').style.display = 'inline';
@@ -319,7 +346,11 @@ class App {
         btn.disabled = false;
         
         if (!result.success) {
-            errorEl.textContent = result.error || 'Invalid email or password';
+            let msg = result.error || 'Invalid email or password';
+            if (this.unauthorizedDomain && (msg.includes('network') || msg.includes('internal'))) {
+                msg += ` (Domain "${this.unauthorizedDomain}" may need to be authorized in Firebase Console.)`;
+            }
+            errorEl.textContent = msg;
         }
     }
 
