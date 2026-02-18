@@ -23,7 +23,6 @@ class App {
         };
         this.isLoading = false;
         this.currentUser = null;
-        this.isDemoMode = false;
 
         // Sorting state for tables
         this.sortState = {
@@ -174,13 +173,6 @@ class App {
     async loadAllData() {
         this.showLoading(true);
 
-        // Demo mode: load from local DummyData instead of Firestore
-        if (this.isDemoMode) {
-            this.loadDemoDataLocally();
-            this.showLoading(false);
-            return;
-        }
-
         // Verify real Firebase auth before querying Firestore
         if (!auth.currentUser) {
             console.error('No Firebase auth session. Firestore queries will fail.');
@@ -231,26 +223,6 @@ class App {
         }
 
         this.showLoading(false);
-    }
-
-    loadDemoDataLocally() {
-        const addIds = (arr) => arr.map((item, i) => ({ id: `demo-${i}`, ...item }));
-        this.data = {
-            students: addIds(DummyData.students || []),
-            tutors: addIds(DummyData.tutors || []),
-            lessons: addIds(DummyData.lessons || []),
-            events: addIds(DummyData.events || []),
-            groups: addIds(DummyData.groups || []),
-            instruments: addIds(DummyData.instruments || []),
-            instrumentHires: addIds(DummyData.instrumentHires || []),
-            lessonRequests: addIds(DummyData.lessonRequests || []),
-            settings: DummyData.settings || {},
-            forms: [],
-            users: [{ id: 'demo-admin', name: 'Rhian Horn', email: 'r.horn@middleton.school.nz', role: 'admin', active: true }],
-            templates: [],
-            activities: []
-        };
-        this.updateActivityBadge();
     }
 
     showLoading(show) {
@@ -367,19 +339,6 @@ class App {
         btn.disabled = true;
         errorEl.textContent = '';
         
-        // Demo login bypass (for testing without Firebase auth setup)
-        // Uses local DummyData instead of Firestore to avoid permission-denied errors
-        if (email === 'r.horn@middleton.school.nz' && password === 'demo123') {
-            this.currentUser = { email: email, displayName: 'Rhian Horn' };
-            this.isDemoMode = true;
-            await this.showApp();
-            this.showToast('Demo mode — using sample data (read-only). Changes will not be saved.', 'info');
-            btn.querySelector('.btn-text').style.display = 'inline';
-            btn.querySelector('.btn-loader').style.display = 'none';
-            btn.disabled = false;
-            return;
-        }
-        
         const result = await AuthService.signIn(email, password);
         
         btn.querySelector('.btn-text').style.display = 'inline';
@@ -414,7 +373,6 @@ class App {
     }
 
     async handleLogout() {
-        this.isDemoMode = false;
         await AuthService.signOut();
         this.showLogin();
     }
