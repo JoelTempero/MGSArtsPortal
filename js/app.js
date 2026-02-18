@@ -3639,26 +3639,34 @@ class App {
         if (!lesson) return;
 
         // Find matching tutor by ID or name
-        const matchedTutor = lesson.tutorId 
+        const matchedTutor = lesson.tutorId
             ? this.data.tutors.find(t => t.id === lesson.tutorId)
             : this.data.tutors.find(t => t.name === lesson.tutorName);
         const matchedTutorId = matchedTutor?.id || '';
 
         // Find matching student by ID or name
-        const matchedStudent = lesson.studentId 
+        const matchedStudent = lesson.studentId
             ? this.data.students.find(s => s.id === lesson.studentId)
             : this.data.students.find(s => s.name === lesson.studentName);
         const matchedStudentId = matchedStudent?.id || '';
 
-        const tutorOptions = this.data.tutors.map(t => 
+        const tutorOptions = this.data.tutors.map(t =>
             `<option value="${t.id}" ${t.id === matchedTutorId ? 'selected' : ''}>${t.name}</option>`
         ).join('');
-        const studentOptions = this.data.students.map(s => 
-            `<option value="${s.id}" ${s.id === matchedStudentId ? 'selected' : ''}>${s.name} (${s.class || ''})</option>`
+
+        // Get unique instrument names from all tutors
+        const instrumentSet = new Set();
+        this.data.tutors.forEach(t => {
+            if (t.instruments && Array.isArray(t.instruments)) {
+                t.instruments.forEach(i => instrumentSet.add(i));
+            }
+        });
+        const instrumentOptions = [...instrumentSet].sort().map(i =>
+            `<option value="${i}" ${i === lesson.instrument ? 'selected' : ''}>${i}</option>`
         ).join('');
-        
+
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        const dayOptions = days.map(d => 
+        const dayOptions = days.map(d =>
             `<option value="${d}" ${d === lesson.day ? 'selected' : ''}>${d}</option>`
         ).join('');
 
@@ -3667,10 +3675,11 @@ class App {
                 <input type="hidden" name="id" value="${id}">
                 <div class="form-group">
                     <label>Student</label>
-                    <select name="studentId" required>
-                        <option value="">Select student...</option>
-                        ${studentOptions}
-                    </select>
+                    <div class="searchable-select" id="edit-student-search-wrapper">
+                        <input type="text" class="searchable-select-input" id="edit-student-search-input" placeholder="Search for a student..." autocomplete="off">
+                        <input type="hidden" name="studentId" id="edit-student-search-value" required>
+                        <div class="searchable-select-dropdown" id="edit-student-search-dropdown"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Tutor</label>
@@ -3681,7 +3690,10 @@ class App {
                 </div>
                 <div class="form-group">
                     <label>Instrument</label>
-                    <input type="text" name="instrument" value="${lesson.instrument || ''}" required>
+                    <select name="instrument" required>
+                        <option value="">Select instrument...</option>
+                        ${instrumentOptions}
+                    </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -3714,6 +3726,7 @@ class App {
         `;
 
         this.showModal('Edit Lesson', content, () => this.updateLesson());
+        this.initStudentSearch('edit-student-search-input', 'edit-student-search-value', 'edit-student-search-dropdown', matchedStudentId, matchedStudent ? `${matchedStudent.name} (${matchedStudent.class || ''})` : '');
     }
 
     async updateLesson() {
@@ -3721,8 +3734,12 @@ class App {
         const formData = new FormData(form);
         const id = formData.get('id');
 
+        const studentId = formData.get('studentId');
+        const student = this.data.students.find(s => s.id === studentId);
+
         const lesson = {
-            studentId: formData.get('studentId'),
+            studentId: studentId,
+            studentName: student?.name || '',
             tutorId: formData.get('tutorId'),
             instrument: formData.get('instrument'),
             day: formData.get('day'),
@@ -3730,7 +3747,7 @@ class App {
             status: formData.get('status'),
             funded: formData.get('funded') === 'on'
         };
-        
+
         const result = await DatabaseService.updateLesson(id, lesson);
 
         if (result.success) {
@@ -6345,18 +6362,79 @@ class App {
         document.getElementById('modal-overlay').classList.remove('visible');
     }
 
+    initStudentSearch(inputId, valueId, dropdownId, initialValue = '', initialText = '') {
+        const input = document.getElementById(inputId);
+        const hiddenInput = document.getElementById(valueId);
+        const dropdown = document.getElementById(dropdownId);
+        if (!input || !hiddenInput || !dropdown) return;
+
+        // Set initial values for edit mode
+        if (initialValue) {
+            hiddenInput.value = initialValue;
+            input.value = initialText;
+        }
+
+        const students = this.data.students;
+
+        const showDropdown = (filter = '') => {
+            const search = filter.toLowerCase();
+            const filtered = search
+                ? students.filter(s => s.name.toLowerCase().includes(search) || (s.class || '').toLowerCase().includes(search))
+                : students.slice(0, 20);
+
+            if (filtered.length === 0) {
+                dropdown.innerHTML = '<div class="searchable-select-item disabled">No students found</div>';
+            } else {
+                dropdown.innerHTML = filtered.map(s =>
+                    `<div class="searchable-select-item" data-value="${s.id}" data-label="${s.name} (${s.class || ''})">${s.name} <span style="color: var(--color-text-muted); font-size: 0.85em;">(${s.class || ''})</span></div>`
+                ).join('');
+            }
+            dropdown.classList.add('visible');
+        };
+
+        input.addEventListener('focus', () => showDropdown(input.value));
+        input.addEventListener('input', () => {
+            hiddenInput.value = '';
+            showDropdown(input.value);
+        });
+
+        dropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.searchable-select-item');
+            if (!item || item.classList.contains('disabled')) return;
+            hiddenInput.value = item.dataset.value;
+            input.value = item.dataset.label;
+            dropdown.classList.remove('visible');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest(`#${inputId}`) && !e.target.closest(`#${dropdownId}`)) {
+                dropdown.classList.remove('visible');
+            }
+        });
+    }
+
     showAddLessonModal() {
         const tutorOptions = this.data.tutors.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-        const studentOptions = this.data.students.map(s => `<option value="${s.id}">${s.name} (${s.class})</option>`).join('');
-        
+
+        // Get unique instrument names from all tutors
+        const instrumentSet = new Set();
+        this.data.tutors.forEach(t => {
+            if (t.instruments && Array.isArray(t.instruments)) {
+                t.instruments.forEach(i => instrumentSet.add(i));
+            }
+        });
+        const instrumentOptions = [...instrumentSet].sort().map(i => `<option value="${i}">${i}</option>`).join('');
+
         const content = `
             <form id="add-lesson-form" class="modal-form">
                 <div class="form-group">
                     <label>Student</label>
-                    <select name="studentId" required>
-                        <option value="">Select student...</option>
-                        ${studentOptions}
-                    </select>
+                    <div class="searchable-select" id="student-search-wrapper">
+                        <input type="text" class="searchable-select-input" id="student-search-input" placeholder="Search for a student..." autocomplete="off">
+                        <input type="hidden" name="studentId" id="student-search-value" required>
+                        <div class="searchable-select-dropdown" id="student-search-dropdown"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Tutor</label>
@@ -6367,7 +6445,10 @@ class App {
                 </div>
                 <div class="form-group">
                     <label>Instrument</label>
-                    <input type="text" name="instrument" placeholder="e.g., Guitar, Piano" required>
+                    <select name="instrument" required>
+                        <option value="">Select instrument...</option>
+                        ${instrumentOptions}
+                    </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -6396,14 +6477,19 @@ class App {
         `;
 
         this.showModal('Add New Lesson', content, () => this.saveLesson());
+        this.initStudentSearch('student-search-input', 'student-search-value', 'student-search-dropdown');
     }
 
     async saveLesson() {
         const form = document.getElementById('add-lesson-form');
         const formData = new FormData(form);
 
+        const studentId = formData.get('studentId');
+        const student = this.data.students.find(s => s.id === studentId);
+
         const lesson = {
-            studentId: formData.get('studentId'),
+            studentId: studentId,
+            studentName: student?.name || '',
             tutorId: formData.get('tutorId'),
             instrument: formData.get('instrument'),
             day: formData.get('day'),
@@ -6411,7 +6497,7 @@ class App {
             status: 'active',
             funded: formData.get('funded') === 'on'
         };
-        
+
         const result = await DatabaseService.addLesson(lesson);
 
         if (result.success) {
@@ -6435,15 +6521,7 @@ class App {
 
     showAddStudentModal() {
         const tutorOptions = this.data.tutors.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
-        
-        // Group checkboxes
-        const groupCheckboxes = this.data.groups.map(g => 
-            `<label class="checkbox-label">
-                <input type="checkbox" name="groups" value="${g.id}">
-                <span>${g.name}</span>
-            </label>`
-        ).join('');
-        
+
         const content = `
             <form id="add-student-form" class="modal-form">
                 <div class="form-group">
@@ -6461,10 +6539,6 @@ class App {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Instrument(s)</label>
-                    <input type="text" name="instruments" placeholder="e.g., Guitar, Piano">
-                </div>
-                <div class="form-group">
                     <label>Tutor</label>
                     <select name="tutorId">
                         <option value="">Select tutor (optional)...</option>
@@ -6472,37 +6546,26 @@ class App {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Performing Arts Groups</label>
-                    <div class="checkbox-group">
-                        ${groupCheckboxes || '<span class="text-muted">No groups created yet</span>'}
-                    </div>
-                    <small class="form-hint">Select the groups this student is a member of</small>
-                </div>
-                <div class="form-group">
                     <label>Parent Email</label>
                     <input type="email" name="parentEmail" placeholder="parent@email.com">
                 </div>
             </form>
         `;
-        
+
         this.showModal('Add New Student', content, () => this.saveStudent());
     }
 
     async saveStudent() {
         const form = document.getElementById('add-student-form');
         const formData = new FormData(form);
-        
-        // Get selected groups
-        const groupCheckboxes = form.querySelectorAll('input[name="groups"]:checked');
-        const groupIds = Array.from(groupCheckboxes).map(cb => cb.value);
-        
+
         const student = {
             name: formData.get('name'),
             year: parseInt(formData.get('year')),
             class: formData.get('class'),
-            instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
+            instruments: [],
             tutorId: formData.get('tutorId') || null,
-            groupIds: groupIds,
+            groupIds: [],
             parentEmail: formData.get('parentEmail'),
             status: formData.get('tutorId') ? 'assigned' : 'waiting'
         };
