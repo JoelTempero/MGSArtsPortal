@@ -605,7 +605,7 @@ class App {
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const today = dayNames[this.currentDate.getDay()];
         
-        const todaysLessons = this.data.lessons.filter(l => l.day === today).sort((a, b) => {
+        const todaysLessons = this.data.lessons.filter(l => l.day === today && !l.finished).sort((a, b) => {
             return this.parseTime(a.time) - this.parseTime(b.time);
         });
         
@@ -934,7 +934,7 @@ class App {
         if (thead) {
             thead.innerHTML = `
                 <th class="sortable" onclick="app.sortData('lessons', 'studentName')">Student ${this.getSortIcon('lessons', 'studentName')}</th>
-                <th class="sortable" onclick="app.sortData('lessons', 'class')">Class ${this.getSortIcon('lessons', 'class')}</th>
+                <th class="sortable" onclick="app.sortData('lessons', 'year')">Year ${this.getSortIcon('lessons', 'year')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'instrument')">Instrument ${this.getSortIcon('lessons', 'instrument')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'dayTime')">Day & Time ${this.getSortIcon('lessons', 'dayTime')}</th>
                 <th class="sortable" onclick="app.sortData('lessons', 'tutorName')">Tutor ${this.getSortIcon('lessons', 'tutorName')}</th>
@@ -973,7 +973,7 @@ class App {
         lessons = this.getSortedData('lessons', lessons);
 
         tbody.innerHTML = lessons.map(lesson => {
-            const student = this.getStudentById(lesson.studentId) || { name: lesson.studentName || 'Unknown', class: '—' };
+            const student = this.getStudentById(lesson.studentId) || { name: lesson.studentName || 'Unknown', year: null };
             const tutor = this.getTutorById(lesson.tutorId) || { name: lesson.tutorName || 'Unknown', initials: 'UN', color: '#888' };
             const dayTime = `${lesson.day} ${lesson.time}`;
             const fundedBadge = lesson.funded
@@ -987,6 +987,8 @@ class App {
                     acknowledgedBadge = '<span class="status-badge status-active" title="Tutor confirmed">Accepted</span>';
                 } else if (lesson.acknowledgmentStatus === 'waitlist') {
                     acknowledgedBadge = '<span class="status-badge status-waiting" title="Added to waitlist">Waitlist</span>';
+                } else if (lesson.acknowledgmentStatus === 'declined') {
+                    acknowledgedBadge = '<span class="status-badge status-declined" title="Tutor declined this lesson">Declined</span>';
                 } else {
                     acknowledgedBadge = '<span class="status-badge status-assigned" title="Tutor responded">Responded</span>';
                 }
@@ -995,9 +997,14 @@ class App {
             }
 
             // Finished status badge
-            const finishedBadge = lesson.finished
-                ? `<span class="status-badge status-inactive" title="Ended ${lesson.finishedAt ? this.formatDate(lesson.finishedAt) : ''}">Finished</span>`
-                : '<span class="text-muted">—</span>';
+            let finishedBadge;
+            if (lesson.finished && lesson.acknowledgmentStatus === 'declined') {
+                finishedBadge = `<span class="status-badge status-declined" title="Declined by tutor ${lesson.finishedAt ? this.formatDate(lesson.finishedAt) : ''}">Declined</span>`;
+            } else if (lesson.finished) {
+                finishedBadge = `<span class="status-badge status-inactive" title="Ended ${lesson.finishedAt ? this.formatDate(lesson.finishedAt) : ''}">Finished</span>`;
+            } else {
+                finishedBadge = '<span class="text-muted">—</span>';
+            }
 
             return `
                 <tr data-id="${lesson.id}" ${lesson.finished ? 'class="row-finished"' : ''}>
@@ -1007,7 +1014,7 @@ class App {
                             <span class="student-name">${student.name}</span>
                         </div>
                     </td>
-                    <td>${student.class}</td>
+                    <td>${student.year ? 'Y' + student.year : '—'}</td>
                     <td>${lesson.instrument}</td>
                     <td>${dayTime}</td>
                     <td>
@@ -1059,7 +1066,6 @@ class App {
             thead.innerHTML = `
                 <th class="sortable" onclick="app.sortData('students', 'name')">Student ${this.getSortIcon('students', 'name')}</th>
                 <th class="sortable" onclick="app.sortData('students', 'year')">Year ${this.getSortIcon('students', 'year')}</th>
-                <th class="sortable" onclick="app.sortData('students', 'class')">Class ${this.getSortIcon('students', 'class')}</th>
                 <th>Instruments</th>
                 <th class="sortable" onclick="app.sortData('students', 'tutorName')">Tutor ${this.getSortIcon('students', 'tutorName')}</th>
                 <th class="sortable" onclick="app.sortData('students', 'status')">Status ${this.getSortIcon('students', 'status')}</th>
@@ -1068,7 +1074,7 @@ class App {
         }
 
         if (this.data.students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="no-data">No students found. Add your first student!</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data">No students found. Add your first student!</td></tr>';
             return;
         }
 
@@ -1105,8 +1111,7 @@ class App {
                             <span class="student-name">${student.name}</span>
                         </div>
                     </td>
-                    <td>${student.year || '—'}</td>
-                    <td>${student.class || '—'}</td>
+                    <td>${student.year ? 'Y' + student.year : '—'}</td>
                     <td>${student.instruments?.join(', ') || '—'}</td>
                     <td>
                         <div class="cell-tutor">
@@ -2015,7 +2020,6 @@ class App {
                     { label: 'Student First Name', name: 'studentFirstName', type: 'text', required: true },
                     { label: 'Student Last Name', name: 'studentLastName', type: 'text', required: true },
                     { label: 'Year Level', name: 'yearLevel', type: 'year', required: true },
-                    { label: 'Class', name: 'class', type: 'text', required: false },
                     { label: 'Parent/Guardian Name', name: 'parentName', type: 'text', required: true },
                     { label: 'Parent Email', name: 'parentEmail', type: 'email', required: true },
                     { label: 'Parent Phone', name: 'parentPhone', type: 'tel', required: true },
@@ -3726,7 +3730,7 @@ class App {
         `;
 
         this.showModal('Edit Lesson', content, () => this.updateLesson());
-        this.initStudentSearch('edit-student-search-input', 'edit-student-search-value', 'edit-student-search-dropdown', matchedStudentId, matchedStudent ? `${matchedStudent.name} (${matchedStudent.class || ''})` : '');
+        this.initStudentSearch('edit-student-search-input', 'edit-student-search-value', 'edit-student-search-dropdown', matchedStudentId, matchedStudent ? `${matchedStudent.name} (Y${matchedStudent.year || '?'})` : '');
     }
 
     async updateLesson() {
@@ -3799,8 +3803,8 @@ class App {
                         <input type="number" name="year" min="1" max="13" value="${student.year || ''}">
                     </div>
                     <div class="form-group">
-                        <label>Class</label>
-                        <input type="text" name="class" value="${student.class || ''}">
+                        <label>Year Level</label>
+                        <input type="number" name="year" value="${student.year || ''}" min="1" max="13">
                     </div>
                 </div>
                 <div class="form-group">
@@ -3863,7 +3867,6 @@ class App {
         const student = {
             name: formData.get('name'),
             year: parseInt(formData.get('year')) || null,
-            class: formData.get('class'),
             instruments: formData.get('instruments').split(',').map(i => i.trim()).filter(i => i),
             groupIds: groupIds,
             parentName: formData.get('parentName') || '',
@@ -5483,7 +5486,7 @@ class App {
                     <div class="member-avatar">${s.name.charAt(0)}</div>
                     <div class="member-info">
                         <div class="member-name">${s.name}</div>
-                        <div class="member-role">Year ${s.year} · ${s.class}</div>
+                        <div class="member-role">Year ${s.year || '?'}</div>
                     </div>
                 </div>
             `).join('')
@@ -5528,7 +5531,6 @@ class App {
                     </div>
                     <div class="response-details">
                         ${r.year ? `<span>Year ${r.year}</span>` : ''}
-                        ${r.class ? `<span>${r.class}</span>` : ''}
                         ${r.email ? `<span>${r.email}</span>` : ''}
                     </div>
                     ${r.notes ? `<div class="response-notes">${r.notes}</div>` : ''}
@@ -6379,14 +6381,14 @@ class App {
         const showDropdown = (filter = '') => {
             const search = filter.toLowerCase();
             const filtered = search
-                ? students.filter(s => s.name.toLowerCase().includes(search) || (s.class || '').toLowerCase().includes(search))
+                ? students.filter(s => s.name.toLowerCase().includes(search) || String(s.year || '').includes(search))
                 : students.slice(0, 20);
 
             if (filtered.length === 0) {
                 dropdown.innerHTML = '<div class="searchable-select-item disabled">No students found</div>';
             } else {
                 dropdown.innerHTML = filtered.map(s =>
-                    `<div class="searchable-select-item" data-value="${s.id}" data-label="${s.name} (${s.class || ''})">${s.name} <span style="color: var(--color-text-muted); font-size: 0.85em;">(${s.class || ''})</span></div>`
+                    `<div class="searchable-select-item" data-value="${s.id}" data-label="${s.name} (Y${s.year || '?'})">${s.name} <span style="color: var(--color-text-muted); font-size: 0.85em;">(Y${s.year || '?'})</span></div>`
                 ).join('');
             }
             dropdown.classList.add('visible');
@@ -6533,10 +6535,6 @@ class App {
                         <label>Year</label>
                         <input type="number" name="year" min="1" max="13" required>
                     </div>
-                    <div class="form-group">
-                        <label>Class</label>
-                        <input type="text" name="class" placeholder="e.g., 7WH" required>
-                    </div>
                 </div>
                 <div class="form-group">
                     <label>Tutor</label>
@@ -6561,8 +6559,7 @@ class App {
 
         const student = {
             name: formData.get('name'),
-            year: parseInt(formData.get('year')),
-            class: formData.get('class'),
+            year: parseInt(formData.get('year')) || null,
             instruments: [],
             tutorId: formData.get('tutorId') || null,
             groupIds: [],
@@ -7612,7 +7609,7 @@ class App {
 
     showCSVImportModal() {
         const dataTypes = [
-            { value: 'students', label: 'Students', fields: ['name', 'class', 'year', 'email', 'parentEmail', 'instrument'] },
+            { value: 'students', label: 'Students', fields: ['name', 'year', 'email', 'parentEmail', 'instrument'] },
             { value: 'tutors', label: 'Staff/Tutors', fields: ['name', 'email', 'phone', 'instruments', 'role'] },
             { value: 'lessons', label: 'Lesson List', fields: ['studentName', 'tutorName', 'instrument', 'day', 'time', 'location', 'type'] },
             { value: 'lessonRequests', label: 'Lesson Requests', fields: ['studentName', 'instrument', 'parentEmail', 'notes', 'status', 'preferredDay'] },
@@ -7894,7 +7891,7 @@ class App {
     showCSVPreviewModal(importType, headers, dataRows) {
         // Define expected fields for each type
         const fieldMappings = {
-            students: ['name', 'class', 'year', 'instruments', 'parentEmail'],
+            students: ['name', 'year', 'instruments', 'parentEmail'],
             lessons: ['studentName', 'tutorName', 'instrument', 'day', 'time'],
             tutors: ['name', 'email', 'phone', 'instruments']
         };
@@ -8300,9 +8297,9 @@ class App {
             case 'tutorName':
                 const tutor = this.getTutorById(item.tutorId);
                 return tutor?.name || item.tutorName || '';
-            case 'class':
-                const studentForClass = this.getStudentById(item.studentId);
-                return studentForClass?.class || item.class || '';
+            case 'year':
+                const studentForYear = this.getStudentById(item.studentId);
+                return studentForYear?.year || item.year || 0;
             case 'dayTime':
                 return `${item.day || ''} ${item.time || ''}`;
             default:
