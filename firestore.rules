@@ -118,10 +118,9 @@ service cloud.firestore {
     // Students collection
     match /students/{studentId} {
       allow read, write: if isAdmin();
-      // Tutors with valid token can read students assigned to them
+      // Tutors with valid token can read individual students
       // (they need this to see student names in their lessons)
-      allow read: if request.auth == null &&
-                    request.resource == null;  // Read only, handled via lessons
+      allow get: if true;
     }
 
     // Tutors collection
@@ -146,8 +145,9 @@ service cloud.firestore {
       // These are the fields tutors can modify via their portal
       allow update: if !isAdmin() &&
                       request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['acknowledged', 'status', 'time', 'day', 'location',
-                                  'finished', 'notes', 'updatedAt']);
+                        .hasOnly(['acknowledged', 'acknowledgedAt', 'acknowledgmentStatus',
+                                  'status', 'time', 'day', 'location',
+                                  'finished', 'finishedAt', 'notes', 'updatedAt']);
     }
 
     // Groups collection

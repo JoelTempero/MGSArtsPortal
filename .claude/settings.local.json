@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(git config:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cd /d/Github/Clients/MGSArtsPortal && npx firebase deploy --only firestore:rules 2>&1)",
+      "Bash(cd /d/Github/Clients/MGSArtsPortal && npx firebase deploy --only hosting 2>&1)"
     ]
   }
 }

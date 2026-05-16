@@ -1,0 +1,278 @@
+/**
+ * Bulk update student year levels from spreadsheet data.
+ * Paste into browser console on admin portal, then run: await updateYears()
+ */
+
+const YEAR_DATA = {
+  "ashton gee|elnsmgee@hotmail.co.nz": 10,
+  "rocco edwards|summereedwards@gmail.com": 8,
+  "jerrick dhale frasco pia|jeannettefrasco@yahoo.com": 12,
+  "hongrui (ray) qiu|gracexue831219@gmail.com": 7,
+  "karl shi|yettashi@gmail.com": 11,
+  "gedeon tseng|henry.christinatseng@gmail.com": 6,
+  "matthew jaeger|jaegerfamilynz@gmail.com": 12,
+  "nate birse|lissa@functiongroup.co.nz": 11,
+  "joshua festing|t.festing@gmail.com": 9,
+  "asher wallis|geoff.emma@gmail.com": 9,
+  "joshua gerretsen|esteg7@gmail.com": 12,
+  "katrina melody watts|jacqui_honeypot@hotmail.com": 11,
+  "blake wilson|joshandcourtneyw@gmail.com": 6,
+  "thomas you|fenwang0822@gmail.com": 9,
+  "sara wong|dkp.wong@gmail.com": 4,
+  "tahlia trethowan|jamieetrethowan@live.com": 9,
+  "neeva trethowan|jamieetrethowan@live.com": 6,
+  "eden mcgowan|kjmcgowan8 @gmail.com": 9,
+  "sarah wang|wangna.chch@gmail.com": 12,
+  "jayden wang|elsahubo6@gmail.com": 7,
+  "raphael lau|rebeccamonki@gmail.com": 5,
+  "grace prince|maureenprince7@gmail.com": 12,
+  "gabrielle hsu|suisiu@yahoo.com": 11,
+  "kiah ashwell|super.bluff@hotmail.com": 12,
+  "liam young|markandgina@gmail.com": 13,
+  "sakura ishii|nobutiny@icloud.com": 10,
+  "ran ishii|nobutiny@icloud.com": 10,
+  "aiden son|hyun7022328@gmail.com": 5,
+  "nathaniel yip|alexcandy.yip@gmail.com": 6,
+  "cody ballinger|frostette2@hotmail.com": 11,
+  "samuel pellow|r.c.pellow@xtra.co.nz": 9,
+  "samuel mattingley|naiomi.mattingley@gmail.com": 7,
+  "hyunu lee|hoyoungandlauren@gmail.com": 9,
+  "bianka yang|sgsuli@hotmail.com": 11,
+  "vincent campbell|tiffa@hotmail.co.nz": 5,
+  "isaac moe|we3moes@me.com": 6,
+  "jayden alec cortez|jaydenalex81@yahoo.com": 11,
+  "zechariah si|miniko1943@gmail.com": 8,
+  "jayden watson|bridgetmail@me.com": 7,
+  "ellie mae jaquiery|nathandcarrie@yahoo.com": 9,
+  "ella-rose mcconnell|sjmcconnell4@gmail.com": 10,
+  "jimmy minty|emily@mintdevelopments.co.nz": 3,
+  "nathan parker|matt.lesley.parker@gmail.com": 13,
+  "ethan highsted|jo.highsted@gmail.com": 13,
+  "austin fletcher|dawnjean@gmail.com": 9,
+  "william breeze|faith.jeremiah@hotmail.com": 12,
+  "avion samuels|wilfred.samuels@hotmail.com": 8,
+  "joshua ferguson|thefergclan@hotmail.com": 11,
+  "jake van tonder|nvantonder76@gmail.com": 4,
+  "austen pope|roland.pope@gmail.com": 10,
+  "paige churton|kimchurton@yahoo.co.nz": 8,
+  "samuel chyn an wong|dkp.wong@gmail.com": 10,
+  "oliver pomare|thepomares@gmail.com": 11,
+  "reuben ure|timandkirst@yahoo.co.nz": 11,
+  "ryan chan|jc.chan08@gmail.com": 13,
+  "thane walker|walker.christchurch@gmail.com": 10,
+  "ethan chan|jc.chan08@gmail.com": 10,
+  "lucas qiao|michael_qcs@hotmail.com": 7,
+  "theo kench|ameliakench@gmail.com": 5,
+  "henry scoulding|simon.scoulding@gmail.com": 10,
+  "flynn atkinson|mellyc999@gmail.com": 10,
+  "israel couperus|ljcouperus@gmail.com": 9,
+  "nikhil lal|sonyanesh@yahoo.com": 12,
+  "aiden john reynolds|richard.reynolds@hamiltonjet.nz": 11,
+  "raymond im|yangcellina78@naver.com": 11,
+  "rosemary gerretsen|esteg7@gmail.com": 10,
+  "luke baker|bakerfam2007@gmail.com": 7,
+  "levi wallis|geoff.emma@gmail.com": 12,
+  "ethan clancey|liesl.clancey@gmail.com": 6,
+  "sam clancey|liesl.clancey@gmail.com": 4,
+  "joseph kuo|muhsinhsu@gmail.com": 4,
+  "micah atkinson|mellyc999@gmail.com": 6,
+  "jedidiah igot|edilenson@gmail.com": 11,
+  "zara tse|peggytsui@gmail.com": 12,
+  "jayden cortez|jaydenalex81@yahoo.com": 11,
+  "jonathan lim|emmelin.lee@gmail.com": 11,
+  "steve lee|hyun54385432@gmail.com": 12,
+  "oliver owen|gjo@hotmail.co.nz": 11,
+  "asher thomas drake|andrew@drake.nz": 7,
+  "aiden reynolds|treynoldsrn@gmail.com": 11,
+  "roy park|bluezone1999@hanmail.net": 8,
+  "nathan abin jose|elsa.pretty@gmail.com": 7,
+  "daniel esterhuizen|angelique_esterhuizen@yahoo.com": 11,
+  "therese surrey|surreyfamily2006@gmail.com": 11,
+  "lime park|bluezone1999@hanmail.net": 6,
+  "ricky wu|lukewu19850816@gmail.com": 8,
+  "aine sugiyama|excelnz.haruna@gmail.com": 11,
+  "annabelle venter|venterphia@gmail.com": 10,
+  "matthew hentschel|bridey75@outlook.co.nz": 11,
+  "karston davie|brent.neeley.davie@gmail.com": 11,
+  "aida-mae auld|lauracauld@gmail.com": 12,
+  "travis ballinger|frostette2@hotmail.com": 8,
+  "tom robson|grobson23@gmail.com": 12,
+  "joshua john scarrott|tracey_scarrott1970@live.com": 12,
+  "micah davis|daviskelly12@gmail.com": 11,
+  "pedro pellizzari|andholl@gmail.com": 9,
+  "chanho jeon|drem8001@gmail.com": 8,
+  "ritsuki kawai|maiko_can@yahoo.co.jp": 11,
+  "sienna ellena|timandruthellena@gmail.com": 9,
+  "lucy penno|joy.penno65@gmail.com": 12,
+  "ezra edwards|summereedwards@gmail.com": 12,
+  "rintaro yamashita|excelnz.haruna@gmail.com": 11,
+  "sol armstrong|elisearm@gmail.com": 12,
+  "blake ramsay|kellandruth@ramsay.org.nz": 9,
+  "valeria galaz|yareni.duarte@gmail.com": 12,
+  "hanalei siose|utahlicious@msn.com": 12,
+  "bella wong|bravtrust@gmail.com": 7,
+  "ethan mcconnell|sjmcconnell4@gmail.com": 12,
+  "taj armstrong|elisearm@gmail.com": 8,
+  "evie brown|lizzy.sisson@gmail.com": 9,
+  "luke churton|kimchurton@yahoo.co.nz": 11,
+  "james carpenter|bradandfleur@gmail.com": 9,
+  "naomi roberts|marionelephant@gmail.com": 12,
+  "sam ure|timandkirst@yahoo.co.nz": 9,
+  "monty given|andygiven2@gmail.com": 12,
+  "lillie birse|lissa@functiongroup.co.nz": 9,
+  "grace holah|timmy.holah@grace.org.nz": 9,
+  "adelia orr|dankatorr@gmail.com": 11,
+  "maddie wallis|geoff.emma@gmail.com": 13,
+  "isaac cooper|heatherbulman@hotmail.com": 9,
+  "aaron festing|t.festing@gmail.com": 7,
+  "aspen alessandra barr|salvebanatao@yahoo.com": 11,
+  "olive hope|hope.jessicamarie@gmail.com": 7,
+  "anastasia hardanava|vhardanava@icloud.com": 12,
+  "malea marsden|amyboss@temapua.com": 11,
+  "isaac tilbury|richard.tilbury@hotmail.co.nz": 13,
+  "madeline posthuma|amposthuma1@gmail.com": 9,
+  "lewis posthuma|amposthuma1@gmail.com": 7,
+  "sara owen|gjo@hotmail.co.nz": 12,
+  "christine jones|roderick.laura@xtra.co.nz": 12,
+  "pedro kaue pellizzari|andholl@gmail.com": 9,
+  "sylvie watson|tonykristyw@tson.nz": 8,
+  "eliana edith humphrey|hilaryhumphreynz@gmail.com": 10,
+  "xin-yang ethan shi|juliette.sun@icloud.com": 11,
+  "jerrick dhale pia|jeannettefrasco@yahoo.com": 12,
+  "ephraim sinclair|jodiehasse@hotmail.com": 10,
+  "leaongo misa|ms_misa @xtra.co.nz": 6,
+  "natalie rin|vjrin@live.com": 7,
+  "james mattingley|naiomi.mattingley@gmail.com": 5,
+  "abigail mattingley|naiomi.mattingley@gmail.com": 4,
+  "xavier dendle|teamdendle@gmail.com": 9,
+  "jaegar yang|sgsuli@hotmail.com": 7,
+  "ella wei|jeff_wei55@hotmail.com": 9,
+  "amber judkins|judkins.family@xtra.co.nz": 12,
+  "percy read|em.and.m.read@gmail.com": 5,
+  "matthew smit|maggiesmit@hotmail.co.za": 7,
+  "phoenix wiegersma|oliviawiegersma5@gmail.com": 9,
+  "cailin heathcote|chpsychologynz@gmail.com": 6,
+  "faith emmanuelle dotulong|septioktaviani.so@gmail.com": 13,
+  "jack uy|uypunlok@gmail.com": 7,
+  "reuben gibbs|michelle.gibbs.nz@gmail.com": 5,
+  "austin posthuma|amposthuma1@gmail.com": 11,
+  "jaden konda|kondaswetha@gmail.com": 10,
+  "shelby rose jaquiery|nathandcarrie@yahoo.com": 3,
+  "mara verdes|bella0577@yahoo.com": 9,
+  "bennett france|aliciagracefrance@gmail.com": 4,
+  "zephath wasa|yinasimlawi@gmail.com": 3,
+  "ava catacutan|rosseyanne.1714@gmail.com": 3,
+  "mila rose humphrey|hilaryhumphreynz@gmail.com": 8,
+  "charlotte pelotin|1jpelotin@gmail.com": 10,
+  "caitlin goodall|": 4,
+  "amelia goodall|": 7,
+  "mya reynolds|": 6,
+  "samuel hurren|": 5,
+  "charlie watson|": 6,
+  "marcus neyra|": 10,
+  "jasmine cornish|": 6,
+  "lydia cole|kendylcole87@gmail.com": 8,
+  "sophie pellow|r.c.pellow@xtra.co.nz": 13,
+  "arden monk|jaimie.monk@outlook.com": 8,
+  "billy minty|emily@mintdevelopments.co.nz": 6,
+  "ihaia hikuroa|handlingmany@gmail.com": 6,
+  "tiaho maia hikuroa|handlingmany@gmail.com": 5,
+  "angelique higgins|jane@peterdiver.co.nz": 6,
+  "zoe zheng|zbob0706@gmail.com": 7,
+  "gabriel perry|imeeperry@gmail.com": 5,
+  "sophia koshchienko|margarita8koshchienko@gmail.com": 3,
+  "olivia kan|rachel.kan@live.com": 11,
+  "valeria galaz duarte|yareni.duarte@gmail.com": 12,
+  "moses petla|benjaminsudhanewzealand@gmail.com": 5,
+  "henco sebastiaan de nysschen|elize.denysschen@gmail.com": 10,
+  "grace maheswari|ribkawilda @gmail.com": 3,
+  "eli highsted|jo.highsted@gmail.com": 8,
+  "jemima scoulding|simon.scoulding@gmail.com": 7,
+  "alice caitlyn au|beks98@gmail.com": 6,
+  "jordan lucas au|beks98@gmail.com": 4,
+  "ayala moe|we3moes@me.com": 12,
+  "joshua judkins|judkins.family@xtra.co.nz": 11,
+  "jasper read|em.and.m.read@gmail.com": 9,
+  "ephraim couperus|ljcouperus@gmail.com": 11,
+  "anastasia wright|elsybear@gmail.com": 10,
+  "kira weston|gns4life@gmail.com": 11,
+  "daniel yeo|chwee@yeoz.com": 12,
+  "verity oldham|markandbri@gmail.com": 7,
+  "abigail zarah iyjo|sumi.iyjo@gmail.com": 3,
+  "eliana chyn hui wong|dkp.wong@gmail.com": 8,
+  "grace maheswari|ribkawilda@gmail.com": 3,
+  "joseph su|minwueve@mail.com": 9,
+  "addison trethowan|jamieetrethowan@live.com": 3,
+  "evie hope|hope.jessicamarie@gmail.com": 5,
+  "zoe fyfe|fyfewhanau@gmail.com": 10,
+  "grant su|minwueve@gmail.com": 6,
+  "joseph su|minwueve@gmail.com": 9,
+  "wilf lowe|megs_lowe@yahoo.co.nz": 10,
+  "zoey harrison|justinharrison@yahoo.com": 12,
+  "jasmine xie|sunshan0323@gmail.com": 3,
+  "keziah horn|rhian.horn@gmail.com": 12,
+  "carla van der nest|riaan@vdnest.co.nz": 10,
+  "isabel moe|we3moes@me.com": 9,
+  "mia wang|wangna.chch@gmail.com": 7,
+  "anja jennings|sisijennings5@gmail.com": 9,
+  "elysia hartstonge|matt.hartstonge@gmail.com": 11,
+  "emma wu|abc100111310@hotmail.com": 3,
+  "imri dinnissen|ahdfamily@gmail.com": 9,
+  "bree bennetts|bennettsfamilynz@gmail.com": 11,
+  "quinn dendle|teamdendle@gmail.com": 11,
+  "lienka muller|elanza@playball.co.nz": 10,
+  "tiffany norriss|hongnorriss@gmail.com": 9,
+  "anya flora wong|floratie@gmail.com": 11,
+  "sloane ramsay|kellandruth@ramsay.org.nz": 11
+};
+
+async function updateYears() {
+    console.log('MGS Arts Portal - Year Level Update');
+    console.log('====================================');
+
+    // Import Firebase
+    const { getApp } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+    const { getFirestore, collection, getDocs, doc, updateDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+
+    const app = getApp();
+    const db = getFirestore(app);
+
+    // Load all students
+    console.log('\nLoading students from Firestore...');
+    const snapshot = await getDocs(collection(db, 'students'));
+    const students = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log(`Found ${students.length} students`);
+
+    let updated = 0, notFound = 0, alreadySet = 0;
+
+    for (const student of students) {
+        const key = `${(student.name || '').toLowerCase().trim()}|${(student.parentEmail || '').toLowerCase().trim()}`;
+        const year = YEAR_DATA[key];
+
+        if (year !== undefined) {
+            if (student.year === year) {
+                alreadySet++;
+                continue;
+            }
+            try {
+                await updateDoc(doc(db, 'students', student.id), {
+                    year: year,
+                    updatedAt: serverTimestamp()
+                });
+                updated++;
+                if (updated % 20 === 0) console.log(`  ... ${updated} updated`);
+            } catch (err) {
+                console.error(`  Failed to update ${student.name}:`, err.message);
+            }
+        } else {
+            notFound++;
+        }
+    }
+
+    console.log('\n====================================');
+    console.log('Year update complete!');
+    console.log(`   Updated:     ${updated}`);
+    console.log(`   Already set: ${alreadySet}`);
+    console.log(`   No match:    ${notFound}`);
+    console.log('\nReload the page to see the changes.');
+}

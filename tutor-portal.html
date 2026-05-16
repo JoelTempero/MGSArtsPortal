@@ -51,7 +51,7 @@
         }
 
         .card-body {
-            padding: 2rem;
+            padding: 0;
         }
 
         .loading {
@@ -91,6 +91,7 @@
         .auth-form {
             max-width: 400px;
             margin: 0 auto;
+            padding: 2rem;
         }
 
         .auth-form h2 {
@@ -110,16 +111,19 @@
             color: #374151;
         }
 
-        .form-group input {
+        .form-group input,
+        .form-group select {
             width: 100%;
-            padding: 0.875rem 1rem;
+            padding: 0.75rem 1rem;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.2s;
+            background: white;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #c9a227;
         }
@@ -130,19 +134,21 @@
             margin-top: 0.5rem;
         }
 
+        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            padding: 0.875rem 1.5rem;
+            gap: 0.4rem;
+            padding: 0.625rem 1rem;
             border: none;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             text-decoration: none;
+            white-space: nowrap;
         }
 
         .btn:disabled {
@@ -150,10 +156,18 @@
             cursor: not-allowed;
         }
 
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
             color: #1a1f2e;
             width: 100%;
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
         }
 
         .btn-primary:hover:not(:disabled) {
@@ -163,7 +177,6 @@
         .btn-accept {
             background: linear-gradient(135deg, #059669 0%, #10b981 100%);
             color: white;
-            flex: 1;
         }
 
         .btn-accept:hover:not(:disabled) {
@@ -173,39 +186,52 @@
         .btn-waitlist {
             background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
             color: white;
-            flex: 1;
         }
 
         .btn-waitlist:hover:not(:disabled) {
             background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
         }
 
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
+        .btn-decline {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
         }
 
-        .btn svg {
-            width: 18px;
-            height: 18px;
+        .btn-decline:hover:not(:disabled) {
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #fca5a5;
         }
 
         .btn-edit {
-            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-            color: white;
+            background: #eef2ff;
+            color: #4f46e5;
+            border: 1px solid #c7d2fe;
         }
 
         .btn-edit:hover:not(:disabled) {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            background: #e0e7ff;
         }
 
         .btn-end {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            color: white;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
         }
 
         .btn-end:hover:not(:disabled) {
-            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+            background: #fee2e2;
+        }
+
+        .btn-toggle {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+
+        .btn-toggle:hover:not(:disabled) {
+            background: #fef3c7;
         }
 
         .btn-outline {
@@ -219,121 +245,323 @@
             border-color: #d1d5db;
         }
 
-        /* Tutor Welcome */
-        .tutor-welcome {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid #c9a227;
+        .btn-ghost {
+            background: transparent;
+            color: #6b7280;
+            padding: 0.5rem 0.75rem;
         }
 
-        .tutor-avatar {
-            width: 64px;
-            height: 64px;
+        .btn-ghost:hover:not(:disabled) {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border: none;
+            background: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: #374151;
+            background: #f3f4f6;
+        }
+
+        .tab-btn.active {
+            color: #c9a227;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #c9a227;
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .tab-badge {
+            background: #dc2626;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .tab-badge.empty {
+            background: #d1d5db;
+        }
+
+        /* Welcome Bar */
+        .welcome-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .welcome-avatar {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #c9a227 0%, #dbb42c 100%);
             color: #1a1f2e;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 0.9rem;
             font-weight: 700;
-            margin: 0 auto 1rem;
+            flex-shrink: 0;
         }
 
-        .tutor-welcome h2 {
+        .welcome-text h2 {
+            font-size: 1rem;
             color: #1a1f2e;
-            margin-bottom: 0.25rem;
+            line-height: 1.2;
         }
 
-        .tutor-welcome p {
-            color: #6b7280;
-            font-size: 0.95rem;
+        .welcome-text p {
+            font-size: 0.8rem;
+            color: #9ca3af;
         }
 
-        /* Lessons List */
-        .lessons-section h3 {
-            color: #1a1f2e;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        /* Page Content */
+        .page-content {
+            padding: 1.5rem;
         }
 
-        .lessons-count {
-            background: #f3f4f6;
-            color: #6b7280;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .lesson-card {
+        /* Inbox Cards */
+        .inbox-card {
             background: #f9fafb;
             border-radius: 10px;
             padding: 1.25rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
             border: 1px solid #e5e7eb;
-        }
-
-        .lesson-card.pending {
             border-left: 4px solid #6b7280;
         }
 
-        .lesson-card.accepted {
-            border-left: 4px solid #10b981;
-        }
-
-        .lesson-card.waitlist {
-            border-left: 4px solid #f59e0b;
-        }
-
-        .lesson-card.finished {
-            border-left: 4px solid #9ca3af;
-            opacity: 0.7;
-            background: #f3f4f6;
-        }
-
-        .status-finished {
-            background: #e5e7eb;
-            color: #6b7280;
-        }
-
-        .lesson-header {
+        .inbox-card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
-        .student-name {
-            font-size: 1.125rem;
+        .inbox-student-name {
+            font-size: 1.1rem;
             font-weight: 700;
             color: #1a1f2e;
         }
 
-        .lesson-instrument {
-            font-size: 0.9rem;
+        .inbox-instrument {
+            font-size: 0.85rem;
             color: #6b7280;
-            margin-top: 0.25rem;
+            margin-top: 0.15rem;
         }
 
-        .lesson-status {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
+        .inbox-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .inbox-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .inbox-meta svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .inbox-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .inbox-actions .btn {
+            flex: 1;
+        }
+
+        .inbox-actions .btn-decline {
+            flex: 0 0 auto;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: #6b7280;
+        }
+
+        .empty-state svg {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+        }
+
+        .empty-state h3 {
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar .search-input {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.5rem 0.75rem;
+            padding-left: 2rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 0.5rem center no-repeat;
+        }
+
+        .filter-bar .search-input:focus {
+            outline: none;
+            border-color: #c9a227;
+        }
+
+        .filter-bar select {
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-bar select:focus {
+            outline: none;
+            border-color: #c9a227;
+        }
+
+        /* Student Table */
+        .student-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .student-table th {
+            text-align: left;
+            padding: 0.625rem 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            border-bottom: 2px solid #e5e7eb;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
         }
 
-        .status-pending {
-            background: #f3f4f6;
+        .student-table th:hover {
             color: #6b7280;
         }
 
-        .status-accepted {
+        .student-table th.sorted {
+            color: #c9a227;
+        }
+
+        .student-table th .sort-arrow {
+            display: inline-block;
+            margin-left: 0.25rem;
+            font-size: 0.6rem;
+        }
+
+        .student-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        .student-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        .student-table .td-name {
+            font-weight: 600;
+            color: #1a1f2e;
+        }
+
+        .student-table .td-actions {
+            text-align: right;
+            white-space: nowrap;
+            display: flex;
+            gap: 0.35rem;
+            justify-content: flex-end;
+        }
+
+        .student-table .td-actions .btn {
+            padding: 0.35rem 0.6rem;
+            font-size: 0.75rem;
+        }
+
+        .student-table .td-actions .btn svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .status-active {
             background: #d1fae5;
             color: #059669;
         }
@@ -343,57 +571,86 @@
             color: #d97706;
         }
 
-        .lesson-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1rem;
+        .status-declined {
+            background: #fee2e2;
+            color: #dc2626;
         }
 
-        .lesson-detail {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .lesson-detail-label {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .lesson-detail-value {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .lesson-actions {
-            display: flex;
-            gap: 0.75rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .no-lessons {
-            text-align: center;
-            padding: 3rem;
+        .status-finished {
+            background: #e5e7eb;
             color: #6b7280;
         }
 
-        .no-lessons svg {
-            width: 48px;
-            height: 48px;
-            margin-bottom: 1rem;
-            opacity: 0.5;
+        .status-pending {
+            background: #f3f4f6;
+            color: #6b7280;
         }
 
-        .footer-note {
-            text-align: center;
-            padding: 1rem;
-            color: #9ca3af;
+        /* Collapsible Section */
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 0;
+            margin-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            cursor: pointer;
+            color: #6b7280;
             font-size: 0.85rem;
-            background: #f9fafb;
-            border-radius: 8px;
+            font-weight: 600;
+            user-select: none;
+        }
+
+        .collapsible-header:hover {
+            color: #374151;
+        }
+
+        .collapsible-header svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s;
+        }
+
+        .collapsible-header.open svg {
+            transform: rotate(90deg);
+        }
+
+        .collapsible-header .finished-count {
+            background: #e5e7eb;
+            color: #6b7280;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .collapsible-content {
+            display: none;
+        }
+
+        .collapsible-content.open {
+            display: block;
+        }
+
+        .finished-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.85rem;
+            color: #9ca3af;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .finished-row .finished-name {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .finished-row .finished-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.8rem;
         }
 
         /* Modal */
@@ -414,7 +671,7 @@
         .modal {
             background: white;
             border-radius: 12px;
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
@@ -442,53 +699,295 @@
             justify-content: flex-end;
         }
 
-        .form-group select {
+        /* Schedule Modal Specific */
+        .schedule-success {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .schedule-success svg {
+            width: 48px;
+            height: 48px;
+            color: #10b981;
+            margin-bottom: 0.75rem;
+        }
+
+        .schedule-success h3 {
+            color: #059669;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .schedule-success p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* Help Guide */
+        .help-guide {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+        }
+
+        .help-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            padding: 0.875rem 1rem;
+            padding: 0.75rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #92400e;
+        }
+
+        .help-toggle:hover {
+            background: #fef3c7;
+        }
+
+        .help-toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .help-toggle svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .help-toggle .chevron {
+            transition: transform 0.2s;
+        }
+
+        .help-toggle.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .help-content {
+            display: none;
+            padding: 0 1rem 1rem;
+        }
+
+        .help-content.open {
+            display: block;
+        }
+
+        .help-item {
+            margin-bottom: 0.75rem;
+        }
+
+        .help-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .help-item h4 {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 0.2rem;
+        }
+
+        .help-item p {
+            font-size: 0.8rem;
+            color: #78350f;
+            line-height: 1.4;
+        }
+
+        /* Time Picker */
+        .time-picker {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .time-picker select {
+            flex: 1;
+            padding: 0.75rem 0.5rem;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 1rem;
             background: white;
             cursor: pointer;
+            text-align: center;
         }
 
-        .form-group select:focus {
+        .time-picker select:focus {
             outline: none;
             border-color: #c9a227;
         }
 
-        .lesson-actions-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .time-picker .time-sep {
+            font-weight: 700;
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        /* Confirm Modal */
+        .confirm-modal-icon {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .confirm-modal-icon svg {
+            width: 48px;
+            height: 48px;
+        }
+
+        .confirm-modal-icon.warning svg {
+            color: #f59e0b;
+        }
+
+        .confirm-modal-icon.danger svg {
+            color: #dc2626;
+        }
+
+        .confirm-modal-icon.error svg {
+            color: #dc2626;
+        }
+
+        .confirm-modal-title {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1f2e;
+            margin-bottom: 0.5rem;
+        }
+
+        .confirm-modal-message {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .confirm-modal-footer {
+            display: flex;
             gap: 0.75rem;
-            padding-top: 1rem;
+            padding: 1rem 1.5rem;
             border-top: 1px solid #e5e7eb;
         }
 
-        .lesson-actions-grid .btn-end {
-            grid-column: 1 / -1;
+        .confirm-modal-footer .btn {
+            flex: 1;
         }
 
-        .finished-note {
+        /* Footer */
+        .footer-note {
             text-align: center;
             padding: 1rem;
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+
+        /* Mobile Table */
+        .mobile-cards {
+            display: none;
+        }
+
+        .mobile-student-card {
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        .mobile-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+
+        .mobile-card-name {
+            font-weight: 600;
+            color: #1a1f2e;
+            font-size: 0.95rem;
+        }
+
+        .mobile-card-instrument {
+            font-size: 0.8rem;
             color: #6b7280;
-            font-size: 0.875rem;
-            font-style: italic;
+        }
+
+        .mobile-card-details {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .mobile-card-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .mobile-card-actions .btn {
+            flex: 1;
+            min-width: 0;
         }
 
         /* Responsive */
         @media (max-width: 640px) {
-            .lesson-actions {
+            .container {
+                padding: 1rem 0.5rem;
+            }
+
+            .card-header {
+                padding: 1rem 1.5rem;
+            }
+
+            .card-header h1 {
+                font-size: 1.25rem;
+            }
+
+            .page-content {
+                padding: 1rem;
+            }
+
+            .inbox-actions {
+                flex-wrap: wrap;
+            }
+
+            .inbox-actions .btn {
+                font-size: 0.8rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            .student-table {
+                display: none;
+            }
+
+            .mobile-cards {
+                display: block;
+            }
+
+            .filter-bar {
                 flex-direction: column;
             }
 
-            .lesson-actions-grid {
-                grid-template-columns: 1fr;
+            .filter-bar select {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .inbox-actions {
+                flex-direction: column;
             }
 
-            .btn {
-                width: 100%;
+            .inbox-actions .btn-decline {
+                flex: 1;
             }
         }
     </style>
@@ -529,17 +1028,105 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="edit-time">Time</label>
-                    <input type="text" id="edit-time" placeholder="e.g., 9:00 AM">
-                </div>
-                <div class="form-group">
-                    <label for="edit-location">Location</label>
-                    <input type="text" id="edit-location" placeholder="e.g., Music Room 1">
+                    <label>Time</label>
+                    <div class="time-picker" id="edit-time-picker">
+                        <select id="edit-time-hour">
+                            <option value="">--</option>
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                        </select>
+                        <span class="time-sep">:</span>
+                        <select id="edit-time-min">
+                            <option value="00">00</option><option value="05">05</option><option value="10">10</option>
+                            <option value="15">15</option><option value="20">20</option><option value="25">25</option>
+                            <option value="30">30</option><option value="35">35</option><option value="40">40</option>
+                            <option value="45">45</option><option value="50">50</option><option value="55">55</option>
+                        </select>
+                        <select id="edit-time-period">
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline btn-sm" onclick="closeEditModal()">Cancel</button>
-                <button class="btn btn-primary btn-sm" onclick="saveLesson()">Save Changes</button>
+                <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-accept" onclick="saveLesson()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal (shown after accepting) -->
+    <div class="modal-overlay" id="schedule-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-body">
+                <div class="schedule-success">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    <h3>Lesson Accepted</h3>
+                    <p>Would you like to set the day and time now?</p>
+                </div>
+                <input type="hidden" id="schedule-lesson-id">
+                <div class="form-group">
+                    <label for="schedule-day">Day</label>
+                    <select id="schedule-day">
+                        <option value="">Select day...</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Time</label>
+                    <div class="time-picker" id="schedule-time-picker">
+                        <select id="schedule-time-hour">
+                            <option value="">--</option>
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+                            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                        </select>
+                        <span class="time-sep">:</span>
+                        <select id="schedule-time-min">
+                            <option value="00">00</option><option value="05">05</option><option value="10">10</option>
+                            <option value="15">15</option><option value="20">20</option><option value="25">25</option>
+                            <option value="30">30</option><option value="35">35</option><option value="40">40</option>
+                            <option value="45">45</option><option value="50">50</option><option value="55">55</option>
+                        </select>
+                        <select id="schedule-time-period">
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="skipSchedule()">I'll Do This Later</button>
+                <button class="btn btn-accept" onclick="saveSchedule()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm/Alert Modal -->
+    <div class="modal-overlay" id="confirm-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-body">
+                <div class="confirm-modal-icon" id="confirm-modal-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <div class="confirm-modal-title" id="confirm-modal-title"></div>
+                <div class="confirm-modal-message" id="confirm-modal-message"></div>
+            </div>
+            <div class="confirm-modal-footer" id="confirm-modal-footer">
             </div>
         </div>
     </div>
@@ -580,6 +1167,8 @@
 
         let currentTutor = null;
         let currentLessons = [];
+        let currentPage = 'inbox';
+        let filters = { status: 'all', search: '', sortBy: 'name', sortDir: 'asc' };
 
         if (!token) {
             showError('Invalid link', 'This link is missing required information. Please use the link from your email.');
@@ -589,7 +1178,6 @@
 
         async function loadTutorToken() {
             try {
-                // Fetch the tutor token document
                 const tokenRef = doc(db, 'tutorTokens', token);
                 const tokenDoc = await getDoc(tokenRef);
 
@@ -600,13 +1188,11 @@
 
                 const tokenData = tokenDoc.data();
 
-                // Check if token has expired
                 if (tokenData.expiresAt && new Date(tokenData.expiresAt) < new Date()) {
                     showError('Link expired', 'This link has expired. Please contact the school for a new link.');
                     return;
                 }
 
-                // Fetch the tutor details
                 const tutorRef = doc(db, 'tutors', tokenData.tutorId);
                 const tutorDoc = await getDoc(tutorRef);
 
@@ -617,7 +1203,6 @@
 
                 currentTutor = { id: tutorDoc.id, ...tutorDoc.data() };
 
-                // Check if already authenticated in this session
                 const sessionAuth = sessionStorage.getItem(`tutor_auth_${token}`);
                 if (sessionAuth === 'true') {
                     await loadTutorLessons();
@@ -633,7 +1218,7 @@
 
         function showError(title, message) {
             contentEl.innerHTML = `
-                <div class="error-message">
+                <div class="error-message" style="padding: 2rem;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="15" y1="9" x2="9" y2="15"/>
@@ -680,18 +1265,13 @@
             const errorEl = document.getElementById('auth-error');
 
             const enteredLastName = lastNameInput.value.trim().toLowerCase();
-
-            // Get the tutor's last name (last word in name)
             const tutorNameParts = currentTutor.name.trim().split(' ');
             const tutorLastName = tutorNameParts[tutorNameParts.length - 1].toLowerCase();
 
             if (enteredLastName === tutorLastName) {
-                // Authenticated - save to session
                 sessionStorage.setItem(`tutor_auth_${token}`, 'true');
-
                 verifyBtn.disabled = true;
                 verifyBtn.innerHTML = '<div class="loading-spinner" style="width: 20px; height: 20px; margin: 0;"></div> Loading...';
-
                 await loadTutorLessons();
             } else {
                 errorEl.textContent = 'Last name does not match our records. Please try again.';
@@ -703,7 +1283,6 @@
 
         async function loadTutorLessons() {
             try {
-                // Fetch all lessons for this tutor
                 const lessonsQuery = query(
                     collection(db, 'lessons'),
                     where('tutorId', '==', currentTutor.id)
@@ -715,7 +1294,7 @@
                     currentLessons.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Resolve student names for lessons that have studentId but no studentName
+                // Resolve student names
                 const needsLookup = currentLessons.filter(l => !l.studentName && l.studentId);
                 if (needsLookup.length > 0) {
                     const studentIds = [...new Set(needsLookup.map(l => l.studentId))];
@@ -737,15 +1316,7 @@
                     });
                 }
 
-                // Sort: pending first, then by student name
-                currentLessons.sort((a, b) => {
-                    if (a.acknowledged === b.acknowledged) {
-                        return (a.studentName || '').localeCompare(b.studentName || '');
-                    }
-                    return a.acknowledged ? 1 : -1;
-                });
-
-                renderTutorPortal();
+                renderPortal();
 
             } catch (error) {
                 console.error('Error loading lessons:', error);
@@ -758,248 +1329,754 @@
             return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
         }
 
-        function renderTutorPortal() {
-            const pendingLessons = currentLessons.filter(l => !l.acknowledged && !l.finished);
-            const activeLessons = currentLessons.filter(l => l.acknowledged && !l.finished);
-            const finishedLessons = currentLessons.filter(l => l.finished);
+        // ==============================
+        // RENDERING
+        // ==============================
+
+        function getPendingLessons() {
+            return currentLessons.filter(l => !l.acknowledged && !l.finished);
+        }
+
+        function getActiveLessons() {
+            return currentLessons.filter(l => l.acknowledged && !l.finished && l.acknowledgmentStatus !== 'declined');
+        }
+
+        function getFinishedLessons() {
+            return currentLessons.filter(l => l.finished);
+        }
+
+        function renderPortal() {
+            const pendingCount = getPendingLessons().length;
+            const activeCount = getActiveLessons().length;
+
+            const helpGuideHTML = `
+                <div class="help-guide">
+                    <button class="help-toggle" id="help-toggle" onclick="toggleHelp()">
+                        <span class="help-toggle-left">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            How to use this portal
+                        </span>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="help-content" id="help-content">
+                        ${currentPage === 'inbox' ? `
+                            <div class="help-item">
+                                <h4>Inbox</h4>
+                                <p>This is where new lesson assignments from the school appear. For each student you need to choose one of three options:</p>
+                            </div>
+                            <div class="help-item">
+                                <h4>Accept</h4>
+                                <p>Choose this if you are happy to teach this student. You will be asked to set a day and time straight away, or you can do it later.</p>
+                            </div>
+                            <div class="help-item">
+                                <h4>Waitlist</h4>
+                                <p>Choose this if you can't fit the student in right now but may be able to in the future. They will appear in your My Students list as "Waitlist".</p>
+                            </div>
+                            <div class="help-item">
+                                <h4>Decline</h4>
+                                <p>Choose this if you are unable to take this student on. The school will be notified so they can find another tutor.</p>
+                            </div>
+                        ` : `
+                            <div class="help-item">
+                                <h4>My Students</h4>
+                                <p>This page shows all the students you have accepted or waitlisted. You can search, filter, and sort to find students quickly.</p>
+                            </div>
+                            <div class="help-item">
+                                <h4>Edit Day/Time</h4>
+                                <p>Click this to change which day and what time the lesson is scheduled for.</p>
+                            </div>
+                            <div class="help-item">
+                                <h4>Move to Waitlist / Set Active</h4>
+                                <p>Use this to switch a student between your active lessons and your waitlist.</p>
+                            </div>
+                            <div class="help-item">
+                                <h4>End Lesson</h4>
+                                <p>Use this when a student has finished their lessons with you. This cannot be undone.</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
 
             contentEl.innerHTML = `
-                <div class="tutor-welcome">
-                    <div class="tutor-avatar">${getInitials(currentTutor.name)}</div>
-                    <h2>Welcome, ${currentTutor.name}</h2>
-                    <p>Manage your assigned lessons below.</p>
+                <div class="welcome-bar">
+                    <div class="welcome-avatar">${getInitials(currentTutor.name)}</div>
+                    <div class="welcome-text">
+                        <h2>${currentTutor.name}</h2>
+                        <p>${activeCount} active student${activeCount !== 1 ? 's' : ''}</p>
+                    </div>
+                </div>
+                <div class="tab-nav">
+                    <button class="tab-btn ${currentPage === 'inbox' ? 'active' : ''}" onclick="switchTab('inbox')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+                            <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
+                        </svg>
+                        Inbox
+                        ${pendingCount > 0 ? `<span class="tab-badge">${pendingCount}</span>` : ''}
+                    </button>
+                    <button class="tab-btn ${currentPage === 'students' ? 'active' : ''}" onclick="switchTab('students')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 010 7.75"/>
+                        </svg>
+                        My Students
+                        <span class="tab-badge empty">${activeCount}</span>
+                    </button>
+                </div>
+                <div class="page-content" id="page-content">
+                </div>
+            `;
+
+            // Insert help guide + inner container for page-specific content
+            document.getElementById('page-content').innerHTML = helpGuideHTML + '<div id="page-inner"></div>';
+
+            if (currentPage === 'inbox') {
+                renderInbox();
+            } else {
+                renderMyStudents();
+            }
+        }
+
+        function renderInbox() {
+            const pending = getPendingLessons().sort((a, b) =>
+                (a.studentName || '').localeCompare(b.studentName || '')
+            );
+
+            const pageEl = document.getElementById('page-inner');
+
+            if (pending.length === 0) {
+                pageEl.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                        <h3>All Caught Up!</h3>
+                        <p>No lessons waiting for your response. Check the My Students tab to manage your current lessons.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            pageEl.innerHTML = pending.map(lesson => `
+                <div class="inbox-card" data-lesson-id="${lesson.id}">
+                    <div class="inbox-card-header">
+                        <div>
+                            <div class="inbox-student-name">${lesson.studentName || 'Unknown Student'}</div>
+                            <div class="inbox-instrument">${lesson.instrument || 'Instrument not specified'}</div>
+                        </div>
+                    </div>
+                    ${(lesson.day && lesson.day !== 'TBC') || (lesson.time && lesson.time !== 'TBC') ? `
+                        <div class="inbox-meta">
+                            ${lesson.day && lesson.day !== 'TBC' ? `
+                                <span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    ${lesson.day}
+                                </span>
+                            ` : ''}
+                            ${lesson.time && lesson.time !== 'TBC' ? `
+                                <span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                    ${lesson.time}
+                                </span>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    <div class="inbox-actions">
+                        <button class="btn btn-accept" onclick="handleAccept('${lesson.id}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                            Accept
+                        </button>
+                        <button class="btn btn-waitlist" onclick="handleWaitlist('${lesson.id}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            Waitlist
+                        </button>
+                        <button class="btn btn-decline" onclick="handleDecline('${lesson.id}')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Decline
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function sortLessons(list) {
+            const dayOrder = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5 };
+            return [...list].sort((a, b) => {
+                let valA, valB;
+                switch (filters.sortBy) {
+                    case 'day':
+                        valA = dayOrder[a.day] || 99;
+                        valB = dayOrder[b.day] || 99;
+                        break;
+                    case 'instrument':
+                        valA = (a.instrument || '').toLowerCase();
+                        valB = (b.instrument || '').toLowerCase();
+                        break;
+                    default:
+                        valA = (a.studentName || '').toLowerCase();
+                        valB = (b.studentName || '').toLowerCase();
+                }
+                if (valA < valB) return filters.sortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return filters.sortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function applySearch(list) {
+            if (!filters.search) return list;
+            const q = filters.search.toLowerCase();
+            return list.filter(l =>
+                (l.studentName || '').toLowerCase().includes(q) ||
+                (l.instrument || '').toLowerCase().includes(q)
+            );
+        }
+
+        function renderStudentTable(lessons) {
+            const sortArrow = (col) => {
+                if (filters.sortBy !== col) return '';
+                return `<span class="sort-arrow">${filters.sortDir === 'asc' ? '\u25B2' : '\u25BC'}</span>`;
+            };
+
+            return `
+                <table class="student-table">
+                    <thead>
+                        <tr>
+                            <th class="${filters.sortBy === 'name' ? 'sorted' : ''}" onclick="handleSort('name')">Student ${sortArrow('name')}</th>
+                            <th class="${filters.sortBy === 'instrument' ? 'sorted' : ''}" onclick="handleSort('instrument')">Instrument ${sortArrow('instrument')}</th>
+                            <th class="${filters.sortBy === 'day' ? 'sorted' : ''}" onclick="handleSort('day')">Day ${sortArrow('day')}</th>
+                            <th>Time</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${lessons.map(l => `
+                            <tr data-lesson-id="${l.id}">
+                                <td class="td-name">${l.studentName || 'Unknown'}</td>
+                                <td>${l.instrument || '—'}</td>
+                                <td>${l.day || 'TBC'}</td>
+                                <td>${l.time || 'TBC'}</td>
+                                <td class="td-actions">
+                                    <button class="btn btn-edit" onclick="showEditModal('${l.id}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-toggle" onclick="confirmToggleStatus('${l.id}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                                        ${l.acknowledgmentStatus === 'accepted' ? 'Waitlist' : 'Activate'}
+                                    </button>
+                                    <button class="btn btn-end" onclick="confirmEndLesson('${l.id}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                                        End
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <!-- Mobile cards -->
+                <div class="mobile-cards">
+                    ${lessons.map(l => `
+                        <div class="mobile-student-card" data-lesson-id="${l.id}">
+                            <div class="mobile-card-top">
+                                <div>
+                                    <div class="mobile-card-name">${l.studentName || 'Unknown'}</div>
+                                    <div class="mobile-card-instrument">${l.instrument || '—'}</div>
+                                </div>
+                            </div>
+                            <div class="mobile-card-details">
+                                <span>${l.day || 'TBC'}</span>
+                                <span>${l.time || 'TBC'}</span>
+                            </div>
+                            <div class="mobile-card-actions">
+                                <button class="btn btn-edit" onclick="showEditModal('${l.id}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit Day/Time
+                                </button>
+                                <button class="btn btn-toggle" onclick="confirmToggleStatus('${l.id}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                                    ${l.acknowledgmentStatus === 'accepted' ? 'Move to Waitlist' : 'Set Active'}
+                                </button>
+                                <button class="btn btn-end" onclick="confirmEndLesson('${l.id}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                                    End Lesson
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderMyStudents() {
+            const pageEl = document.getElementById('page-inner');
+            const allLessons = getActiveLessons();
+            const finished = getFinishedLessons();
+
+            // Split into active and waitlist
+            let activeLessons = allLessons.filter(l => l.acknowledgmentStatus === 'accepted');
+            let waitlistLessons = allLessons.filter(l => l.acknowledgmentStatus === 'waitlist');
+
+            // Apply search across both
+            activeLessons = sortLessons(applySearch(activeLessons));
+            waitlistLessons = sortLessons(applySearch(waitlistLessons));
+
+            const totalCount = allLessons.length;
+
+            pageEl.innerHTML = `
+                <div class="filter-bar">
+                    <input type="text" class="search-input" placeholder="Search students..." value="${filters.search}" oninput="handleSearch(this.value)">
                 </div>
 
-                ${currentLessons.length === 0 ? `
-                    <div class="no-lessons">
+                ${totalCount === 0 ? `
+                    <div class="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
                         </svg>
-                        <h3>No Lessons Assigned</h3>
-                        <p>You don't have any lessons assigned yet.</p>
+                        <h3>No Students Yet</h3>
+                        <p>Accept lessons from your Inbox to see them here.</p>
                     </div>
                 ` : `
-                    ${pendingLessons.length > 0 ? `
-                        <div class="lessons-section">
-                            <h3>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M12 6v6l4 2"/>
-                                </svg>
-                                Awaiting Response
-                                <span class="lessons-count">${pendingLessons.length}</span>
-                            </h3>
-                            ${pendingLessons.map(lesson => renderLessonCard(lesson)).join('')}
-                        </div>
-                    ` : ''}
-
                     ${activeLessons.length > 0 ? `
-                        <div class="lessons-section" style="margin-top: 2rem;">
-                            <h3>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                                    <path d="M20 6L9 17l-5-5"/>
-                                </svg>
-                                Active Lessons
-                                <span class="lessons-count">${activeLessons.length}</span>
-                            </h3>
-                            ${activeLessons.map(lesson => renderLessonCard(lesson)).join('')}
+                        <h3 style="font-size: 0.9rem; color: #059669; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="status-badge status-active">${activeLessons.length}</span>
+                            Active Students
+                        </h3>
+                        ${renderStudentTable(activeLessons)}
+                    ` : filters.search ? '' : `
+                        <div style="text-align: center; padding: 1.5rem; color: #9ca3af; font-size: 0.85rem;">
+                            No active students yet. Accept lessons from your Inbox.
                         </div>
-                    ` : ''}
+                    `}
 
-                    ${finishedLessons.length > 0 ? `
-                        <div class="lessons-section" style="margin-top: 2rem;">
-                            <h3>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                    <path d="M9 12l2 2 4-4"/>
-                                </svg>
-                                Finished Lessons
-                                <span class="lessons-count">${finishedLessons.length}</span>
-                            </h3>
-                            ${finishedLessons.map(lesson => renderLessonCard(lesson)).join('')}
+                    ${waitlistLessons.length > 0 ? `
+                        <div class="collapsible-header ${waitlistLessons.length > 0 ? 'open' : ''}" id="waitlist-toggle" onclick="toggleWaitlist()" style="margin-top: ${activeLessons.length > 0 ? '1.5rem' : '0'};">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                            <span style="color: #d97706;">Waitlisted Students</span>
+                            <span class="finished-count" style="background: #fef3c7; color: #d97706;">${waitlistLessons.length}</span>
+                        </div>
+                        <div class="collapsible-content open" id="waitlist-content">
+                            ${renderStudentTable(waitlistLessons)}
                         </div>
                     ` : ''}
                 `}
 
-                <div class="footer-note" style="margin-top: 2rem;">
+                ${finished.length > 0 ? `
+                    <div class="collapsible-header" id="finished-toggle" onclick="toggleFinished()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                        Finished Lessons
+                        <span class="finished-count">${finished.length}</span>
+                    </div>
+                    <div class="collapsible-content" id="finished-content">
+                        ${finished.map(l => {
+                            const date = l.finishedAt ? new Date(l.finishedAt).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                            const isDeclined = l.acknowledgmentStatus === 'declined';
+                            return `
+                                <div class="finished-row">
+                                    <div>
+                                        <span class="finished-name">${l.studentName || 'Unknown'}</span>
+                                        <span style="margin-left: 0.5rem; color: #d1d5db;">${l.instrument || ''}</span>
+                                    </div>
+                                    <div class="finished-detail">
+                                        <span class="status-badge ${isDeclined ? 'status-declined' : 'status-finished'}">${isDeclined ? 'Declined' : 'Finished'}</span>
+                                        ${date ? `<span>${date}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : ''}
+
+                <div class="footer-note" style="margin-top: 1.5rem;">
                     <p>Need help? Contact the Performing Arts Department at MGS.</p>
                 </div>
             `;
         }
 
-        function renderLessonCard(lesson) {
-            let statusClass, statusLabel;
+        // ==============================
+        // TAB / FILTER / SORT HANDLERS
+        // ==============================
 
-            if (lesson.finished) {
-                statusClass = 'finished';
-                statusLabel = 'Finished';
-            } else if (lesson.acknowledged) {
-                statusClass = lesson.acknowledgmentStatus === 'accepted' ? 'accepted' : 'waitlist';
-                statusLabel = lesson.acknowledgmentStatus === 'accepted' ? 'Active' : 'Waitlist';
-            } else {
-                statusClass = 'pending';
-                statusLabel = 'Pending';
-            }
+        // ==============================
+        // HELP GUIDE
+        // ==============================
 
-            // Format finished date if available
-            const finishedDate = lesson.finishedAt ? new Date(lesson.finishedAt).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        window.toggleHelp = function() {
+            const toggle = document.getElementById('help-toggle');
+            const content = document.getElementById('help-content');
+            toggle.classList.toggle('open');
+            content.classList.toggle('open');
+        };
 
-            return `
-                <div class="lesson-card ${statusClass}" data-lesson-id="${lesson.id}">
-                    <div class="lesson-header">
-                        <div>
-                            <div class="student-name">${lesson.studentName || 'Unknown Student'}</div>
-                            <div class="lesson-instrument">${lesson.instrument || 'Instrument not specified'}</div>
-                        </div>
-                        <span class="lesson-status status-${statusClass}">${statusLabel}</span>
-                    </div>
-                    <div class="lesson-details">
-                        <div class="lesson-detail">
-                            <span class="lesson-detail-label">Day</span>
-                            <span class="lesson-detail-value">${lesson.day || 'TBC'}</span>
-                        </div>
-                        <div class="lesson-detail">
-                            <span class="lesson-detail-label">Time</span>
-                            <span class="lesson-detail-value">${lesson.time || 'TBC'}</span>
-                        </div>
-                        <div class="lesson-detail">
-                            <span class="lesson-detail-label">Location</span>
-                            <span class="lesson-detail-value">${lesson.location || 'TBC'}</span>
-                        </div>
-                        <div class="lesson-detail">
-                            <span class="lesson-detail-label">Duration</span>
-                            <span class="lesson-detail-value">${lesson.duration || '30'} min</span>
-                        </div>
-                    </div>
-                    ${lesson.finished ? `
-                        <div class="finished-note">
-                            Lesson ended${finishedDate ? ` on ${finishedDate}` : ''}
-                        </div>
-                    ` : !lesson.acknowledged ? `
-                        <div class="lesson-actions">
-                            <button class="btn btn-accept btn-sm" onclick="handleLessonResponse('${lesson.id}', 'accepted')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 6L9 17l-5-5"/>
-                                </svg>
-                                Accept Lesson
-                            </button>
-                            <button class="btn btn-waitlist btn-sm" onclick="handleLessonResponse('${lesson.id}', 'waitlist')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M12 6v6l4 2"/>
-                                </svg>
-                                Add to Waitlist
-                            </button>
-                        </div>
-                    ` : `
-                        <div class="lesson-actions-grid">
-                            <button class="btn btn-edit btn-sm" onclick="showEditModal('${lesson.id}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                                Edit Details
-                            </button>
-                            <button class="btn ${lesson.acknowledgmentStatus === 'accepted' ? 'btn-waitlist' : 'btn-accept'} btn-sm" onclick="toggleStatus('${lesson.id}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 1l4 4-4 4"/>
-                                    <path d="M3 11V9a4 4 0 014-4h14"/>
-                                    <path d="M7 23l-4-4 4-4"/>
-                                    <path d="M21 13v2a4 4 0 01-4 4H3"/>
-                                </svg>
-                                ${lesson.acknowledgmentStatus === 'accepted' ? 'Move to Waitlist' : 'Set Active'}
-                            </button>
-                            <button class="btn btn-end btn-sm" onclick="endLesson('${lesson.id}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                    <line x1="9" y1="9" x2="15" y2="15"/>
-                                    <line x1="15" y1="9" x2="9" y2="15"/>
-                                </svg>
-                                End Lesson
-                            </button>
-                        </div>
-                    `}
-                </div>
+        // ==============================
+        // CUSTOM CONFIRM/ALERT MODALS
+        // ==============================
+
+        let confirmCallback = null;
+
+        function showConfirmModal(title, message, confirmLabel, confirmClass, onConfirm) {
+            const iconEl = document.getElementById('confirm-modal-icon');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const messageEl = document.getElementById('confirm-modal-message');
+            const footerEl = document.getElementById('confirm-modal-footer');
+
+            iconEl.className = 'confirm-modal-icon warning';
+            iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>`;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            confirmCallback = onConfirm;
+
+            footerEl.innerHTML = `
+                <button class="btn btn-outline" onclick="closeConfirmModal()">No, Go Back</button>
+                <button class="btn ${confirmClass}" onclick="executeConfirm()">${confirmLabel}</button>
             `;
+
+            document.getElementById('confirm-modal').style.display = 'flex';
         }
 
-        // Expose to global scope
-        window.handleLessonResponse = async function(lessonId, status) {
-            const lessonCard = document.querySelector(`[data-lesson-id="${lessonId}"]`);
-            const buttons = lessonCard.querySelectorAll('button');
+        function showAlertModal(title, message) {
+            const iconEl = document.getElementById('confirm-modal-icon');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const messageEl = document.getElementById('confirm-modal-message');
+            const footerEl = document.getElementById('confirm-modal-footer');
+
+            iconEl.className = 'confirm-modal-icon error';
+            iconEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>`;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            confirmCallback = null;
+
+            footerEl.innerHTML = `
+                <button class="btn btn-outline" onclick="closeConfirmModal()" style="flex: 1;">OK</button>
+            `;
+
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        window.closeConfirmModal = function() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            confirmCallback = null;
+        };
+
+        window.executeConfirm = function() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            if (confirmCallback) {
+                confirmCallback();
+                confirmCallback = null;
+            }
+        };
+
+        // ==============================
+        // TIME PICKER HELPERS
+        // ==============================
+
+        function parseTimeString(timeStr) {
+            // Parse "9:00 AM" or "12:30 PM" into { hour, min, period }
+            if (!timeStr) return { hour: '', min: '00', period: 'AM' };
+            const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return { hour: '', min: '00', period: 'AM' };
+            return { hour: match[1], min: match[2].padStart(2, '0'), period: match[3].toUpperCase() };
+        }
+
+        function readTimePicker(prefix) {
+            const hour = document.getElementById(`${prefix}-hour`).value;
+            const min = document.getElementById(`${prefix}-min`).value;
+            const period = document.getElementById(`${prefix}-period`).value;
+            if (!hour) return '';
+            return `${hour}:${min} ${period}`;
+        }
+
+        function setTimePicker(prefix, timeStr) {
+            const { hour, min, period } = parseTimeString(timeStr);
+            document.getElementById(`${prefix}-hour`).value = hour;
+            // Snap minute to nearest 5
+            const minNum = parseInt(min) || 0;
+            const snapped = String(Math.round(minNum / 5) * 5).padStart(2, '0');
+            document.getElementById(`${prefix}-min`).value = snapped === '60' ? '55' : snapped;
+            document.getElementById(`${prefix}-period`).value = period;
+        }
+
+        window.switchTab = function(tab) {
+            currentPage = tab;
+            renderPortal();
+        };
+
+        window.handleSearch = function(value) {
+            filters.search = value;
+            renderMyStudents();
+        };
+
+        window.handleSort = function(col) {
+            if (filters.sortBy === col) {
+                filters.sortDir = filters.sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                filters.sortBy = col;
+                filters.sortDir = 'asc';
+            }
+            renderMyStudents();
+        };
+
+        window.toggleFinished = function() {
+            const header = document.getElementById('finished-toggle');
+            const content = document.getElementById('finished-content');
+            header.classList.toggle('open');
+            content.classList.toggle('open');
+        };
+
+        window.toggleWaitlist = function() {
+            const header = document.getElementById('waitlist-toggle');
+            const content = document.getElementById('waitlist-content');
+            header.classList.toggle('open');
+            content.classList.toggle('open');
+        };
+
+        // ==============================
+        // INBOX ACTIONS
+        // ==============================
+
+        window.handleAccept = async function(lessonId) {
+            const card = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+            const buttons = card.querySelectorAll('button');
             buttons.forEach(btn => btn.disabled = true);
 
             try {
-                // Update the lesson
                 const lessonRef = doc(db, 'lessons', lessonId);
                 await updateDoc(lessonRef, {
                     acknowledged: true,
                     acknowledgedAt: new Date().toISOString(),
-                    acknowledgmentStatus: status,
+                    acknowledgmentStatus: 'accepted',
                     updatedAt: serverTimestamp()
                 });
 
-                // Update local data
                 const lesson = currentLessons.find(l => l.id === lessonId);
                 if (lesson) {
                     lesson.acknowledged = true;
-                    lesson.acknowledgmentStatus = status;
+                    lesson.acknowledgmentStatus = 'accepted';
                 }
 
-                // Log activity for admin to see
                 try {
-                    const activitiesRef = collection(db, 'activities');
-                    const statusText = status === 'accepted' ? 'accepted' : 'added to waitlist';
-                    await addDoc(activitiesRef, {
+                    await addDoc(collection(db, 'activities'), {
                         type: 'lesson',
-                        message: `Lesson ${statusText} by ${currentTutor.name}`,
-                        details: { lessonId, status },
+                        message: `Lesson accepted by ${currentTutor.name}`,
+                        details: { lessonId, status: 'accepted' },
                         actor: currentTutor.name + ' (Tutor Portal)',
                         timestamp: serverTimestamp(),
                         createdAt: new Date().toISOString(),
                         isTutorPortalActivity: true
                     });
-                } catch (activityError) {
-                    console.warn('Failed to log activity:', activityError);
+                } catch (e) {
+                    console.warn('Failed to log activity:', e);
                 }
 
-                renderTutorPortal();
+                // Show schedule modal
+                showScheduleModal(lessonId);
 
             } catch (error) {
-                console.error('Error updating lesson:', error);
+                console.error('Error accepting lesson:', error);
                 buttons.forEach(btn => btn.disabled = false);
-                alert('There was an error saving your response. Please try again.');
+                showAlertModal('Something Went Wrong', 'There was an error accepting the lesson. Please try again.');
             }
         };
 
-        // Show edit modal
+        window.handleWaitlist = async function(lessonId) {
+            const card = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+            const buttons = card.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            try {
+                const lessonRef = doc(db, 'lessons', lessonId);
+                await updateDoc(lessonRef, {
+                    acknowledged: true,
+                    acknowledgedAt: new Date().toISOString(),
+                    acknowledgmentStatus: 'waitlist',
+                    updatedAt: serverTimestamp()
+                });
+
+                const lesson = currentLessons.find(l => l.id === lessonId);
+                if (lesson) {
+                    lesson.acknowledged = true;
+                    lesson.acknowledgmentStatus = 'waitlist';
+                }
+
+                try {
+                    await addDoc(collection(db, 'activities'), {
+                        type: 'lesson',
+                        message: `Lesson added to waitlist by ${currentTutor.name}`,
+                        details: { lessonId, status: 'waitlist' },
+                        actor: currentTutor.name + ' (Tutor Portal)',
+                        timestamp: serverTimestamp(),
+                        createdAt: new Date().toISOString(),
+                        isTutorPortalActivity: true
+                    });
+                } catch (e) {
+                    console.warn('Failed to log activity:', e);
+                }
+
+                renderPortal();
+
+            } catch (error) {
+                console.error('Error waitlisting lesson:', error);
+                buttons.forEach(btn => btn.disabled = false);
+                showAlertModal('Something Went Wrong', 'There was an error adding the student to your waitlist. Please try again.');
+            }
+        };
+
+        window.handleDecline = function(lessonId) {
+            const lesson = currentLessons.find(l => l.id === lessonId);
+            if (!lesson) return;
+
+            showConfirmModal(
+                'Decline This Lesson?',
+                `Are you sure you want to decline the lesson with ${lesson.studentName || 'this student'}? The school will be notified so they can find another tutor.`,
+                'Yes, Decline',
+                'btn-end',
+                () => executeDecline(lessonId)
+            );
+        };
+
+        async function executeDecline(lessonId) {
+            const lesson = currentLessons.find(l => l.id === lessonId);
+            const card = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+            const buttons = card ? card.querySelectorAll('button') : [];
+            buttons.forEach(btn => btn.disabled = true);
+
+            try {
+                const lessonRef = doc(db, 'lessons', lessonId);
+                await updateDoc(lessonRef, {
+                    acknowledged: true,
+                    acknowledgedAt: new Date().toISOString(),
+                    acknowledgmentStatus: 'declined',
+                    finished: true,
+                    finishedAt: new Date().toISOString(),
+                    updatedAt: serverTimestamp()
+                });
+
+                lesson.acknowledged = true;
+                lesson.acknowledgmentStatus = 'declined';
+                lesson.finished = true;
+                lesson.finishedAt = new Date().toISOString();
+
+                try {
+                    await addDoc(collection(db, 'activities'), {
+                        type: 'lesson',
+                        message: `Lesson declined by ${currentTutor.name}`,
+                        details: { lessonId, status: 'declined', studentName: lesson.studentName },
+                        actor: currentTutor.name + ' (Tutor Portal)',
+                        timestamp: serverTimestamp(),
+                        createdAt: new Date().toISOString(),
+                        isTutorPortalActivity: true
+                    });
+                } catch (e) {
+                    console.warn('Failed to log activity:', e);
+                }
+
+                renderPortal();
+
+            } catch (error) {
+                console.error('Error declining lesson:', error);
+                buttons.forEach(btn => btn.disabled = false);
+                showAlertModal('Something Went Wrong', 'There was an error declining the lesson. Please try again.');
+            }
+        }
+
+        // ==============================
+        // SCHEDULE MODAL (after accept)
+        // ==============================
+
+        function showScheduleModal(lessonId) {
+            const lesson = currentLessons.find(l => l.id === lessonId);
+            document.getElementById('schedule-lesson-id').value = lessonId;
+            document.getElementById('schedule-day').value = lesson?.day || '';
+            setTimePicker('schedule-time', lesson?.time);
+            document.getElementById('schedule-modal').style.display = 'flex';
+        }
+
+        window.saveSchedule = async function() {
+            const lessonId = document.getElementById('schedule-lesson-id').value;
+            const day = document.getElementById('schedule-day').value;
+            const time = readTimePicker('schedule-time');
+
+            if (!day && !time) {
+                skipSchedule();
+                return;
+            }
+
+            const saveBtn = document.querySelector('#schedule-modal .btn-accept');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const updateData = { updatedAt: serverTimestamp() };
+                if (day) updateData.day = day;
+                if (time) updateData.time = time;
+
+                const lessonRef = doc(db, 'lessons', lessonId);
+                await updateDoc(lessonRef, updateData);
+
+                const lesson = currentLessons.find(l => l.id === lessonId);
+                if (lesson) {
+                    if (day) lesson.day = day;
+                    if (time) lesson.time = time;
+                }
+
+                document.getElementById('schedule-modal').style.display = 'none';
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                renderPortal();
+
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                showAlertModal('Something Went Wrong', 'There was an error saving the schedule. You can set it later from the My Students tab.');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                document.getElementById('schedule-modal').style.display = 'none';
+                renderPortal();
+            }
+        };
+
+        window.skipSchedule = function() {
+            document.getElementById('schedule-modal').style.display = 'none';
+            renderPortal();
+        };
+
+        // ==============================
+        // MY STUDENTS ACTIONS
+        // ==============================
+
         window.showEditModal = function(lessonId) {
             const lesson = currentLessons.find(l => l.id === lessonId);
             if (!lesson) return;
 
             document.getElementById('edit-lesson-id').value = lessonId;
             document.getElementById('edit-day').value = lesson.day || '';
-            document.getElementById('edit-time').value = lesson.time || '';
-            document.getElementById('edit-location').value = lesson.location || '';
+            setTimePicker('edit-time', lesson.time);
             document.getElementById('edit-modal').style.display = 'flex';
         };
 
-        // Close edit modal
         window.closeEditModal = function() {
             document.getElementById('edit-modal').style.display = 'none';
         };
 
-        // Save lesson changes
         window.saveLesson = async function() {
             const lessonId = document.getElementById('edit-lesson-id').value;
             const day = document.getElementById('edit-day').value;
-            const time = document.getElementById('edit-time').value;
-            const location = document.getElementById('edit-location').value;
+            const time = readTimePicker('edit-time');
 
-            const saveBtn = document.querySelector('#edit-modal .btn-primary');
+            const saveBtn = document.querySelector('#edit-modal .btn-accept');
             saveBtn.disabled = true;
             saveBtn.textContent = 'Saving...';
 
@@ -1008,55 +2085,64 @@
                 await updateDoc(lessonRef, {
                     day: day,
                     time: time,
-                    location: location,
                     updatedAt: serverTimestamp()
                 });
 
-                // Update local data
                 const lesson = currentLessons.find(l => l.id === lessonId);
                 if (lesson) {
                     lesson.day = day;
                     lesson.time = time;
-                    lesson.location = location;
                 }
 
-                // Log activity
                 try {
-                    const activitiesRef = collection(db, 'activities');
-                    await addDoc(activitiesRef, {
+                    await addDoc(collection(db, 'activities'), {
                         type: 'lesson',
                         message: `Lesson details updated by ${currentTutor.name}`,
-                        details: { lessonId, day, time, location },
+                        details: { lessonId, day, time },
                         actor: currentTutor.name + ' (Tutor Portal)',
                         timestamp: serverTimestamp(),
                         createdAt: new Date().toISOString(),
                         isTutorPortalActivity: true
                     });
-                } catch (activityError) {
-                    console.warn('Failed to log activity:', activityError);
+                } catch (e) {
+                    console.warn('Failed to log activity:', e);
                 }
 
                 closeEditModal();
-                renderTutorPortal();
+                renderPortal();
 
             } catch (error) {
                 console.error('Error saving lesson:', error);
-                alert('There was an error saving changes. Please try again.');
+                showAlertModal('Something Went Wrong', 'There was an error saving the changes. Please try again.');
             }
 
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save Changes';
         };
 
-        // Toggle lesson status between active and waitlist
-        window.toggleStatus = async function(lessonId) {
+        window.confirmToggleStatus = function(lessonId) {
+            const lesson = currentLessons.find(l => l.id === lessonId);
+            if (!lesson) return;
+
+            const isActive = lesson.acknowledgmentStatus === 'accepted';
+            const studentName = lesson.studentName || 'this student';
+
+            showConfirmModal(
+                isActive ? 'Move to Waitlist?' : 'Set as Active?',
+                isActive
+                    ? `Are you sure you want to move ${studentName} to your waitlist? You can move them back to active at any time.`
+                    : `Are you sure you want to set ${studentName} as an active lesson?`,
+                isActive ? 'Yes, Move to Waitlist' : 'Yes, Set Active',
+                isActive ? 'btn-waitlist' : 'btn-accept',
+                () => toggleStatus(lessonId)
+            );
+        };
+
+        async function toggleStatus(lessonId) {
             const lesson = currentLessons.find(l => l.id === lessonId);
             if (!lesson) return;
 
             const newStatus = lesson.acknowledgmentStatus === 'accepted' ? 'waitlist' : 'accepted';
-            const lessonCard = document.querySelector(`[data-lesson-id="${lessonId}"]`);
-            const buttons = lessonCard.querySelectorAll('button');
-            buttons.forEach(btn => btn.disabled = true);
 
             try {
                 const lessonRef = doc(db, 'lessons', lessonId);
@@ -1065,14 +2151,11 @@
                     updatedAt: serverTimestamp()
                 });
 
-                // Update local data
                 lesson.acknowledgmentStatus = newStatus;
 
-                // Log activity
                 try {
-                    const activitiesRef = collection(db, 'activities');
                     const statusText = newStatus === 'accepted' ? 'set to active' : 'moved to waitlist';
-                    await addDoc(activitiesRef, {
+                    await addDoc(collection(db, 'activities'), {
                         type: 'lesson',
                         message: `Lesson ${statusText} by ${currentTutor.name}`,
                         details: { lessonId, newStatus },
@@ -1081,30 +2164,34 @@
                         createdAt: new Date().toISOString(),
                         isTutorPortalActivity: true
                     });
-                } catch (activityError) {
-                    console.warn('Failed to log activity:', activityError);
+                } catch (e) {
+                    console.warn('Failed to log activity:', e);
                 }
 
-                renderTutorPortal();
+                renderPortal();
 
             } catch (error) {
                 console.error('Error toggling status:', error);
-                buttons.forEach(btn => btn.disabled = false);
-                alert('There was an error updating the lesson. Please try again.');
+                showAlertModal('Something Went Wrong', 'There was an error updating the lesson. Please try again.');
             }
-        };
+        }
 
-        // End a lesson
-        window.endLesson = async function(lessonId) {
+        window.confirmEndLesson = function(lessonId) {
             const lesson = currentLessons.find(l => l.id === lessonId);
             if (!lesson) return;
 
-            const confirmed = confirm(`Are you sure you want to end lessons with ${lesson.studentName}?\n\nThis will mark the lesson as finished.`);
-            if (!confirmed) return;
+            showConfirmModal(
+                'End This Lesson?',
+                `Are you sure you want to end lessons with ${lesson.studentName || 'this student'}? This will mark the lesson as finished and cannot be undone.`,
+                'Yes, End Lesson',
+                'btn-end',
+                () => endLesson(lessonId)
+            );
+        };
 
-            const lessonCard = document.querySelector(`[data-lesson-id="${lessonId}"]`);
-            const buttons = lessonCard.querySelectorAll('button');
-            buttons.forEach(btn => btn.disabled = true);
+        async function endLesson(lessonId) {
+            const lesson = currentLessons.find(l => l.id === lessonId);
+            if (!lesson) return;
 
             try {
                 const lessonRef = doc(db, 'lessons', lessonId);
@@ -1114,14 +2201,11 @@
                     updatedAt: serverTimestamp()
                 });
 
-                // Update local data
                 lesson.finished = true;
                 lesson.finishedAt = new Date().toISOString();
 
-                // Log activity
                 try {
-                    const activitiesRef = collection(db, 'activities');
-                    await addDoc(activitiesRef, {
+                    await addDoc(collection(db, 'activities'), {
                         type: 'lesson',
                         message: `Lesson ended by ${currentTutor.name}`,
                         details: { lessonId, studentName: lesson.studentName },
@@ -1130,24 +2214,27 @@
                         createdAt: new Date().toISOString(),
                         isTutorPortalActivity: true
                     });
-                } catch (activityError) {
-                    console.warn('Failed to log activity:', activityError);
+                } catch (e) {
+                    console.warn('Failed to log activity:', e);
                 }
 
-                renderTutorPortal();
+                renderPortal();
 
             } catch (error) {
                 console.error('Error ending lesson:', error);
-                buttons.forEach(btn => btn.disabled = false);
-                alert('There was an error ending the lesson. Please try again.');
+                showAlertModal('Something Went Wrong', 'There was an error ending the lesson. Please try again.');
             }
-        };
+        }
 
-        // Close modal when clicking outside
+        // Close modals when clicking overlay
         document.getElementById('edit-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEditModal();
-            }
+            if (e.target === this) closeEditModal();
+        });
+        document.getElementById('schedule-modal').addEventListener('click', function(e) {
+            if (e.target === this) skipSchedule();
+        });
+        document.getElementById('confirm-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfirmModal();
         });
     </script>
 </body>

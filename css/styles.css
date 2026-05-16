@@ -2076,6 +2076,11 @@ tr.clickable:hover td {
     color: var(--color-text-muted);
 }
 
+.status-declined {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
 .row-finished {
     opacity: 0.6;
 }
